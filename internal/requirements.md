@@ -1,4 +1,5 @@
-# Software Requirements Specification (SRS)
+Software Requirements Specification (SRS)
+
 ## Esports Tournament & Community Platform
 
 ---
@@ -27,7 +28,7 @@ The platform supports two core roles — **Normal User** and **Admin**. It is de
 
 ### 3.1 In Scope
 
-- **Public & Community Pages**: Home, Tournaments, Teams & Groups, User Profile, ID Buy/Sell Marketplace, Rank Boosting Booking, Leaderboard, Social Links, About Us, and Custom 404 page.
+- **Public & Community Pages**: Home, Tournaments, Teams & Groups, User Profile, ID Buy/Sell Marketplace, Rank Boosting Booking, Leaderboard, Social Links, and About Us.
 - **Authentication & Security**: Account registration, email verification flows, login/logout, password reset, and password visibility toggles.
 - **Account & Preference Settings**: Theme switching (Dark, Light, AMOLED true-black), interface density controls (Compact, Comfortable, Spacious), and user privacy toggles.
 - **Device & Session Management**: Active sessions list, historical login audits, device identification, and remote session revocation.
@@ -45,10 +46,10 @@ The platform supports two core roles — **Normal User** and **Admin**. It is de
 
 ## 4. Users & Roles
 
-| Role | Description | Access Level |
-| :--- | :--- | :--- |
-| **Normal User** | Standard community member. Can browse tournaments, book rank-boosting packages, create/join teams, list/buy gaming IDs, leave ratings, and manage their personal account and active sessions. | Public & Authenticated User features |
-| **Admin** | Elevated platform manager responsible for tournament creation and updates, marketplace moderation, rank-boosting package offerings, and system oversight. | Full administrative and moderation privileges |
+| Role                  | Description                                                                                                                                                                                   | Access Level                                  |
+| :-------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :-------------------------------------------- |
+| **Normal User** | Standard community member. Can browse tournaments, book rank-boosting packages, create/join teams, list/buy gaming IDs, leave ratings, and manage their personal account and active sessions. | Public & Authenticated User features          |
+| **Admin**       | Elevated platform manager responsible for tournament creation and updates, marketplace moderation, rank-boosting package offerings, and system oversight.                                     | Full administrative and moderation privileges |
 
 ---
 
@@ -57,7 +58,7 @@ The platform supports two core roles — **Normal User** and **Admin**. It is de
 ### 5.1 Global Navigation Bar
 
 1. **Logo & Branding**: Main logo with platform branding, linking directly to the Home page.
-2. **Universal Search Bar**: Persistent search bar supporting cross-entity search for tournaments, teams, and players (see Section 6.12).
+2. **Universal Search Bar**: Persistent search bar supporting cross-entity search for tournaments, teams, and players (see Section 6.11).
 3. **Notification Center**: Icon with dynamic badge indicator displaying unread incoming requests and system announcements.
 4. **User Account Menu**: Displays current user avatar and opens a dropdown for Profile, Settings, Device Management, Activity History, and Logout.
 5. **Navbar Stability**: The navigation bar must remain sticky, performant, and completely free from layout jitter or freezing during fast scrolling and viewport resizing (see Section 15.4 Item 4).
@@ -73,9 +74,8 @@ The platform supports two core roles — **Normal User** and **Admin**. It is de
 7. **Leaderboard Page**: Community rankings for top-rated tournaments and trending teams.
 8. **Social Media Links Page**: Official directory of owner and platform community links.
 9. **About Us Page**: Mission statement, community guidelines, and owner details.
-10. **Custom 404 Page**: Themed error state with navigation recovery links.
-11. **Authentication Suite**: Registration, Email Verification, Login, and Password Reset.
-12. **Settings Suite**: Device Management, Active Sessions, Login History, Activity Log, and Display Settings.
+10. **Authentication Suite**: Registration, Email Verification, Login, and Password Reset.
+11. **Settings Suite**: Device Management, Active Sessions, Login History, Activity Log, and Display Settings.
 
 ---
 
@@ -122,9 +122,21 @@ The platform supports two core roles — **Normal User** and **Admin**. It is de
 
 ### 6.6 Rank Boosting Booking
 
-1. Users can browse rank-boosting packages with tier-by-tier breakdowns.
-2. Users can initiate booking requests specifying current rank, desired target rank, and schedule preferences.
-3. Service availability, pricing tiers, and estimated completion times are dynamically populated from provider settings.
+1. **Interactive Dual-Mode Calculator**:
+   - **Fixed Tier Jump Packages (Sub-Mythic)**: Dropdown selection for standard rank promotions with baseline rates:
+     - Epic → Legend: ₹400
+     - Legend → Mythic: ₹300
+     - Epic → Mythic (Bundle): ₹600 (includes ₹100 bundle discount)
+   - **Per-Star Incremental Calculator (Mythic & Above)**: Dynamic star counter/slider for high-tier progression, applying progressive difficulty-scaled rates:
+     - Mythic (0–24 Stars): ₹20 / star
+     - Mythical Honor (25–49 Stars): ₹30 / star
+     - Mythical Glory (50–99 Stars): ₹35 / star
+     - Mythical Immortal (100+ Stars): ₹40 / star
+   - Real-time quote generation factoring multi-tier bracket jumps (e.g., Mythic 10★ to Mythical Honor 30★ automatically calculates 15 stars @ ₹20 + 5 stars @ ₹30 = ₹450).
+2. **Direct Booking Handoff**:
+   - Generates pre-formatted direct external communication links (WhatsApp, Telegram, Discord) containing order parameters: starting rank/stars, target rank/stars, calculated price in INR (₹), and player in-game ID (IGN).
+3. **Admin Rate Management**:
+   - Base rates per tier jump and per-star rates are stored in the database and configurable via the Admin dashboard without requiring redeployment.
 
 ### 6.7 Leaderboard Page
 
@@ -139,28 +151,24 @@ The platform supports two core roles — **Normal User** and **Admin**. It is de
 
 1. Custom About Us page highlighting platform background, community mission, and verified owner credentials.
 
-### 6.10 Custom 404 Page
-
-1. Custom-designed 404 error page styled in harmony with the application theme, offering quick recovery actions to Home and Tournaments.
-
-### 6.11 Notifications
+### 6.10 Notifications
 
 1. Centralized notification system delivering:
    - **Action Requests**: Team invitations, join requests, and marketplace inquiries.
    - **System Updates**: Tournament start alerts, schedule shifts, and listing status updates.
 
-### 6.12 Universal Search
+### 6.11 Universal Search
 
 1. Fast universal search bar in the global navbar capable of querying tournaments, teams, user profiles, and marketplace items.
 2. Search results must support faceted **Filters** (e.g., game title, price range, tournament status).
 3. Search results must support multi-field **Sorting** (e.g., newest, price low-to-high, rating, member count).
 4. Search results must support **Category Tags** for quick navigation.
 
-### 6.13 Rating & Review System
+### 6.12 Rating & Review System
 
 1. Verified buyers can submit star ratings and textual reviews for sellers following a marketplace transaction, building a reliable trust network.
 
-### 6.14 Theme & Interface Settings
+### 6.13 Theme & Interface Settings
 
 1. Standard Dark Mode toggle.
 2. Standard Light Mode toggle.
@@ -192,18 +200,18 @@ The visual theme embodies a modern, premium esports aesthetic centered on deep d
 
 #### Design System Token Reference
 
-| Token | Recommended Value | Component Application |
-| :--- | :--- | :--- |
-| **Surface / Card** | `#121C19` – `#16211D` | Content cards, dialog panels, modals |
-| **Primary Accent (Emerald)** | `#1FAE7A` – `#22C58F` | Primary CTAs, active pills, badges |
-| **Secondary Accent (Teal)** | `#1B8F97` – `#20A6AE` | Secondary actions, progress bars, links |
-| **Gradient Pair** | `#1B8F97` → `#22C58F` | Hero highlights, key action buttons |
-| **Glow / Accent Light** | `#3FE6B0` (15–20% opacity) | Subtle focus rings and active card borders |
-| **Text — Primary (Dark)** | `#E9F5F1` | Headings and primary body copy |
-| **Text — Muted** | `#8FA39C` | Metadata, timestamps, helper labels |
-| **Border / Divider** | `#223530` | Structural borders and container outlines |
-| **AMOLED Base** | `#000000` | True-black OLED background surface |
-| **Light Mode Base** | `#F4FAF8` | Clean, crisp light surface background |
+| Token                              | Recommended Value             | Component Application                      |
+| :--------------------------------- | :---------------------------- | :----------------------------------------- |
+| **Surface / Card**           | `#121C19` – `#16211D`    | Content cards, dialog panels, modals       |
+| **Primary Accent (Emerald)** | `#1FAE7A` – `#22C58F`    | Primary CTAs, active pills, badges         |
+| **Secondary Accent (Teal)**  | `#1B8F97` – `#20A6AE`    | Secondary actions, progress bars, links    |
+| **Gradient Pair**            | `#1B8F97` → `#22C58F`    | Hero highlights, key action buttons        |
+| **Glow / Accent Light**      | `#3FE6B0` (15–20% opacity) | Subtle focus rings and active card borders |
+| **Text — Primary (Dark)**   | `#E9F5F1`                   | Headings and primary body copy             |
+| **Text — Muted**            | `#8FA39C`                   | Metadata, timestamps, helper labels        |
+| **Border / Divider**         | `#223530`                   | Structural borders and container outlines  |
+| **AMOLED Base**              | `#000000`                   | True-black OLED background surface         |
+| **Light Mode Base**          | `#F4FAF8`                   | Clean, crisp light surface background      |
 
 ### 7.2 General UI/UX Guidelines
 
@@ -230,7 +238,7 @@ The visual theme embodies a modern, premium esports aesthetic centered on deep d
 ### 8.2 Login
 
 1. User enters credentials on the Login screen.
-2. User can toggle password visibility via Section 6.14 Item 5.
+2. User can toggle password visibility via Section 6.13 Item 5.
 3. Upon authentication, a new device session record is created under Device Management.
 4. An immutable timestamped event is recorded in the Login History log.
 
@@ -244,7 +252,7 @@ The visual theme embodies a modern, premium esports aesthetic centered on deep d
 
 1. Team captain creates squad profile specifying game title, description, and target member cap (Section 6.3 Item 1).
 2. Team card appears on the recruitment board with real-time member tally and availability indicator.
-3. Prospective players submit join requests, dispatching real-time notifications to team admins (Section 6.11 Item 1).
+3. Prospective players submit join requests, dispatching real-time notifications to team admins (Section 6.10 Item 1).
 
 ### 8.5 List an ID for Sale
 
@@ -260,18 +268,22 @@ The visual theme embodies a modern, premium esports aesthetic centered on deep d
 1. Buyer filters or searches marketplace listings.
 2. Buyer opens listing detail page to view verified proof screenshots, seller trust rating, and direct contact options (Section 6.5 Item 2).
 3. Buyer reaches out directly to the seller via the provided communication channel.
-4. Upon transaction completion, the buyer submits a seller review (Section 6.13 Item 1).
+4. Upon transaction completion, the buyer submits a seller review (Section 6.12 Item 1).
 
 ### 8.7 Book a Rank Boosting Package
 
-1. User browses available rank tiers on the Home or Boosting directory (Section 6.1 Item 3).
-2. User selects a package, enters account specifications, and submits the booking inquiry (Section 6.6 Item 2).
+1. User opens the Rank Boosting calculator (Section 6.6 Item 1).
+2. User selects either a Tier-Jump package or inputs starting/target star values for Mythic+ progression.
+3. System computes the exact price in INR (₹) and displays estimated turnaround time.
+4. User enters their In-Game Name (IGN) and optional notes.
+5. User clicks the preferred communication channel (WhatsApp / Telegram / Discord), which opens the app with a pre-filled, formatted booking message.
+6. User and booster/admin finalize payment and schedule off-platform (Section 26 Item 1).
 
 ### 8.8 Rate a Seller
 
 1. Following a marketplace transaction, buyer accesses the seller review interface.
 2. Buyer submits a 1-to-5 star rating and optional written review.
-3. The seller's aggregate reputation score updates immediately across all public listings (Section 6.13 Item 1).
+3. The seller's aggregate reputation score updates immediately across all public listings (Section 6.12 Item 1).
 
 ---
 
@@ -482,7 +494,7 @@ To protect performance, accessibility, and visual elegance, the following are st
 ## 18. Accessibility
 
 1. Sitewide respect for `prefers-reduced-motion` operating system preferences.
-2. Password visibility toggles on all password entry inputs (Section 6.14 Item 5).
+2. Password visibility toggles on all password entry inputs (Section 6.13 Item 5).
 3. Full compliance target of **WCAG 2.1 Level AA** standards for color contrast, keyboard focus rings, and screen-reader accessible labeling (ARIA).
 
 ---
@@ -497,10 +509,10 @@ To protect performance, accessibility, and visual elegance, the following are st
 
 ## 20. Error Handling
 
-1. Themed Custom 404 page rendered for all unrecognized URL routes.
-2. Zero broken internal routes or unhandled exceptions sitewide.
-3. Explicit, human-readable error messages for authentication failures (e.g., invalid credentials, expired session, unverified email).
-4. Inline input error states with clear correction guidance for form validation failures.
+1. Zero unhandled exceptions or exposed server stack traces across client and API boundaries.
+2. Explicit, human-readable error messages for authentication failures (e.g., invalid credentials, expired session, unverified email).
+3. Inline input error states with clear correction guidance for form validation failures.
+4. Resilient recovery handling for transient network disconnects.
 
 ---
 
@@ -532,8 +544,8 @@ To protect performance, accessibility, and visual elegance, the following are st
 
 The platform architecture and implementation must strictly adhere to the following technical and operational constraints:
 
-1. **Frontend Architecture**: Modern Single-Page Application (SPA) built using React with Vite bundler, strictly typed with TypeScript, and following modular component architecture.
-2. **Backend & API Architecture**: RESTful stateless API architecture utilizing standard HTTP methods, status codes, and JSON request/response formats.
+1. **Frontend Architecture**: Next.js (App Router, TypeScript strict mode) leveraging Server Components and Server-Side Rendering (SSR) for search engine indexing (SEO), dynamic OpenGraph tags, and structured metadata, paired with client components for interactive features.
+2. **Backend & API Architecture**: Decoupled, standalone backend service (Node/TypeScript with Fastify or Express) exposing a RESTful stateless API alongside a persistent WebSocket server for real-time tournament brackets and notifications.
 3. **Authentication & Session Tokens**: Stateless authentication utilizing cryptographically signed JSON Web Tokens (JWT) for access and secure, HTTP-only, `SameSite=Strict` cookies for refresh tokens.
 4. **Browser & Platform Support**: Target modern evergreen web browsers (Chromium-based browsers, Firefox, Safari, Edge) across the last 2 major stable releases; mobile support for iOS Safari and Android Chrome.
 5. **Database & Storage Architecture**: PostgreSQL for all structured relational business entities with ACID transactional guarantees; Redis cache for active session lookups and rate limiting; S3-compatible cloud object storage for user screenshot proof uploads.
@@ -573,19 +585,18 @@ A build is considered production-ready when:
 13. The application is 100% free of prohibited visual effects (no opacity fades, no frosted glass, no excessive edge-glow, no frozen navbars).
 14. System respects `prefers-reduced-motion` sitewide.
 15. The site is fully responsive, performs at 60 FPS, and contains zero broken links.
-16. Custom 404 page is styled and operational.
-17. Admin role is secured and accessible only to authorized accounts.
-18. Dark emerald/teal theme is implemented consistently and passes WCAG AA contrast standards.
-19. Native-quality animations perform smoothly on low-end test hardware without layout thrashing.
-20. Full responsive layout coverage verified across the entire breakpoint matrix with zero horizontal scroll.
+16. Admin role is secured and accessible only to authorized accounts.
+17. Dark emerald/teal theme is implemented consistently and passes WCAG AA contrast standards.
+18. Native-quality animations perform smoothly on low-end test hardware without layout thrashing.
+19. Full responsive layout coverage verified across the entire breakpoint matrix with zero horizontal scroll.
 
 ---
 
 ## 26. Architectural Decision Records (ADR)
 
-| # | Specification Item | Description & Architectural Decision |
-| :--- | :--- | :--- |
-| **1** | External Payment & Communication Links | All marketplace transactions and rank-boosting bookings are coordinated off-platform. The platform provides direct external communication links (WhatsApp, Discord, Telegram, etc.) where buyers and sellers/boosters handle payment and fulfillment directly. There will be no integrated payment gateways (e.g., Stripe, Razorpay) or escrow services. |
-| **2** | Rank-Boosting Provider Model | Define whether boosting packages are offered solely by the platform administration or opened to third-party verified booster applications. *Recommendation: Restrict boosting offerings to Admin-curated packages for initial release.* |
-| **3** | Accessibility Target | Standardize formal accessibility compliance tier. *Recommendation: Standardize on WCAG 2.1 Level AA compliance.* |
-| **4** | Design Token Locking | Finalize exact CSS variable hex tokens during initial Tailwind configuration based on the Section 7.1 emerald/teal reference palette. |
+| Serial Number | Architecture Domain                                  | Context & Trade-off                                                                                                                                                | Architectural Decision                                                                                                                                                                                                                                                                                                                                                         |
+| :------------ | :--------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **1**   | **Payment & Checkout Architecture**            | In-app payment gateways (Stripe/Razorpay) introduce regulatory compliance, gateway fees, verification delays, and merchant chargeback liability for gaming assets. | Zero integrated payment gateways or native escrow services. All marketplace trades and rank-boosting bookings coordinate off-platform via direct external communication links (WhatsApp, Discord, Telegram) where users transact directly.                                                                                                                                     |
+| **2**   | **Rank-Boosting Model & Pricing System**       | Third-party booster onboarding introduces fraud risks; pricing must reflect competitive market rates for Mobile Legends: Bang Bang (MLBB).                         | Restrict boosting packages to Admin-curated offerings for initial release. Implement MLBB dual-mode pricing: fixed sub-Mythic tier jumps (Epic → Legend: ₹400, Legend → Mythic: ₹300, Epic → Mythic bundle: ₹600) and difficulty-scaled per-star rates for Mythic+ (Mythic: ₹20/★, Honor: ₹30/★, Glory: ₹35/★, Immortal: ₹40/★) with pre-filled message handoff. |
+| **3**   | **Accessibility Standards Compliance**         | Defining formal accessibility benchmarks to avoid vague accessibility claims.                                                                                      | Standardized formally on**WCAG 2.1 Level AA** compliance across all pages and modes. Requires minimum 4.5:1 text contrast ratios, visible keyboard navigation focus rings, screen-reader ARIA labeling, and strict adherence to OS `prefers-reduced-motion`.                                                                                                           |
+| **4**   | **Application Stack & Decoupled Architecture** | Balancing client requirement for maximum SEO crawlability with persistent, stateful real-time WebSockets for tournament brackets.                                  | Decoupled architecture:**Next.js (App Router, TypeScript)** for frontend SSR, dynamic OpenGraph generation, and sitemaps; **Standalone Node/TypeScript API (Fastify or Express)** with PostgreSQL and Redis to host persistent native WebSockets and core business logic without serverless runtime limitations.                                                   |
