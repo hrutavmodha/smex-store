@@ -1,4 +1,4 @@
-Software Requirements Specification (SRS)
+# Software Requirements Specification (SRS)
 
 ## Esports Tournament & Community Platform
 
@@ -39,7 +39,7 @@ The platform supports two core roles — **Normal User** and **Admin**. It is de
 
 ### 3.2 Out of Scope
 
-- **In-App Payment Gateway Processing**: Direct in-app payment processing (no integration with payment gateways like Stripe or Razorpay; all transactions for IDs and rank boosting are handled off-platform via direct external communication links such as WhatsApp, Discord, Telegram, etc.; see [ADR 0001](adr/0001-external-payment-and-communication-links.md)).
+- **In-App Payment Gateway Processing**: Direct in-app payment processing (no integration with payment gateways like Stripe or Razorpay; all transactions for IDs and rank boosting are handled off-platform via direct external communication links such as WhatsApp, Discord, Telegram, etc.; see [ADR: Payment](adr/payment.md)).
 - **Third-Party Game API Scrapers**: Automated live synchronization with proprietary game servers (account stats and ranks rely on user profile entry and verified screenshots).
 
 ---
@@ -244,7 +244,7 @@ The user interface adheres to the modern esports dark emerald design system, the
 3. System computes the exact price in INR (₹) and displays estimated turnaround time.
 4. User enters their In-Game Name (IGN) and optional notes.
 5. User clicks the preferred communication channel (WhatsApp / Telegram / Discord), which opens the app with a pre-filled, formatted booking message.
-6. User and booster/admin finalize payment and schedule off-platform (see [ADR 0001](adr/0001-external-payment-and-communication-links.md)).
+6. User and booster/admin finalize payment and schedule off-platform (see [ADR: Payment](adr/payment.md)).
 
 ### 8.8 Rate a Seller
 
@@ -349,7 +349,7 @@ The user interface adheres to the modern esports dark emerald design system, the
 
 1. Sitewide respect for `prefers-reduced-motion` operating system preferences.
 2. Password visibility toggles on all password entry inputs (Section 6.13 Item 5).
-3. Full compliance target of **WCAG 2.1 Level AA** standards for color contrast, keyboard focus rings, and screen-reader accessible labeling (ARIA; see [ADR 0003](adr/0003-accessibility-standards-compliance.md)).
+3. Full compliance target of **WCAG 2.1 Level AA** standards for color contrast, keyboard focus rings, and screen-reader accessible labeling (ARIA; see [ADR: Accessibility](adr/a11y-std.md)).
 
 ---
 
@@ -399,7 +399,7 @@ The user interface adheres to the modern esports dark emerald design system, the
 The platform architecture and implementation must strictly adhere to the following technical and operational constraints:
 
 1. **Frontend Architecture**: Next.js (App Router, TypeScript strict mode) leveraging Server Components and Server-Side Rendering (SSR) for search engine indexing (SEO), dynamic OpenGraph tags, and structured metadata, paired with client components for interactive features.
-2. **Backend & API Architecture**: Decoupled, standalone backend service (Node/TypeScript with Fastify or Express) exposing a RESTful stateless API alongside a persistent WebSocket server for real-time tournament brackets and notifications (see [ADR 0004](adr/0004-application-stack-and-decoupled-architecture.md)).
+2. **Backend & API Architecture**: Decoupled, standalone backend service (Node/TypeScript with Fastify or Express) exposing a RESTful stateless API alongside a persistent WebSocket server for real-time tournament brackets and notifications (see [ADR: Tech Stack](adr/tech-stack.md)).
 3. **Authentication & Session Tokens**: Stateless authentication utilizing cryptographically signed JSON Web Tokens (JWT) for access and secure, HTTP-only, `SameSite=Strict` cookies for refresh tokens.
 4. **Browser & Platform Support**: Target modern evergreen web browsers (Chromium-based browsers, Firefox, Safari, Edge) across the last 2 major stable releases; mobile support for iOS Safari and Android Chrome.
 5. **Database & Storage Architecture**: PostgreSQL for all structured relational business entities with ACID transactional guarantees; Redis cache for active session lookups and rate limiting; S3-compatible cloud object storage for user screenshot proof uploads.
