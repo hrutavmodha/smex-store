@@ -39,7 +39,7 @@ The platform supports two core roles — **Normal User** and **Admin**. It is de
 
 ### 3.2 Out of Scope
 
-- **In-App Payment Gateway Processing**: Direct in-app payment processing (no integration with payment gateways like Stripe or Razorpay; all transactions for IDs and rank boosting are handled off-platform via direct external communication links such as WhatsApp, Discord, Telegram, etc.; see [Section 26 Item 1](#26-architectural-decision-records-adr)).
+- **In-App Payment Gateway Processing**: Direct in-app payment processing (no integration with payment gateways like Stripe or Razorpay; all transactions for IDs and rank boosting are handled off-platform via direct external communication links such as WhatsApp, Discord, Telegram, etc.; see [ADR 0001](adr/0001-external-payment-and-communication-links.md)).
 - **Third-Party Game API Scrapers**: Automated live synchronization with proprietary game servers (account stats and ranks rely on user profile entry and verified screenshots).
 
 ---
@@ -277,7 +277,7 @@ The visual theme embodies a modern, premium esports aesthetic centered on deep d
 3. System computes the exact price in INR (₹) and displays estimated turnaround time.
 4. User enters their In-Game Name (IGN) and optional notes.
 5. User clicks the preferred communication channel (WhatsApp / Telegram / Discord), which opens the app with a pre-filled, formatted booking message.
-6. User and booster/admin finalize payment and schedule off-platform (Section 26 Item 1).
+6. User and booster/admin finalize payment and schedule off-platform (see [ADR 0001](adr/0001-external-payment-and-communication-links.md)).
 
 ### 8.8 Rate a Seller
 
@@ -589,14 +589,3 @@ A build is considered production-ready when:
 17. Dark emerald/teal theme is implemented consistently and passes WCAG AA contrast standards.
 18. Native-quality animations perform smoothly on low-end test hardware without layout thrashing.
 19. Full responsive layout coverage verified across the entire breakpoint matrix with zero horizontal scroll.
-
----
-
-## 26. Architectural Decision Records (ADR)
-
-| Serial Number | Architecture Domain                                  | Context & Trade-off                                                                                                                                                | Architectural Decision                                                                                                                                                                                                                                                                                                                                                         |
-| :------------ | :--------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **1**   | **Payment & Checkout Architecture**            | In-app payment gateways (Stripe/Razorpay) introduce regulatory compliance, gateway fees, verification delays, and merchant chargeback liability for gaming assets. | Zero integrated payment gateways or native escrow services. All marketplace trades and rank-boosting bookings coordinate off-platform via direct external communication links (WhatsApp, Discord, Telegram) where users transact directly.                                                                                                                                     |
-| **2**   | **Rank-Boosting Model & Pricing System**       | Third-party booster onboarding introduces fraud risks; pricing must reflect competitive market rates for Mobile Legends: Bang Bang (MLBB).                         | Restrict boosting packages to Admin-curated offerings for initial release. Implement MLBB dual-mode pricing: fixed sub-Mythic tier jumps (Epic → Legend: ₹400, Legend → Mythic: ₹300, Epic → Mythic bundle: ₹600) and difficulty-scaled per-star rates for Mythic+ (Mythic: ₹20/★, Honor: ₹30/★, Glory: ₹35/★, Immortal: ₹40/★) with pre-filled message handoff. |
-| **3**   | **Accessibility Standards Compliance**         | Defining formal accessibility benchmarks to avoid vague accessibility claims.                                                                                      | Standardized formally on**WCAG 2.1 Level AA** compliance across all pages and modes. Requires minimum 4.5:1 text contrast ratios, visible keyboard navigation focus rings, screen-reader ARIA labeling, and strict adherence to OS `prefers-reduced-motion`.                                                                                                           |
-| **4**   | **Application Stack & Decoupled Architecture** | Balancing client requirement for maximum SEO crawlability with persistent, stateful real-time WebSockets for tournament brackets.                                  | Decoupled architecture:**Next.js (App Router, TypeScript)** for frontend SSR, dynamic OpenGraph generation, and sitemaps; **Standalone Node/TypeScript API (Fastify or Express)** with PostgreSQL and Redis to host persistent native WebSockets and core business logic without serverless runtime limitations.                                                   |
