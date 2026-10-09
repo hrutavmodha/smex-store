@@ -8,7 +8,7 @@ Software Requirements Specification (SRS)
 
 The platform is a web-based community hub for esports enthusiasts that centralizes tournament schedules, team and group recruitment, a peer-to-peer in-game gaming ID marketplace, and rank-boosting service bookings. The platform provides comprehensive tracking of past, ongoing (live), and upcoming tournament events, showcases official owner social channels, and incorporates community-driven marketplace transactions backed by seller reputation systems.
 
-The platform supports two core roles — **Normal User** and **Admin**. It is designed to be fully responsive across mobile, tablet, and desktop viewports, performance-optimized, and compliant with explicit visual styling and motion constraints (see [Section 15.4](#154-prohibited-animation--visual-effects)).
+The platform supports two core roles — **Normal User** and **Admin**. It is designed to be fully responsive across mobile, tablet, and desktop viewports, performance-optimized, and compliant with explicit visual styling and motion constraints (see [internal/design/ui.md](design/ui.md#42-prohibited-visual-effects--animations)).
 
 ---
 
@@ -61,7 +61,7 @@ The platform supports two core roles — **Normal User** and **Admin**. It is de
 2. **Universal Search Bar**: Persistent search bar supporting cross-entity search for tournaments, teams, and players (see Section 6.11).
 3. **Notification Center**: Icon with dynamic badge indicator displaying unread incoming requests and system announcements.
 4. **User Account Menu**: Displays current user avatar and opens a dropdown for Profile, Settings, Device Management, Activity History, and Logout.
-5. **Navbar Stability**: The navigation bar must remain sticky, performant, and completely free from layout jitter or freezing during fast scrolling and viewport resizing (see Section 15.4 Item 4).
+5. **Navbar Stability**: The navigation bar must remain sticky, performant, and completely free from layout jitter or freezing during fast scrolling and viewport resizing (see [internal/design/ui.md](design/ui.md#42-prohibited-visual-effects--animations)).
 
 ### 5.2 Primary Site Pages
 
@@ -181,49 +181,16 @@ The platform supports two core roles — **Normal User** and **Admin**. It is de
 
 ---
 
-## 7. UI/UX Requirements
+## 7. UI & Design System Guidelines
 
-### 7.1 Visual Theme & Design System
+The user interface adheres to the modern esports dark emerald design system, theme tokens, interface density controls, and hardware-accelerated motion rules specified in detail in [internal/design/ui.md](design/ui.md).
 
-The visual theme embodies a modern, premium esports aesthetic centered on deep dark bases and luminous emerald/teal accents.
-
-1. **Theme Identity**: Primary visual tone is a sleek, game-inspired aesthetic that feels refined and modern rather than saturated or garish.
-2. **Base Surfaces**: Surfaces and backgrounds utilize deep charcoal and obsidian dark tones.
-3. **Accent Palette**: Interactive highlights, CTAs, and active states use cool emerald and vibrant teal accents.
-4. **Gradient Accents**: Multi-tone blue-green gradients add depth to primary buttons, hero banners, and active indicators.
-5. **Lighting & Glow**: Dynamic lighting and soft glows are applied selectively to key interactive states (never applied globally).
-6. **Cohesive Components**: Cohesive styling must be consistently maintained across cards, modals, form inputs, status chips, and dividers.
-7. **Readability First**: Strict contrast standards take priority over decoration; text legibility must remain crystal clear in all modes.
-8. **Modern Aesthetic**: Clean and futuristic styling without visual clutter, heavy neon glare, or intrusive patterns.
-9. **Multi-Mode Support**: The theme cleanly adapts across Dark Mode, AMOLED Mode, and a high-contrast Light Mode.
-10. **Constraint Compliance**: All glow and gradient treatments must comply strictly with the core visual prohibitions in Section 15.4 (no excessive edge-glow, no blurred-glass effects, and no opacity fades).
-
-#### Design System Token Reference
-
-| Token                              | Recommended Value             | Component Application                      |
-| :--------------------------------- | :---------------------------- | :----------------------------------------- |
-| **Surface / Card**           | `#121C19` – `#16211D`    | Content cards, dialog panels, modals       |
-| **Primary Accent (Emerald)** | `#1FAE7A` – `#22C58F`    | Primary CTAs, active pills, badges         |
-| **Secondary Accent (Teal)**  | `#1B8F97` – `#20A6AE`    | Secondary actions, progress bars, links    |
-| **Gradient Pair**            | `#1B8F97` → `#22C58F`    | Hero highlights, key action buttons        |
-| **Glow / Accent Light**      | `#3FE6B0` (15–20% opacity) | Subtle focus rings and active card borders |
-| **Text — Primary (Dark)**   | `#E9F5F1`                   | Headings and primary body copy             |
-| **Text — Muted**            | `#8FA39C`                   | Metadata, timestamps, helper labels        |
-| **Border / Divider**         | `#223530`                   | Structural borders and container outlines  |
-| **AMOLED Base**              | `#000000`                   | True-black OLED background surface         |
-| **Light Mode Base**          | `#F4FAF8`                   | Clean, crisp light surface background      |
-
-### 7.2 General UI/UX Guidelines
-
-1. Site interactions and scrolling must remain silky smooth and jitter-free on all devices.
-2. Full responsive support across mobile phones, tablets, laptops, and large desktop screens.
-3. Absolute zero dead ends or broken links across the application.
-4. Hero banner on the Home page must support smooth swipe/click rotation.
-5. Cards and listings must prioritize information density and clarity without truncating vital tournament or listing specs.
-6. Pricing and discount badges ("Good Deal", "Hot") must compute automatically from data.
-7. Interactive controls (buttons, toggles, menus) must feature immediate micro-state feedback.
-8. Global enforcement of motion and visual constraints (see Section 15.4).
-9. Visual tokens must consistently maintain WCAG AA contrast compliance across all color schemes.
+1. **Visual Aesthetic**: Sleek game-inspired visual identity featuring deep charcoal/obsidian surfaces, vibrant emerald (`#1FAE7A`) and teal (`#1B8F97`) accents, and subtle glow highlights (see [design/ui.md#1-visual-theme--design-tokens](design/ui.md#1-visual-theme--design-tokens)).
+2. **Multi-Theme Engine**: Native runtime switching between Dark Mode, AMOLED True-Black (`#000000`), and a high-contrast Light Mode (`#F4FAF8`).
+3. **Interface Densities**: User-selectable layout spacing (Compact, Comfortable, Spacious) with touch targets scaled appropriately (see [design/ui.md#3-interface-density-system](design/ui.md#3-interface-density-system)).
+4. **Motion & Visual Prohibitions**: All interactions must remain snappy and hardware-accelerated. Opacity fades, frosted-glass blur filters, heavy edge glows, and frozen navigation bars are strictly prohibited (see [design/ui.md#42-prohibited-visual-effects--animations](design/ui.md#42-prohibited-visual-effects--animations)).
+5. **Responsive Fluidity**: Fluid reflow across the breakpoint matrix (Mobile, Tablet, Desktop, Ultrawide) with zero horizontal overflow (see [design/ui.md#6-responsive-breakpoint-matrix](design/ui.md#6-responsive-breakpoint-matrix)).
+6. **Accessibility Compliance**: Minimum 4.5:1 text contrast ratios, visible keyboard focus indicators, and OS `prefers-reduced-motion` compliance across all themes.
 
 ---
 
@@ -378,136 +345,23 @@ The visual theme embodies a modern, premium esports aesthetic centered on deep d
 
 ---
 
-## 15. Animation, Motion & Transition System
-
-Interactive motion must remain purposeful, lightweight, and hardware-accelerated. Motion communicates hierarchy and state change rather than serving as visual clutter.
-
-### 15.1 Motion Animations
-
-1. Clean circular spinner and pulse loading animations.
-2. Smooth horizontal progress bar animations.
-3. Content skeleton placeholder screens.
-4. Deterministic file upload progress feedback.
-5. Numerical count-up animations for statistics, member totals, and ratings.
-6. Immediate success checkmark / error shake feedback.
-7. Viewport-triggered scroll reveal motions.
-8. Subtle micro-interactions on button click and hover states.
-9. Contextual state transitions between UI panels.
-10. Smooth section snap and scroll transitions.
-11. Smooth morphing geometry for expanding/collapsing cards.
-
-### 15.2 Normal UI Transitions
-
-1. Interactive hover color shifts (150–200ms ease-out).
-2. Accessible focus ring indications.
-3. Button depression (`transform: scale(0.98)`) on active click.
-4. Card lift elevation (`translateY(-2px)`) on hover.
-5. Responsive navigation menu expansion.
-6. Flyout context menus.
-7. Modal entrance and backdrop reveal.
-8. Inline form validation error state appearances.
-9. Segmented tab indicator transitions.
-10. Select dropdown list expansions.
-11. Slide-out drawer panels.
-12. Color scheme toggle transitions.
-
-### 15.3 General Animation Principles
-
-1. Motion is applied only where it clarifies context or enhances feedback.
-2. Architectural separation: standard CSS transitions handle micro-interactions; dedicated motion controllers handle layout state morphing.
-3. All motion curves must feel responsive, smooth, and lightweight.
-4. Full compliance with the OS/browser `prefers-reduced-motion` media query (disabling non-essential motion).
-
-### 15.4 Prohibited Animation & Visual Effects
-
-To protect performance, accessibility, and visual elegance, the following are strictly prohibited:
-
-1. **No opacity fade animations** anywhere across page transitions or modal entrances (use crisp sliding, scale, or direct reveals instead).
-2. **No frosted-glass (glassmorphism) surfaces** (no `backdrop-filter: blur()`, which triggers significant GPU overhead on mobile devices).
-3. **No aggressive or multi-layered edge glows** (keep glow treatments minimal, subtle, and localized to active focus rings).
-4. **No frozen or stuck navigation bars** during scrolling, device orientation flips, or window resizes.
-
-### 15.5 Extended Fluidity & Native-App Motion Guidelines
-
-1. Interface transitions should deliver the fluid responsiveness of a native application.
-2. Cards and containers morph smoothly between collapsed and expanded states without layout snapping.
-3. Page and section transitions utilize directional translation rather than fades.
-4. Skeleton placeholders feature a subtle shimmer wave to indicate active background data fetching.
-5. Navigation and card responses feel mechanically tied to user touch/click inputs.
-6. Modals and menus originate smoothly from their triggering anchor elements.
-7. Motion curves are differentiated by purpose (e.g., snappy micro-clicks vs. smooth drawer reveals).
-8. Counters, progress indicators, and upload meters provide accurate, real-time feedback.
-9. Micro-interactions remain crisp and contained without screen vibration.
-10. All extended fluidity rules strictly obey the core prohibitions in Section 15.4.
-
-### 15.6 Animation Performance & Optimization Requirements
-
-1. Consistent 60 FPS performance maintained across low-end mobile devices and high-refresh monitors.
-2. Zero unnecessary component re-renders triggered by animation loop state changes.
-3. Zero layout thrashing: animate only composited GPU properties (`transform`, `clip-path`) rather than geometry properties (`height`, `width`, `top`, `margin`).
-4. Limit the number of simultaneously animating elements on screen.
-5. Utilize hardware-accelerated CSS transforms and compositing layers.
-6. Motion must never block or delay user input responsiveness (clicks, taps, and scrolls register instantly).
-7. For users with `prefers-reduced-motion: reduce`, animations instantly resolve to final static states.
-
----
-
-## 16. Loading & Feedback States
-
-1. Content loading must display skeleton screen placeholders matching the exact geometry of expected data cards.
-2. Screenshot uploads must display real-time deterministic percentage progress (Section 15.1 Item 4).
-3. Form submissions, booking confirmations, and error alerts must trigger clear visual toasts (Section 15.1 Item 6).
-4. Empty states (e.g., "No tournaments found", "No active sessions", "No listings in this category") must render informative, illustrated placeholders with call-to-action buttons.
-
----
-
-## 17. Responsive Design
-
-### 17.1 General Responsiveness
-
-1. Fully responsive layout adapting seamlessly from 320px mobile screens to 4K ultrawide monitors.
-2. Fluid typography, responsive grids, and flexible container max-widths.
-3. Zero horizontal viewport overflow or clipping across any standard breakpoint.
-4. Navbar transforms gracefully into a mobile slide-out navigation drawer on smaller viewports.
-
-### 17.2 Breakpoint & Device Coverage
-
-1. Explicit layout optimization across device categories:
-   - **Mobile (Small & Large)**: 320px – 480px.
-   - **Tablets**: 481px – 768px.
-   - **Laptops / Small Desktop**: 769px – 1024px.
-   - **Standard Desktop**: 1025px – 1440px.
-   - **Ultrawide & High-DPI Displays**: 1441px+.
-2. Seamless layout adaptation between Portrait and Landscape orientations on mobile and tablet hardware.
-3. Full responsive coverage across all defined breakpoints and orientations.
-
-### 17.3 Adaptive Layout Behavior
-
-1. Data tables and cards reflow intelligently into single-column vertical cards on mobile viewports.
-2. Zero content clipping, text overlap, or clipped modal dialogs on small screens.
-3. Touch targets on mobile and tablet viewports must meet minimum accessibility sizes (minimum 44x44px).
-4. Proportional hierarchy, font scale, and padding maintain brand coherence across all breakpoints.
-5. Responsive standards apply uniformly to all pages, navigation elements, marketplace grids, and modals.
-
----
-
-## 18. Accessibility
+## 15. Accessibility
 
 1. Sitewide respect for `prefers-reduced-motion` operating system preferences.
 2. Password visibility toggles on all password entry inputs (Section 6.13 Item 5).
-3. Full compliance target of **WCAG 2.1 Level AA** standards for color contrast, keyboard focus rings, and screen-reader accessible labeling (ARIA).
+3. Full compliance target of **WCAG 2.1 Level AA** standards for color contrast, keyboard focus rings, and screen-reader accessible labeling (ARIA; see [ADR 0003](adr/0003-accessibility-standards-compliance.md)).
 
 ---
 
-## 19. Performance
+## 16. Performance
 
 1. Fast First Contentful Paint (FCP < 1.2s) and Largest Contentful Paint (LCP < 2.5s) on standard 4G networks.
-2. Animations must not drop frames or degrade CPU/GPU efficiency.
+2. Animations must not drop frames or degrade CPU/GPU efficiency (maintain 60 FPS minimum; see [internal/design/ui.md](design/ui.md#43-animation-performance-constraints)).
 3. Core Web Vitals optimized: Cumulative Layout Shift (CLS < 0.1) and Interaction to Next Paint (INP < 200ms).
 
 ---
 
-## 20. Error Handling
+## 17. Error Handling
 
 1. Zero unhandled exceptions or exposed server stack traces across client and API boundaries.
 2. Explicit, human-readable error messages for authentication failures (e.g., invalid credentials, expired session, unverified email).
@@ -516,7 +370,7 @@ To protect performance, accessibility, and visual elegance, the following are st
 
 ---
 
-## 21. Edge Cases
+## 18. Edge Cases
 
 1. A marketplace listing is marked sold or deleted by the seller while a buyer is actively viewing it: detail page updates dynamically to reflect sold status and disables contact actions.
 2. Successive rapid price changes: discount badge calculation correctly computes against the original baseline price rather than intermediate edits.
@@ -529,7 +383,7 @@ To protect performance, accessibility, and visual elegance, the following are st
 
 ---
 
-## 22. Admin Requirements
+## 19. Admin Requirements
 
 1. Explicit Admin role with elevated authentication credentials and permissions.
 2. Admin Dashboard capabilities:
@@ -540,12 +394,12 @@ To protect performance, accessibility, and visual elegance, the following are st
 
 ---
 
-## 23. Technical Constraints
+## 20. Technical Constraints
 
 The platform architecture and implementation must strictly adhere to the following technical and operational constraints:
 
 1. **Frontend Architecture**: Next.js (App Router, TypeScript strict mode) leveraging Server Components and Server-Side Rendering (SSR) for search engine indexing (SEO), dynamic OpenGraph tags, and structured metadata, paired with client components for interactive features.
-2. **Backend & API Architecture**: Decoupled, standalone backend service (Node/TypeScript with Fastify or Express) exposing a RESTful stateless API alongside a persistent WebSocket server for real-time tournament brackets and notifications.
+2. **Backend & API Architecture**: Decoupled, standalone backend service (Node/TypeScript with Fastify or Express) exposing a RESTful stateless API alongside a persistent WebSocket server for real-time tournament brackets and notifications (see [ADR 0004](adr/0004-application-stack-and-decoupled-architecture.md)).
 3. **Authentication & Session Tokens**: Stateless authentication utilizing cryptographically signed JSON Web Tokens (JWT) for access and secure, HTTP-only, `SameSite=Strict` cookies for refresh tokens.
 4. **Browser & Platform Support**: Target modern evergreen web browsers (Chromium-based browsers, Firefox, Safari, Edge) across the last 2 major stable releases; mobile support for iOS Safari and Android Chrome.
 5. **Database & Storage Architecture**: PostgreSQL for all structured relational business entities with ACID transactional guarantees; Redis cache for active session lookups and rate limiting; S3-compatible cloud object storage for user screenshot proof uploads.
@@ -557,7 +411,7 @@ The platform architecture and implementation must strictly adhere to the followi
 
 ---
 
-## 24. Dependencies
+## 21. Dependencies
 
 1. **Transactional Email Service**: SMTP / transactional email provider (e.g., Resend, SendGrid) for verification and password reset workflows.
 2. **Object Storage / CDN**: Cloud storage bucket for marketplace proof screenshots and static preset avatar assets.
@@ -566,7 +420,7 @@ The platform architecture and implementation must strictly adhere to the followi
 
 ---
 
-## 25. Acceptance Criteria
+## 22. Acceptance Criteria
 
 A build is considered production-ready when:
 
@@ -582,7 +436,7 @@ A build is considered production-ready when:
 10. Social Media Links and About Us pages are fully populated and link-verified.
 11. Universal search operates across tournaments, teams, and marketplace listings with filters and sorting.
 12. Dark, Light, and AMOLED modes persist across user sessions.
-13. The application is 100% free of prohibited visual effects (no opacity fades, no frosted glass, no excessive edge-glow, no frozen navbars).
+13. The application is 100% free of prohibited visual effects (no opacity fades, no frosted glass, no excessive edge-glow, no frozen navbars; see [internal/design/ui.md](design/ui.md#42-prohibited-visual-effects--animations)).
 14. System respects `prefers-reduced-motion` sitewide.
 15. The site is fully responsive, performs at 60 FPS, and contains zero broken links.
 16. Admin role is secured and accessible only to authorized accounts.
