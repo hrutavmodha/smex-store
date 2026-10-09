@@ -1,0 +1,7 @@
+packages:
+  - 'client'
+  - 'server'
+
+allowBuilds:
+  sharp: false
+  unrs-resolver: false
