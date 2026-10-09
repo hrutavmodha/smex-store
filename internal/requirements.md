@@ -1,0 +1,591 @@
+# Software Requirements Specification (SRS)
+## Esports Tournament & Community Platform
+
+---
+
+## 1. Project Overview
+
+The platform is a web-based community hub for esports enthusiasts that centralizes tournament schedules, team and group recruitment, a peer-to-peer in-game gaming ID marketplace, and rank-boosting service bookings. The platform provides comprehensive tracking of past, ongoing (live), and upcoming tournament events, showcases official owner social channels, and incorporates community-driven marketplace transactions backed by seller reputation systems.
+
+The platform supports two core roles — **Normal User** and **Admin**. It is designed to be fully responsive across mobile, tablet, and desktop viewports, performance-optimized, and compliant with explicit visual styling and motion constraints (see [Section 15.4](#154-prohibited-animation--visual-effects)).
+
+---
+
+## 2. Objectives
+
+1. Provide a centralized hub for all tournament information across past, ongoing, and upcoming states.
+2. Connect community members with the platform owner via a dedicated social media links directory.
+3. Enable users to browse and book professional rank-boosting services.
+4. Facilitate peer-to-peer trading of gaming account IDs with seller ratings and proof screenshots to prevent scams.
+5. Empower players to create, discover, and join competitive teams and groups.
+6. Deliver robust account and session security, including email verification, password reset, multi-session device tracking, and user activity logging.
+7. Deliver a consistent, fluid, accessible, and performant UI/UX across all device classes.
+
+---
+
+## 3. Scope
+
+### 3.1 In Scope
+
+- **Public & Community Pages**: Home, Tournaments, Teams & Groups, User Profile, ID Buy/Sell Marketplace, Rank Boosting Booking, Leaderboard, Social Links, About Us, and Custom 404 page.
+- **Authentication & Security**: Account registration, email verification flows, login/logout, password reset, and password visibility toggles.
+- **Account & Preference Settings**: Theme switching (Dark, Light, AMOLED true-black), interface density controls (Compact, Comfortable, Spacious), and user privacy toggles.
+- **Device & Session Management**: Active sessions list, historical login audits, device identification, and remote session revocation.
+- **Search & Discovery**: Universal cross-entity search with filtering, sorting, and tag categorization.
+- **Community Features**: Member requests, tournament updates, notifications, and seller reputation rating system.
+- **Administrative Moderation**: Dedicated admin controls for content oversight and platform management.
+- **Motion & Design System**: Hardware-accelerated transitions and distinct motion feedback adhering to strict performance and styling guardrails.
+
+### 3.2 Out of Scope
+
+- **In-App Payment Gateway Processing**: Direct in-app payment processing (no integration with payment gateways like Stripe or Razorpay; all transactions for IDs and rank boosting are handled off-platform via direct external communication links such as WhatsApp, Discord, Telegram, etc.; see [Section 26 Item 1](#26-architectural-decision-records-adr)).
+- **Third-Party Game API Scrapers**: Automated live synchronization with proprietary game servers (account stats and ranks rely on user profile entry and verified screenshots).
+
+---
+
+## 4. Users & Roles
+
+| Role | Description | Access Level |
+| :--- | :--- | :--- |
+| **Normal User** | Standard community member. Can browse tournaments, book rank-boosting packages, create/join teams, list/buy gaming IDs, leave ratings, and manage their personal account and active sessions. | Public & Authenticated User features |
+| **Admin** | Elevated platform manager responsible for tournament creation and updates, marketplace moderation, rank-boosting package offerings, and system oversight. | Full administrative and moderation privileges |
+
+---
+
+## 5. Information Architecture & Navigation
+
+### 5.1 Global Navigation Bar
+
+1. **Logo & Branding**: Main logo with platform branding, linking directly to the Home page.
+2. **Universal Search Bar**: Persistent search bar supporting cross-entity search for tournaments, teams, and players (see Section 6.12).
+3. **Notification Center**: Icon with dynamic badge indicator displaying unread incoming requests and system announcements.
+4. **User Account Menu**: Displays current user avatar and opens a dropdown for Profile, Settings, Device Management, Activity History, and Logout.
+5. **Navbar Stability**: The navigation bar must remain sticky, performant, and completely free from layout jitter or freezing during fast scrolling and viewport resizing (see Section 15.4 Item 4).
+
+### 5.2 Primary Site Pages
+
+1. **Home Page**: Featured banners, quick tournament summaries, featured boosting packages, and platform stats.
+2. **Tournaments Page**: Dedicated multi-state listings (Past, Ongoing, Upcoming) with filterable categories.
+3. **Teams & Groups Page**: Squad recruitment, team rosters, and open slot statuses.
+4. **Profile Page**: Preset avatar, in-game player ID, username, designated role/playstyle, and bio.
+5. **ID Buy/Sell Marketplace Page**: Account listings, verified screenshot proofs, price badges, and direct seller contact.
+6. **Rank Boosting Booking**: Service package directory with tiered options and booking inquiry flow.
+7. **Leaderboard Page**: Community rankings for top-rated tournaments and trending teams.
+8. **Social Media Links Page**: Official directory of owner and platform community links.
+9. **About Us Page**: Mission statement, community guidelines, and owner details.
+10. **Custom 404 Page**: Themed error state with navigation recovery links.
+11. **Authentication Suite**: Registration, Email Verification, Login, and Password Reset.
+12. **Settings Suite**: Device Management, Active Sessions, Login History, Activity Log, and Display Settings.
+
+---
+
+## 6. Functional Requirements
+
+### 6.1 Home Page
+
+1. Render the persistent global navigation bar across all screen viewports.
+2. Feature a rotating hero carousel displaying 5 to 6 high-visibility announcement banners and promotional posters.
+3. Showcase featured rank-boosting packages with transparent pricing, completion timeframes, and package deliverables.
+4. Display a "Recent Tournaments" showcase featuring complete competition details, prize pools, and schedules.
+
+### 6.2 Tournaments Page
+
+1. Render the complete directory of esports tournaments.
+2. Organize tournament listings into clearly segmented tabs or sections: **Past**, **Ongoing/Current**, and **Upcoming**.
+3. Each tournament entry must provide full tournament metadata (dates, format, rules, registration requirements, and prize structure).
+
+### 6.3 Teams & Groups Page
+
+1. Authenticated users can create new team or group listings.
+2. Users can submit join requests or directly join open rosters.
+3. Display current member count and maximum capacity on every team card.
+4. Display dynamic availability status badges (**Open to Join** vs. **Full / Closed**).
+
+### 6.4 Profile Page
+
+1. Profile avatar must be selectable from a curated library of high-quality preset gaming avatars (custom image uploads disabled for safety and moderation).
+2. Display the player's primary in-game User ID and public in-game handle.
+3. Highlight the player's competitive in-game role and playstyle (e.g., Duelist, Support, Sniper, IGL).
+4. Provide an editable rich bio field for player descriptions and hardware specs.
+
+### 6.5 ID Buy/Sell Marketplace Page
+
+1. Sellers can create gaming account listings including title, rank, item inventory, price, and proof screenshots.
+2. Clicking a marketplace card opens a comprehensive detail view displaying:
+   - Seller profile summary and reputation score.
+   - Full-resolution account proof screenshots.
+   - Direct external contact options (WhatsApp, Discord, Telegram, or phone link).
+3. Sellers retain full control over their own listings, including the ability to mark listings as **Sold** or remove them from the marketplace.
+4. **Dynamic Price-Drop Badge**: If a seller lowers the price on an existing listing, the system automatically computes the discount percentage and assigns a **"Good Deal"** badge.
+5. **High-Value Badge**: Premium or newly increased listing values are automatically tagged with a **"Hot"** badge.
+6. Seller ratings and completed transaction feedback must be prominently displayed on the listing view.
+
+### 6.6 Rank Boosting Booking
+
+1. Users can browse rank-boosting packages with tier-by-tier breakdowns.
+2. Users can initiate booking requests specifying current rank, desired target rank, and schedule preferences.
+3. Service availability, pricing tiers, and estimated completion times are dynamically populated from provider settings.
+
+### 6.7 Leaderboard Page
+
+1. Display a leaderboard showcasing the highest-rated tournaments based on community feedback.
+2. Display a dedicated leaderboard section showcasing top-performing and most popular teams.
+
+### 6.8 Social Media Links Page
+
+1. Dedicated portal featuring verified external links to the platform owner's YouTube, Twitch, Discord, Twitter/X, and Instagram channels.
+
+### 6.9 About Us Page
+
+1. Custom About Us page highlighting platform background, community mission, and verified owner credentials.
+
+### 6.10 Custom 404 Page
+
+1. Custom-designed 404 error page styled in harmony with the application theme, offering quick recovery actions to Home and Tournaments.
+
+### 6.11 Notifications
+
+1. Centralized notification system delivering:
+   - **Action Requests**: Team invitations, join requests, and marketplace inquiries.
+   - **System Updates**: Tournament start alerts, schedule shifts, and listing status updates.
+
+### 6.12 Universal Search
+
+1. Fast universal search bar in the global navbar capable of querying tournaments, teams, user profiles, and marketplace items.
+2. Search results must support faceted **Filters** (e.g., game title, price range, tournament status).
+3. Search results must support multi-field **Sorting** (e.g., newest, price low-to-high, rating, member count).
+4. Search results must support **Category Tags** for quick navigation.
+
+### 6.13 Rating & Review System
+
+1. Verified buyers can submit star ratings and textual reviews for sellers following a marketplace transaction, building a reliable trust network.
+
+### 6.14 Theme & Interface Settings
+
+1. Standard Dark Mode toggle.
+2. Standard Light Mode toggle.
+3. High-contrast **AMOLED True-Black Mode** (`#000000` base) for OLED displays.
+4. Interface Density selector with three layout scales:
+   - **Compact**: Tighter padding, higher data density.
+   - **Comfortable**: Default balanced layout.
+   - **Spacious**: Relaxed spacing and larger touch targets.
+5. Password visibility toggle ("show/hide password") on all password fields.
+
+---
+
+## 7. UI/UX Requirements
+
+### 7.1 Visual Theme & Design System
+
+The visual theme embodies a modern, premium esports aesthetic centered on deep dark bases and luminous emerald/teal accents.
+
+1. **Theme Identity**: Primary visual tone is a sleek, game-inspired aesthetic that feels refined and modern rather than saturated or garish.
+2. **Base Surfaces**: Surfaces and backgrounds utilize deep charcoal and obsidian dark tones.
+3. **Accent Palette**: Interactive highlights, CTAs, and active states use cool emerald and vibrant teal accents.
+4. **Gradient Accents**: Multi-tone blue-green gradients add depth to primary buttons, hero banners, and active indicators.
+5. **Lighting & Glow**: Dynamic lighting and soft glows are applied selectively to key interactive states (never applied globally).
+6. **Cohesive Components**: Cohesive styling must be consistently maintained across cards, modals, form inputs, status chips, and dividers.
+7. **Readability First**: Strict contrast standards take priority over decoration; text legibility must remain crystal clear in all modes.
+8. **Modern Aesthetic**: Clean and futuristic styling without visual clutter, heavy neon glare, or intrusive patterns.
+9. **Multi-Mode Support**: The theme cleanly adapts across Dark Mode, AMOLED Mode, and a high-contrast Light Mode.
+10. **Constraint Compliance**: All glow and gradient treatments must comply strictly with the core visual prohibitions in Section 15.4 (no excessive edge-glow, no blurred-glass effects, and no opacity fades).
+
+#### Design System Token Reference
+
+| Token | Recommended Value | Component Application |
+| :--- | :--- | :--- |
+| **Surface / Card** | `#121C19` – `#16211D` | Content cards, dialog panels, modals |
+| **Primary Accent (Emerald)** | `#1FAE7A` – `#22C58F` | Primary CTAs, active pills, badges |
+| **Secondary Accent (Teal)** | `#1B8F97` – `#20A6AE` | Secondary actions, progress bars, links |
+| **Gradient Pair** | `#1B8F97` → `#22C58F` | Hero highlights, key action buttons |
+| **Glow / Accent Light** | `#3FE6B0` (15–20% opacity) | Subtle focus rings and active card borders |
+| **Text — Primary (Dark)** | `#E9F5F1` | Headings and primary body copy |
+| **Text — Muted** | `#8FA39C` | Metadata, timestamps, helper labels |
+| **Border / Divider** | `#223530` | Structural borders and container outlines |
+| **AMOLED Base** | `#000000` | True-black OLED background surface |
+| **Light Mode Base** | `#F4FAF8` | Clean, crisp light surface background |
+
+### 7.2 General UI/UX Guidelines
+
+1. Site interactions and scrolling must remain silky smooth and jitter-free on all devices.
+2. Full responsive support across mobile phones, tablets, laptops, and large desktop screens.
+3. Absolute zero dead ends or broken links across the application.
+4. Hero banner on the Home page must support smooth swipe/click rotation.
+5. Cards and listings must prioritize information density and clarity without truncating vital tournament or listing specs.
+6. Pricing and discount badges ("Good Deal", "Hot") must compute automatically from data.
+7. Interactive controls (buttons, toggles, menus) must feature immediate micro-state feedback.
+8. Global enforcement of motion and visual constraints (see Section 15.4).
+9. Visual tokens must consistently maintain WCAG AA contrast compliance across all color schemes.
+
+---
+
+## 8. User Flows
+
+### 8.1 Registration & Email Verification
+
+1. User fills out registration form (Email, Password, Username).
+2. System validates input and dispatches a branded verification email styled in the dark emerald theme.
+3. User clicks the verification link; the account status is updated to verified and access is unlocked.
+
+### 8.2 Login
+
+1. User enters credentials on the Login screen.
+2. User can toggle password visibility via Section 6.14 Item 5.
+3. Upon authentication, a new device session record is created under Device Management.
+4. An immutable timestamped event is recorded in the Login History log.
+
+### 8.3 Password Reset
+
+1. User initiates a password reset request via registered email.
+2. System dispatches a secure, single-use, time-limited reset link.
+3. User enters and confirms new password with inline strength indicators.
+
+### 8.4 Create / Join Team or Group
+
+1. Team captain creates squad profile specifying game title, description, and target member cap (Section 6.3 Item 1).
+2. Team card appears on the recruitment board with real-time member tally and availability indicator.
+3. Prospective players submit join requests, dispatching real-time notifications to team admins (Section 6.11 Item 1).
+
+### 8.5 List an ID for Sale
+
+1. Seller fills out listing form with game title, rank tier, price, contact method, and proof screenshots (Section 6.5 Item 1).
+2. Listing is published to the marketplace with standard metadata tags.
+3. If seller subsequently adjusts the price:
+   - **Price Decrease**: System calculates savings and displays **"Good Deal"** badge.
+   - **Price Increase / Premium**: System tags listing with **"Hot"** badge.
+4. Once completed, the seller marks the item as **Sold** or deletes the listing.
+
+### 8.6 Buy an ID / Contact Seller
+
+1. Buyer filters or searches marketplace listings.
+2. Buyer opens listing detail page to view verified proof screenshots, seller trust rating, and direct contact options (Section 6.5 Item 2).
+3. Buyer reaches out directly to the seller via the provided communication channel.
+4. Upon transaction completion, the buyer submits a seller review (Section 6.13 Item 1).
+
+### 8.7 Book a Rank Boosting Package
+
+1. User browses available rank tiers on the Home or Boosting directory (Section 6.1 Item 3).
+2. User selects a package, enters account specifications, and submits the booking inquiry (Section 6.6 Item 2).
+
+### 8.8 Rate a Seller
+
+1. Following a marketplace transaction, buyer accesses the seller review interface.
+2. Buyer submits a 1-to-5 star rating and optional written review.
+3. The seller's aggregate reputation score updates immediately across all public listings (Section 6.13 Item 1).
+
+---
+
+## 9. Authentication & Account Management
+
+1. Enterprise-grade credential management and session handling.
+2. Mandatory email verification lifecycle with themed notification templates.
+3. Cryptographically secure, time-limited password recovery tokens.
+4. Interactive show/hide password toggle on all authentication input fields.
+5. Role-based access control distinguishing Normal Users from Platform Admins.
+6. Tight integration between session authentication and the Device Management subsystem.
+
+---
+
+## 10. Device Management
+
+### 10.1 Active Sessions
+
+1. View all active authenticated sessions tied to the account.
+2. Detailed session metadata: browser family, operating system, IP-derived approximate location, and last active timestamp.
+
+### 10.2 Login History
+
+1. Audit log tracking historical login events, timestamps, and authentication statuses.
+
+### 10.3 Device List & Details
+
+1. Consolidated list of authorized devices associated with account logins.
+2. Drill-down modal displaying extended device specifications.
+
+### 10.4 Remote Logout / Session Revocation
+
+1. Instant remote revocation button enabling users to terminate any active session or all other sessions simultaneously.
+
+---
+
+## 11. Activity History & Privacy Controls
+
+1. **Activity Logging**: Activity History log tracking user-initiated browsing actions (viewed tournaments, visited marketplace listings, recruitment requests).
+2. **User Privacy Controls**: Full privacy control: users can pause tracking, clear their history, or set history visibility to completely private.
+3. **Decoupled Architecture**: Architectural separation between Activity History (user browsing behavior) and Login History (security audit log).
+
+---
+
+## 12. Backend & API Requirements
+
+*(Backend API architecture supporting client operations through RESTful endpoints with JWT session validation):*
+
+1. **Auth Endpoints**: `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/verify-email`, `POST /api/auth/reset-password`.
+2. **Session & Device Endpoints**: `GET /api/devices/sessions`, `DELETE /api/devices/sessions/:id`, `GET /api/devices/history`.
+3. **Tournament Endpoints**: `GET /api/tournaments`, `GET /api/tournaments/:id`, `POST /api/tournaments` [Admin].
+4. **Teams & Groups Endpoints**: `GET /api/teams`, `POST /api/teams`, `POST /api/teams/:id/join`.
+5. **Profile Endpoints**: `GET /api/profile/:id`, `PUT /api/profile/me`.
+6. **Marketplace Endpoints**: `GET /api/marketplace`, `POST /api/marketplace`, `PATCH /api/marketplace/:id`, `DELETE /api/marketplace/:id`.
+7. **Boosting Package Endpoints**: `GET /api/boosting/packages`, `POST /api/boosting/bookings`.
+8. **Leaderboard Endpoints**: `GET /api/leaderboard/tournaments`, `GET /api/leaderboard/teams`.
+9. **Rating Endpoints**: `POST /api/ratings`, `GET /api/ratings/seller/:id`.
+10. **Notification Endpoints**: `GET /api/notifications`, `PATCH /api/notifications/:id/read`.
+11. **Universal Search Endpoint**: `GET /api/search?q=&category=&sort=&filter=`.
+12. **User Activity Endpoints**: `GET /api/activity`, `PUT /api/activity/preferences`, `DELETE /api/activity`.
+13. **Admin Moderation Endpoints**: `GET /api/admin/metrics`, `PATCH /api/admin/content/:id/status`.
+14. **Security Middleware**: Strict middleware authorization enforcing role permissions on all state-mutating endpoints.
+
+---
+
+## 13. Database & Data Requirements
+
+1. **User Entity**: `id`, `email`, `password_hash`, `role` (USER | ADMIN), `is_verified`, `avatar_preset_id`, `game_id`, `game_username`, `game_role`, `bio`, `theme_pref`, `density_pref`, `activity_privacy`.
+2. **Session Entity**: `id`, `user_id`, `token_hash`, `device_info`, `ip_address`, `last_active_at`, `is_revoked`.
+3. **Tournament Entity**: `id`, `title`, `description`, `game_title`, `status` (PAST | CURRENT | UPCOMING), `start_date`, `end_date`, `prize_pool`, `rating`.
+4. **Team Entity**: `id`, `name`, `captain_id`, `game_title`, `max_slots`, `status` (OPEN | CLOSED), `member_ids[]`.
+5. **Marketplace Listing Entity**: `id`, `seller_id`, `game_title`, `rank_tier`, `price`, `previous_price`, `screenshots[]`, `contact_info`, `status` (ACTIVE | SOLD | DELETED), `badge_tag`.
+6. **Rating Entity**: `id`, `reviewer_id`, `seller_id`, `listing_id`, `rating_score`, `comment`, `created_at`.
+7. **Boosting Package Entity**: `id`, `title`, `game_title`, `starting_tier`, `target_tier`, `price`, `eta_hours`, `is_active`.
+8. **Notification Entity**: `id`, `recipient_id`, `type` (REQUEST | UPDATE | SYSTEM), `payload`, `is_read`, `created_at`.
+9. **Activity Log Entity**: `id`, `user_id`, `action_type`, `entity_reference`, `timestamp`.
+10. **Relational Integrity**: Foreign key relational integrity enforced across all parent-child associations.
+
+---
+
+## 14. Security & Privacy
+
+1. Passwords hashed using industry-standard algorithms (Argon2id or bcrypt with strong work factor).
+2. Mandatory email verification tokens with single-use expiry.
+3. Cryptographic time-limited tokens for password resets (15-minute expiration).
+4. Granular session management allowing instant termination of stale or compromised tokens.
+5. Immutable audit logging for account authentication events.
+6. Activity history queries must enforce user privacy preferences at the database query level.
+7. Seller contact links are protected against automated scraping (accessible only via deliberate client interaction).
+8. Anti-fraud review gating: rating submissions require verified buyer association.
+9. Role-based access control enforced at both API gateway and controller layers.
+
+---
+
+## 15. Animation, Motion & Transition System
+
+Interactive motion must remain purposeful, lightweight, and hardware-accelerated. Motion communicates hierarchy and state change rather than serving as visual clutter.
+
+### 15.1 Motion Animations
+
+1. Clean circular spinner and pulse loading animations.
+2. Smooth horizontal progress bar animations.
+3. Content skeleton placeholder screens.
+4. Deterministic file upload progress feedback.
+5. Numerical count-up animations for statistics, member totals, and ratings.
+6. Immediate success checkmark / error shake feedback.
+7. Viewport-triggered scroll reveal motions.
+8. Subtle micro-interactions on button click and hover states.
+9. Contextual state transitions between UI panels.
+10. Smooth section snap and scroll transitions.
+11. Smooth morphing geometry for expanding/collapsing cards.
+
+### 15.2 Normal UI Transitions
+
+1. Interactive hover color shifts (150–200ms ease-out).
+2. Accessible focus ring indications.
+3. Button depression (`transform: scale(0.98)`) on active click.
+4. Card lift elevation (`translateY(-2px)`) on hover.
+5. Responsive navigation menu expansion.
+6. Flyout context menus.
+7. Modal entrance and backdrop reveal.
+8. Inline form validation error state appearances.
+9. Segmented tab indicator transitions.
+10. Select dropdown list expansions.
+11. Slide-out drawer panels.
+12. Color scheme toggle transitions.
+
+### 15.3 General Animation Principles
+
+1. Motion is applied only where it clarifies context or enhances feedback.
+2. Architectural separation: standard CSS transitions handle micro-interactions; dedicated motion controllers handle layout state morphing.
+3. All motion curves must feel responsive, smooth, and lightweight.
+4. Full compliance with the OS/browser `prefers-reduced-motion` media query (disabling non-essential motion).
+
+### 15.4 Prohibited Animation & Visual Effects
+
+To protect performance, accessibility, and visual elegance, the following are strictly prohibited:
+
+1. **No opacity fade animations** anywhere across page transitions or modal entrances (use crisp sliding, scale, or direct reveals instead).
+2. **No frosted-glass (glassmorphism) surfaces** (no `backdrop-filter: blur()`, which triggers significant GPU overhead on mobile devices).
+3. **No aggressive or multi-layered edge glows** (keep glow treatments minimal, subtle, and localized to active focus rings).
+4. **No frozen or stuck navigation bars** during scrolling, device orientation flips, or window resizes.
+
+### 15.5 Extended Fluidity & Native-App Motion Guidelines
+
+1. Interface transitions should deliver the fluid responsiveness of a native application.
+2. Cards and containers morph smoothly between collapsed and expanded states without layout snapping.
+3. Page and section transitions utilize directional translation rather than fades.
+4. Skeleton placeholders feature a subtle shimmer wave to indicate active background data fetching.
+5. Navigation and card responses feel mechanically tied to user touch/click inputs.
+6. Modals and menus originate smoothly from their triggering anchor elements.
+7. Motion curves are differentiated by purpose (e.g., snappy micro-clicks vs. smooth drawer reveals).
+8. Counters, progress indicators, and upload meters provide accurate, real-time feedback.
+9. Micro-interactions remain crisp and contained without screen vibration.
+10. All extended fluidity rules strictly obey the core prohibitions in Section 15.4.
+
+### 15.6 Animation Performance & Optimization Requirements
+
+1. Consistent 60 FPS performance maintained across low-end mobile devices and high-refresh monitors.
+2. Zero unnecessary component re-renders triggered by animation loop state changes.
+3. Zero layout thrashing: animate only composited GPU properties (`transform`, `clip-path`) rather than geometry properties (`height`, `width`, `top`, `margin`).
+4. Limit the number of simultaneously animating elements on screen.
+5. Utilize hardware-accelerated CSS transforms and compositing layers.
+6. Motion must never block or delay user input responsiveness (clicks, taps, and scrolls register instantly).
+7. For users with `prefers-reduced-motion: reduce`, animations instantly resolve to final static states.
+
+---
+
+## 16. Loading & Feedback States
+
+1. Content loading must display skeleton screen placeholders matching the exact geometry of expected data cards.
+2. Screenshot uploads must display real-time deterministic percentage progress (Section 15.1 Item 4).
+3. Form submissions, booking confirmations, and error alerts must trigger clear visual toasts (Section 15.1 Item 6).
+4. Empty states (e.g., "No tournaments found", "No active sessions", "No listings in this category") must render informative, illustrated placeholders with call-to-action buttons.
+
+---
+
+## 17. Responsive Design
+
+### 17.1 General Responsiveness
+
+1. Fully responsive layout adapting seamlessly from 320px mobile screens to 4K ultrawide monitors.
+2. Fluid typography, responsive grids, and flexible container max-widths.
+3. Zero horizontal viewport overflow or clipping across any standard breakpoint.
+4. Navbar transforms gracefully into a mobile slide-out navigation drawer on smaller viewports.
+
+### 17.2 Breakpoint & Device Coverage
+
+1. Explicit layout optimization across device categories:
+   - **Mobile (Small & Large)**: 320px – 480px.
+   - **Tablets**: 481px – 768px.
+   - **Laptops / Small Desktop**: 769px – 1024px.
+   - **Standard Desktop**: 1025px – 1440px.
+   - **Ultrawide & High-DPI Displays**: 1441px+.
+2. Seamless layout adaptation between Portrait and Landscape orientations on mobile and tablet hardware.
+3. Full responsive coverage across all defined breakpoints and orientations.
+
+### 17.3 Adaptive Layout Behavior
+
+1. Data tables and cards reflow intelligently into single-column vertical cards on mobile viewports.
+2. Zero content clipping, text overlap, or clipped modal dialogs on small screens.
+3. Touch targets on mobile and tablet viewports must meet minimum accessibility sizes (minimum 44x44px).
+4. Proportional hierarchy, font scale, and padding maintain brand coherence across all breakpoints.
+5. Responsive standards apply uniformly to all pages, navigation elements, marketplace grids, and modals.
+
+---
+
+## 18. Accessibility
+
+1. Sitewide respect for `prefers-reduced-motion` operating system preferences.
+2. Password visibility toggles on all password entry inputs (Section 6.14 Item 5).
+3. Full compliance target of **WCAG 2.1 Level AA** standards for color contrast, keyboard focus rings, and screen-reader accessible labeling (ARIA).
+
+---
+
+## 19. Performance
+
+1. Fast First Contentful Paint (FCP < 1.2s) and Largest Contentful Paint (LCP < 2.5s) on standard 4G networks.
+2. Animations must not drop frames or degrade CPU/GPU efficiency.
+3. Core Web Vitals optimized: Cumulative Layout Shift (CLS < 0.1) and Interaction to Next Paint (INP < 200ms).
+
+---
+
+## 20. Error Handling
+
+1. Themed Custom 404 page rendered for all unrecognized URL routes.
+2. Zero broken internal routes or unhandled exceptions sitewide.
+3. Explicit, human-readable error messages for authentication failures (e.g., invalid credentials, expired session, unverified email).
+4. Inline input error states with clear correction guidance for form validation failures.
+
+---
+
+## 21. Edge Cases
+
+1. A marketplace listing is marked sold or deleted by the seller while a buyer is actively viewing it: detail page updates dynamically to reflect sold status and disables contact actions.
+2. Successive rapid price changes: discount badge calculation correctly computes against the original baseline price rather than intermediate edits.
+3. A team reaches capacity while a join request is in flight: system rejects the transaction gracefully and displays "Team Roster Full".
+4. User toggles Activity History to private after previously having it active: prior history is immediately hidden from public queries.
+5. User revokes their current active session from the Device Management dashboard: system cleanly terminates the local session and redirects to the login screen.
+6. Unverified or non-buyer attempts to submit a seller rating: system blocks the request with a "Verified Purchase Required" prompt.
+7. User with unverified email attempts to create a marketplace listing: system prompts with an email verification banner.
+8. Reduced-motion enabled at the OS level: all animations degrade instantly to static transitions without disrupting UI function.
+
+---
+
+## 22. Admin Requirements
+
+1. Explicit Admin role with elevated authentication credentials and permissions.
+2. Admin Dashboard capabilities:
+   - **Tournament Management**: Create, edit, schedule, and finalize tournaments across Past, Current, and Upcoming states.
+   - **Marketplace Moderation**: Review reported listings, remove fraudulent items, and ban abusive seller accounts.
+   - **Boosting Package Configuration**: Manage package tiers, pricing, and active status.
+   - **System Metrics**: Overview of active user counts, listings volume, and system health.
+
+---
+
+## 23. Technical Constraints
+
+The platform architecture and implementation must strictly adhere to the following technical and operational constraints:
+
+1. **Frontend Architecture**: Modern Single-Page Application (SPA) built using React with Vite bundler, strictly typed with TypeScript, and following modular component architecture.
+2. **Backend & API Architecture**: RESTful stateless API architecture utilizing standard HTTP methods, status codes, and JSON request/response formats.
+3. **Authentication & Session Tokens**: Stateless authentication utilizing cryptographically signed JSON Web Tokens (JWT) for access and secure, HTTP-only, `SameSite=Strict` cookies for refresh tokens.
+4. **Browser & Platform Support**: Target modern evergreen web browsers (Chromium-based browsers, Firefox, Safari, Edge) across the last 2 major stable releases; mobile support for iOS Safari and Android Chrome.
+5. **Database & Storage Architecture**: PostgreSQL for all structured relational business entities with ACID transactional guarantees; Redis cache for active session lookups and rate limiting; S3-compatible cloud object storage for user screenshot proof uploads.
+6. **Network & Transport Security**: Mandatory TLS 1.3 encryption across all public and internal network communication; strict HTTPS enforcement with HSTS headers.
+7. **Cross-Origin & Header Protection**: Explicit CORS origin whitelisting; enforced Content Security Policy (CSP), X-Content-Type-Options, X-Frame-Options, and Referrer-Policy headers.
+8. **Rate Limiting & Abuse Prevention**: Server-side rate limiting on all public API endpoints (specifically targeting authentication routes, listing creation, and search) to prevent brute-force attacks and resource exhaustion.
+9. **Asset & Performance Budgets**: Client-side production bundles must implement code-splitting and dynamic route-based lazy loading; initial compressed JavaScript bundle target under 250KB.
+10. **Data Validation & Sanitization**: Strict input validation and sanitization enforced on both client and server boundaries to prevent Cross-Site Scripting (XSS), SQL injection, and payload manipulation.
+
+---
+
+## 24. Dependencies
+
+1. **Transactional Email Service**: SMTP / transactional email provider (e.g., Resend, SendGrid) for verification and password reset workflows.
+2. **Object Storage / CDN**: Cloud storage bucket for marketplace proof screenshots and static preset avatar assets.
+3. **Real-Time Event Engine**: WebSocket or Server-Sent Events (SSE) provider for instant notifications and live tournament updates.
+4. **Database & Cache**: Relational database (PostgreSQL) paired with Redis for session cache and rate limiting.
+
+---
+
+## 25. Acceptance Criteria
+
+A build is considered production-ready when:
+
+1. All functional requirements in Section 6 are fully implemented and demonstrable.
+2. Authentication, email verification, and password reset flows are secure, tested, and fully functional.
+3. Device Management allows real-time session tracking and remote logout.
+4. Activity History logging respects user privacy settings across all database queries.
+5. Marketplace supports screenshot proof uploads, dynamic "Good Deal" / "Hot" badges, seller contact links, and sold statuses.
+6. Seller rating system is functional and protected against fraudulent reviews.
+7. Team creation and recruitment features maintain accurate capacity limits and status indicators.
+8. Rank-boosting packages are browsable and bookable.
+9. Leaderboard accurately ranks top tournaments and trending teams.
+10. Social Media Links and About Us pages are fully populated and link-verified.
+11. Universal search operates across tournaments, teams, and marketplace listings with filters and sorting.
+12. Dark, Light, and AMOLED modes persist across user sessions.
+13. The application is 100% free of prohibited visual effects (no opacity fades, no frosted glass, no excessive edge-glow, no frozen navbars).
+14. System respects `prefers-reduced-motion` sitewide.
+15. The site is fully responsive, performs at 60 FPS, and contains zero broken links.
+16. Custom 404 page is styled and operational.
+17. Admin role is secured and accessible only to authorized accounts.
+18. Dark emerald/teal theme is implemented consistently and passes WCAG AA contrast standards.
+19. Native-quality animations perform smoothly on low-end test hardware without layout thrashing.
+20. Full responsive layout coverage verified across the entire breakpoint matrix with zero horizontal scroll.
+
+---
+
+## 26. Architectural Decision Records (ADR)
+
+| # | Specification Item | Description & Architectural Decision |
+| :--- | :--- | :--- |
+| **1** | External Payment & Communication Links | All marketplace transactions and rank-boosting bookings are coordinated off-platform. The platform provides direct external communication links (WhatsApp, Discord, Telegram, etc.) where buyers and sellers/boosters handle payment and fulfillment directly. There will be no integrated payment gateways (e.g., Stripe, Razorpay) or escrow services. |
+| **2** | Rank-Boosting Provider Model | Define whether boosting packages are offered solely by the platform administration or opened to third-party verified booster applications. *Recommendation: Restrict boosting offerings to Admin-curated packages for initial release.* |
+| **3** | Accessibility Target | Standardize formal accessibility compliance tier. *Recommendation: Standardize on WCAG 2.1 Level AA compliance.* |
+| **4** | Design Token Locking | Finalize exact CSS variable hex tokens during initial Tailwind configuration based on the Section 7.1 emerald/teal reference palette. |
