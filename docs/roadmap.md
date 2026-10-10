@@ -6,9 +6,10 @@ A battle-tested, milestone-driven implementation plan for the Smex Store platfor
 
 ## Technical Dependencies & Library Stack
 
-All packages must be installed using `pnpm add` (no manual version editing):
+All packages must be installed using `pnpm add`:
 
 ### Backend (`server/`)
+
 * **Core Framework**: `fastify@5`, `fastify-plugin@6`, `@fastify/sensible@6`
 * **Network & Sockets**: `@fastify/cors`, `@fastify/websocket`
 * **Configuration**: `dotenv`
@@ -19,6 +20,7 @@ All packages must be installed using `pnpm add` (no manual version editing):
 * **Build Engine**: `tsdown` (powered by Rolldown in Rust)
 
 ### Frontend (`client/`)
+
 * **Core Framework**: `next@16.4` (App Router, Turbopack, React 19)
 * **Styling**: `tailwindcss@4`, `@tailwindcss/turbopack`, `clsx`, `tailwind-merge`
 * **Icons**: `lucide-react`
@@ -44,6 +46,7 @@ flowchart TD
 ---
 
 ### Milestone 1: Core Plumbing & Library Foundations
+
 * [ ] **1.1 Dependency Installation**: Run `pnpm add` across `server/` and `client/` for all foundational packages.
 * [ ] **1.2 Fastify CORS & Security**: Register `@fastify/cors` configured strictly for `http://localhost:3000` (or `CORS_ORIGIN` env).
 * [ ] **1.3 Fastify WebSocket Registration**: Register `@fastify/websocket` with ping/pong heartbeat handling.
@@ -53,6 +56,7 @@ flowchart TD
 ---
 
 ### Milestone 2: PostgreSQL & Drizzle Data Layer
+
 * [ ] **2.1 Drizzle Connection Pool**: Set up `drizzle-orm/node-postgres` with pooled `pg.Pool` connection and graceful shutdown handlers.
 * [ ] **2.2 Schema Definitions**:
   * `users` table: UUID, email, password_hash, role (`user`, `admin`, `booster`), game_ign, avatar_preset, created_at.
@@ -67,6 +71,7 @@ flowchart TD
 ---
 
 ### Milestone 3: Zero-Trust Auth & Redis Remote Revocation
+
 * [ ] **3.1 Password Security**: Implement hashing and verification via `argon2`.
 * [ ] **3.2 Dual-Token Session Pipeline**:
   * Short-lived Access Token (JWT, 15m).
@@ -80,6 +85,7 @@ flowchart TD
 ---
 
 ### Milestone 4: Squads & Team Recruitment Engine (Section 6.3)
+
 * [ ] **4.1 Squad CRUD**: Endpoints for team creation, updating roster limits, and changing open/closed availability.
 * [ ] **4.2 Join Request Pipeline**:
   * Player submits join request with in-game IGN and role.
@@ -90,6 +96,7 @@ flowchart TD
 ---
 
 ### Milestone 5: Tournament Engine & Real-Time Brackets (Section 6.2, 6.17)
+
 * [ ] **5.1 Tournament Management**: Lifecycle state machine: `upcoming` $\rightarrow$ `registration_open` $\rightarrow$ `ongoing` $\rightarrow$ `completed`.
 * [ ] **5.2 Bracket Generation**: Single elimination and round-robin bracket seed generators.
 * [ ] **5.3 Real-Time WebSocket Lobby**:
@@ -99,6 +106,7 @@ flowchart TD
 ---
 
 ### Milestone 6: MLBB Dual-Mode Boosting Engine (Section 6.6, ADR 0002)
+
 * [ ] **6.1 Core Calculation Logic**:
   * Sub-Mythic: Tier jump fixed matrix (Epic $\rightarrow$ Legend: ₹400, Legend $\rightarrow$ Mythic: ₹300, Bundle: ₹600).
   * Mythic & Above: Progressive difficulty-scaled per-star tiers (0-24★: ₹20, 25-49★: ₹30, 50-99★: ₹35, 100+★: ₹40).
@@ -111,6 +119,7 @@ flowchart TD
 ---
 
 ### Milestone 7: Marketplace with S3 Presigned Uploads (Section 6.5, HLD Section 4)
+
 * [ ] **7.1 Direct-to-Storage Presigned Uploads**:
   * Fastify endpoint generates signed S3/R2 upload URLs with strict MIME type and file size limits (5MB per image).
   * Client uploads screenshot proofs directly to S3 (zero binary traffic passing through Fastify).
@@ -122,6 +131,7 @@ flowchart TD
 ---
 
 ### Milestone 8: Real-Time Notifications & Universal Search (Section 6.8, 6.11)
+
 * [ ] **8.1 Notification Dispatcher**:
   * In-memory WebSocket pub/sub + database persistence for unread notification center.
   * Notification types: Squad join requests, tournament schedule alerts, order status updates.
@@ -132,6 +142,7 @@ flowchart TD
 ---
 
 ### Milestone 9: Admin Dashboard & Governance Suite (Section 6.14)
+
 * [ ] **9.1 User & Roster Moderation**: Admin ability to ban users, revoke tokens, and disband rule-breaking squads.
 * [ ] **9.2 Marketplace Moderation**: Takedown reported fraudulent listings and suspend seller accounts.
 * [ ] **9.3 Rate & Fee Overrides**: Live dashboard controls for boosting rates and platform announcements.
@@ -139,6 +150,7 @@ flowchart TD
 ---
 
 ### Milestone 10: AMOLED UI Port, WCAG AA, & Production Hardening
+
 * [ ] **10.1 Port UI from `anitikrish-ai/smexstore`**:
   * Migrate components (`RankPackageCard`, Tournament cards, Marketplace cards) into Next.js App Router structure.
   * Re-skin all legacy Crimson colors with Matrix Emerald (`#1FAE7A`) and pure AMOLED (`#000000`).
