@@ -1,8 +1,8 @@
-# Data Layer and Persistence Engine
+# Data Layer and Client UI Shell
 
 ## 1. Overview and Scope
 
-This document specifies the Low-Level Design for the PostgreSQL persistence tier and Drizzle ORM data layer outlined in Milestone 2 of the platform roadmap. It defines the connection pooling topology, relational schema contracts across all core domains, migration lifecycle, idempotent seed pipeline, and dynamic database health probing.
+This document specifies the Low-Level Design for the PostgreSQL persistence tier and Next.js Client UI Shell outlined in Milestone 2 of the platform roadmap. It defines the connection pooling topology, relational schema contracts across all core domains, migration lifecycle, idempotent seed pipeline, dynamic database health probing, Next.js 16 App Router root layout, TanStack Query provider, sticky navigation bar with official logo, and pure AMOLED `#000000` and Obsidian `#0B0F12` theme shell.
 
 ```mermaid
 flowchart TD
@@ -19,6 +19,14 @@ flowchart TD
         CONFIG --> DKIT["drizzle-kit CLI"]
         DKIT -->|Generate / Migrate| PG
         SEED["src/db/seed.ts"] -->|Idempotent Upserts| PG
+    end
+
+    subgraph ClientShell["Next.js 16 Client Shell"]
+        LAYOUT["RootLayout: app/layout.tsx"] --> QUERY_PROV["TanStack Query Provider"]
+        LAYOUT --> THEME_PROV["AMOLED / Obsidian Theme Provider"]
+        LAYOUT --> NAVBAR["Sticky Navbar with Official Logo"]
+        LAYOUT --> VIEWPORT["Page Viewport Canvas"]
+        LAYOUT --> FOOTER["Platform Footer"]
     end
 ```
 
@@ -462,3 +470,94 @@ The `GET /health` endpoint extends from Milestone 1 to execute an active ping qu
   }
 }
 ```
+
+---
+
+## 7. Client UI Shell and Root Layout Architecture
+
+*Target Sources: `client/app/layout.tsx`, `client/src/providers/query-provider.tsx`, `client/src/components/navigation/navbar.tsx`, `client/src/components/navigation/footer.tsx`, `client/src/components/theme/theme-toggle.tsx`*
+
+### 7.1 Next App Router Root Layout and Providers
+
+The client entry point utilizes the Next.js 16 App Router architecture with React 19 Server Components. The root layout establishes global styling, font injection, client-side caching boundaries, and theme state persistence:
+
+1. **Hydration and HTML Shell**: The root `<html>` element defines `lang="en"` and includes `suppressHydrationWarning` to eliminate attribute hydration mismatches when local storage theme states are applied.
+2. **TanStack Query Provider**: Wraps client children in a single instance `QueryClientProvider` with configured caching defaults:
+   * `staleTime`: 60,000 milliseconds (1 minute)
+   * `refetchOnWindowFocus`: false (prevents unnecessary duplicate API re-fetching on tab switching)
+   * `retry`: 1 (fast failover for network queries)
+3. **Layout Tree Topology**:
+   * Fixed header containing the sticky navigation bar.
+   * Viewport `<main>` canvas with `min-h-screen pt-16 flex flex-col`.
+   * Standard platform footer at the document bottom.
+
+```typescript
+export interface ShellLayoutProps {
+  children: import('react').ReactNode;
+}
+
+export interface QueryProviderProps {
+  children: import('react').ReactNode;
+}
+```
+
+### 7.2 Sticky Navigation Bar Specification
+
+*Target Source: `client/src/components/navigation/navbar.tsx`*
+
+The navigation header remains permanently visible at the top of the viewport across all platform routes:
+
+1. **Visual Styling**:
+   * Height: Fixed 64 pixels (`h-16`).
+   * Positioning: `sticky top-0 left-0 right-0 z-50`.
+   * Background: Semi-transparent Obsidian (`bg-obsidian/85`) with CSS frosted backdrop blur (`backdrop-blur-md`).
+   * Border: Subtle divider line (`border-b border-white/5`).
+2. **Brand Emblem**:
+   * Uses the official emblem placed at `/logo.png`.
+   * Rendered via `next/image` at 36x36 pixels with priority loading.
+   * Accompanied by text branding: "SMEX STORE" in bold emerald/cyan gradient.
+3. **Navigation Links**:
+   * Tournaments: `/tournaments`
+   * Squads: `/squads`
+   * MLBB Boosting: `/boosting`
+   * Marketplace: `/marketplace`
+4. **Action Controls**:
+   * **Theme Toggle**: Switch between pure AMOLED black (`#000000`) and Obsidian carbon (`#0B0F12`).
+   * **Sign In CTA**: Emerald glow button (`bg-[#1FAE7A] hover:bg-[#1B8F97] text-black font-semibold px-4 py-2 rounded-lg text-sm transition-all`).
+5. **Mobile Viewport Drawer**:
+   * For viewports under 768px, navigation links collapse behind a hamburger icon (`lucide-react` `Menu`).
+   * Clicking toggles a sliding mobile navigation drawer with backdrop overlay.
+
+### 7.3 Platform Footer Specification
+
+*Target Source: `client/src/components/navigation/footer.tsx`*
+
+The platform footer anchors all pages with navigational taxonomy, community links, and legal safeguards:
+
+1. **Column Structure**:
+   * **Brand & Identity**: Official logo, brief platform statement, and copyright notice.
+   * **Gaming Services**: Direct routes to Tournaments, Squad Recruitment, Rank Boosting, and Account Marketplace.
+   * **Community & Support**: Verified external links to WhatsApp Direct Dispatch, Telegram Channel, and Discord Server.
+   * **Legal & Compliance**: Terms of Service, Privacy Policy, Escrow Guidelines, and Refund Policy.
+2. **Typography and Styling**:
+   * Background: Deepest Obsidian canvas (`bg-[#070A0D] border-t border-white/5`).
+   * Text: Neutral muted zinc (`text-zinc-400 hover:text-white transition-colors duration-120`).
+
+### 7.4 AMOLED Palette Tokens and Theme Transitions
+
+*Target Source: `client/app/globals.css`, `client/src/components/theme/theme-toggle.tsx`*
+
+The platform enforces high-contrast, gaming-optimized color tokens tailored for OLED/AMOLED mobile and desktop displays:
+
+| Color Token | Hex Code | Purpose in UI Shell |
+| :--- | :--- | :--- |
+| **AMOLED Pure Black** | `#000000` | True zero-pixel OLED background canvas mode |
+| **Obsidian Dark** | `#0B0F12` | Default subtle deep carbon canvas mode |
+| **Matrix Emerald** | `#1FAE7A` | Primary brand accent, action buttons, active states |
+| **Cyan Depth** | `#1B8F97` | Secondary accent, gradient stops, tournament badges |
+| **Card Surface** | `#11161B` | Elevated card container background with border |
+| **Border Subtle** | `rgba(255, 255, 255, 0.08)` | Low-contrast containment borders |
+
+**Transition Standard**:
+All theme state transitions and interactive hover effects must adhere to a strict 120 millisecond hardware transition (`transition-all duration-120 ease-in-out`), eliminating perceived UI input lag while delivering smooth visual transitions.
+

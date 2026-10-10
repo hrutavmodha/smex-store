@@ -138,18 +138,18 @@ No release or milestone is marked complete if any of the following conditions ex
 
 ## 6. Milestone Test Matrix Mapping
 
-Every milestone in `docs/internal/roadmap.md` is verified by a dedicated test catalog document matching the Low-Level Design file:
+Every milestone in `docs/internal/roadmap.md` is structured as a full-stack vertical slice verified by a dedicated test catalog document matching the Low-Level Design file:
 
 | Milestone Domain | Low-Level Design Document | Milestone Test Specification |
 | :--- | :--- | :--- |
-| **Milestone 1** | `lld/core-plumbing.md` | `testing/llt/core-plumbing.md` |
-| **Milestone 2** | `lld/data-layer.md` | `testing/llt/data-layer.md` |
-| **Milestone 3** | `lld/auth-and-sessions.md` | `testing/llt/auth-and-sessions.md` |
-| **Milestone 4** | `lld/squad-recruitment.md` | `testing/llt/squad-recruitment.md` |
-| **Milestone 5** | `lld/tournament-engine.md` | `testing/llt/tournament-engine.md` |
-| **Milestone 6** | `lld/mlbb-boosting.md` | `testing/llt/mlbb-boosting.md` |
-| **Milestone 7** | `lld/marketplace-media.md` | `testing/llt/marketplace-media.md` |
-| **Milestone 8** | `lld/notifications-search.md` | `testing/llt/notifications-search.md` |
-| **Milestone 9** | `lld/admin-governance.md` | `testing/llt/admin-governance.md` |
-| **Milestone 10** | `lld/client-ui-amoled.md` | `testing/llt/client-ui-amoled.md` |
-| **Milestone 11** | `lld/cicd-hardening.md` | `testing/llt/cicd-hardening.md` |
+| **Milestone 1: Core Tooling and Monorepo Foundations** | `lld/core-plumbing.md` | `testing/llt/core-plumbing.md` |
+| **Milestone 2: Data Layer and Client UI Shell** | `lld/data-layer.md` | `testing/llt/data-layer.md` |
+| **Milestone 3: Zero-Trust Authentication and User Profiles** | `lld/auth-and-sessions.md` | `testing/llt/auth-and-sessions.md` |
+| **Milestone 4: Squads and Team Recruitment Engine** | `lld/squad-recruitment.md` | `testing/llt/squad-recruitment.md` |
+| **Milestone 5: Tournament Engine and Live Lobbies** | `lld/tournament-engine.md` | `testing/llt/tournament-engine.md` |
+| **Milestone 6: MLBB Dual-Mode Boosting Engine** | `lld/mlbb-boosting.md` | `testing/llt/mlbb-boosting.md` |
+| **Milestone 7: Marketplace and S3 Presigned Uploads** | `lld/marketplace-media.md` | `testing/llt/marketplace-media.md` |
+| **Milestone 8: Real-Time Notifications and Universal Search** | `lld/notifications-search.md` | `testing/llt/notifications-search.md` |
+| **Milestone 9: Admin Dashboard and Governance Suite** | `lld/admin-governance.md` | `testing/llt/admin-governance.md` |
+| **Milestone 10: Production Hardening, CI CD, and Deployment** | `lld/cicd-hardening.md` | `testing/llt/cicd-hardening.md` |
+

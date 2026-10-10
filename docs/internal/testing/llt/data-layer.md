@@ -1,14 +1,14 @@
-# Data Layer and Persistence Engine Test Specification
+# Data Layer and Client UI Shell Test Specification
 
 ## 1. Overview and Quality Objectives
 
-This document specifies the Low-Level Test verification catalog for the PostgreSQL database and Drizzle ORM persistence layer designed in Milestone 2 of the platform roadmap. It serves as the direct 1:1 verification counterpart to `docs/internal/design/lld/data-layer.md`.
+This document specifies the Low-Level Test verification catalog for the PostgreSQL database, Drizzle ORM persistence layer, and Next.js Client UI Shell designed in Milestone 2 of the platform roadmap. It serves as the direct 1:1 verification counterpart to `docs/internal/design/lld/data-layer.md`.
 
-* **Verification Objective**: Validate connection pool lifecycle, foreign key cascade behaviors, compound unique constraints, check constraints, schema migration consistency, seed pipeline idempotency, and active health check database readiness pings.
-* **Test Toolchain**: Native Node.js Test Runner (`node:test`), Node Strict Assertions (`node:assert`), Fastify CLI Test Helper (`fastify-cli/helper.js`), Drizzle Kit (`drizzle-kit`), and V8 Code Coverage Engine (`c8`).
+* **Verification Objective**: Validate connection pool lifecycle, foreign key cascade behaviors, compound unique constraints, check constraints, schema migration consistency, seed pipeline idempotency, active health check database readiness pings, client root layout hydration, sticky navigation bar rendering, AMOLED theme toggling, and platform footer taxonomy.
+* **Test Toolchain**: Native Node.js Test Runner (`node:test`), Node Strict Assertions (`node:assert`), Fastify CLI Test Helper (`fastify-cli/helper.js`), Drizzle Kit (`drizzle-kit`), React Testing Library, and V8 Code Coverage Engine (`c8`).
 * **Backing Service Environment**: Containerized PostgreSQL 16 on port 5432 provided via `docker-compose.yml`.
 * **Execution Status**: Specification Ready. Test cases queued for execution alongside Milestone 2 implementation.
-* **Target Coverage Thresholds**: Minimum 80.0% lines, 75.0% branches, 80.0% functions across all database modules.
+* **Target Coverage Thresholds**: Minimum 80.0% lines, 75.0% branches, 80.0% functions across all database and UI shell modules.
 
 ```mermaid
 flowchart TD
@@ -18,10 +18,11 @@ flowchart TD
         TC_MIGRATION["Migrations & Drift Detection: 2 Tests"]
         TC_SEED["Seed Pipeline & Idempotency: 2 Tests"]
         TC_HEALTH["Health Probe & Latency: 2 Tests"]
+        TC_UI_SHELL["Client UI Shell & Layout: 5 Tests"]
     end
 
     subgraph QualityGate["Quality Gate Enforcement"]
-        TOTAL["20 Test Cases Ready"]
+        TOTAL["25 Test Cases Ready"]
         ISOLATION["Transactional Isolation & Rollback"]
         GATE["Coverage Floor: >= 80% Threshold"]
     end
@@ -31,6 +32,7 @@ flowchart TD
     TC_MIGRATION --> TOTAL
     TC_SEED --> TOTAL
     TC_HEALTH --> TOTAL
+    TC_UI_SHELL --> TOTAL
     TOTAL --> ISOLATION
     ISOLATION --> GATE
 ```
@@ -114,6 +116,22 @@ flowchart TD
 
 ---
 
+### 2.6 Client UI Shell and Layout Test Cases
+
+*Test Targets: `client/app/layout.tsx`, `client/src/components/navigation/navbar.tsx`, `client/src/components/navigation/footer.tsx`, `client/src/components/theme/theme-toggle.tsx`*  
+*Test Source: `client/test/shell.test.tsx`*  
+*LLD Specification Reference: `docs/internal/design/lld/data-layer.md` Section 7*
+
+| Test ID | Test Description | Test Data | Expected Result | Actual Result | Status |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| 21 | Root layout TanStack Query provider and DOM hydration initialization | Mount `RootLayout` with child consumer executing `useQuery` | Query client context is available, child renders successfully, zero hydration warning | Pending execution | Ready |
+| 22 | Sticky navigation bar brand emblem and route links | Render `Navbar` component | Official `/logo.png` renders at 36x36, brand label SMEX STORE displays, navigation links to `/tournaments`, `/squads`, `/boosting`, `/marketplace` exist | Pending execution | Ready |
+| 23 | AMOLED and Obsidian theme toggle transition | Render `ThemeToggle` and click theme toggle button | HTML document class switches between `amoled` and `obsidian`, local storage updates, 120ms transition styling applied | Pending execution | Ready |
+| 24 | Platform footer navigation taxonomy and external links | Render `Footer` component | 4 column taxonomy renders, WhatsApp, Telegram, Discord direct links formatted with target `_blank`, copyright notice visible | Pending execution | Ready |
+| 25 | Mobile viewport responsive drawer menu trigger | Simulate mobile viewport width under 768px and click hamburger icon | Hamburger button toggles mobile navigation drawer open, revealing navigation links and close button | Pending execution | Ready |
+
+---
+
 ## 3. Test Coverage Strategy and Isolation Invariants
 
 ### 3.1 Transactional Rollback and Test Isolation
@@ -162,6 +180,11 @@ This matrix maps each architectural requirement from `docs/internal/design/lld/d
 | **LLD 5.3** | Idempotency on consecutive seed script executions | 18 | Repeated execution asserting zero duplicate errors |
 | **LLD 6.1** | Database query ping and latency metrics | 19 | HTTP probe assertion checking database status and latency |
 | **LLD 6.1** | Health probe 503 error on database failure | 20 | Disconnected pool assertion checking 503 status code |
+| **LLD 7.1** | Root layout and TanStack Query provider initialization | 21 | React component mounting asserting QueryClientProvider context |
+| **LLD 7.2** | Sticky navigation bar with official logo and links | 22 | DOM query asserting logo image, links, and sticky positioning |
+| **LLD 7.4** | AMOLED and Obsidian palette toggle transitions | 23 | Button click simulation checking DOM class and storage |
+| **LLD 7.3** | Platform footer taxonomy and legal links | 24 | Component assertion verifying footer columns and external links |
+| **LLD 7.2** | Mobile viewport drawer collapse and toggle | 25 | Viewport emulation asserting hamburger drawer toggle |
 
 ---
 
@@ -194,3 +217,10 @@ Verify migration status and schema drift:
 ```bash
 pnpm --filter @smex/server db:check
 ```
+
+Run client UI shell component tests:
+
+```bash
+pnpm --filter @smex/client test
+```
+
