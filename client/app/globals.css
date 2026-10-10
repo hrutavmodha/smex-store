@@ -1,26 +1,70 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Matrix Emerald Core Palette */
+  --emerald-primary: #1FAE7A;
+  --emerald-hover: #178C62;
+  --emerald-active: #13724F;
+  --emerald-glow: rgba(31, 174, 122, 0.25);
+
+  /* Cyan Depth Secondary Accent */
+  --cyan-depth: #1B8F97;
+  --cyan-hover: #16767D;
+
+  /* Default Dark Mode Surface System (Obsidian) */
+  --bg-canvas: #0B0F12;
+  --bg-surface: #12181D;
+  --bg-surface-elevated: #182026;
+  --border-subtle: #1E262C;
+  --border-prominent: #2A3640;
+
+  /* High-Contrast Typography */
+  --text-primary: #EDEDED;
+  --text-secondary: #9BA3AF;
+  --text-muted: #5B626E;
+
+  /* Hardware Motion Constraints: 120ms Physical Limit */
+  --transition-speed: 120ms;
+  --transition-curve: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Pure AMOLED Overrides */
+[data-theme="amoled"] {
+  --bg-canvas: #000000;
+  --bg-surface: #0A0A0A;
+  --bg-surface-elevated: #121212;
+  --border-subtle: #1F1F1F;
+  --border-prominent: #2E2E2E;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --color-emerald-primary: var(--emerald-primary);
+  --color-emerald-hover: var(--emerald-hover);
+  --color-emerald-active: var(--emerald-active);
+  --color-emerald-glow: var(--emerald-glow);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-cyan-depth: var(--cyan-depth);
+  --color-cyan-hover: var(--cyan-hover);
+
+  --color-bg-canvas: var(--bg-canvas);
+  --color-bg-surface: var(--bg-surface);
+  --color-bg-surface-elevated: var(--bg-surface-elevated);
+  --color-border-subtle: var(--border-subtle);
+  --color-border-prominent: var(--border-prominent);
+
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+
+  --font-sans: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: var(--font-geist-mono), monospace;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--bg-canvas);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  min-height: 100vh;
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
 }
