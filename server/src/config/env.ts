@@ -1,9 +1,11 @@
 import { z } from 'zod';
 import dotenv from 'dotenv';
+import path from 'node:path';
 import 'fastify';
 
-// Load variables from .env file into process.env
+// Load variables from .env file (current working directory or monorepo root)
 dotenv.config();
+dotenv.config({ path: path.resolve(process.cwd(), '../.env') });
 
 export const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),

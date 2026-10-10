@@ -14,6 +14,7 @@ All packages must be installed using pnpm add with zero manual version editing:
 * **Configuration**: `dotenv`
 * **Persistence and ORM**: `pg`, `drizzle-orm`, `drizzle-kit` dev dependency
 * **Caching and Sessions**: `ioredis`
+* **Rate Limiting**: `@fastify/rate-limit`
 * **Validation and Security**: `zod`, `argon2`
 * **File Uploads**: `@aws-sdk/client-s3`, `@aws-sdk/s3-request-presigner`
 * **Build Engine**: `tsdown` powered by Rolldown in Rust
@@ -39,7 +40,7 @@ flowchart TD
     M7 --> M8["M8: Real-Time Notifications and Universal Search"]
     M8 --> M9["M9: Admin Governance and Rate Controls"]
     M9 --> M10["M10: Client UI Implementation and AMOLED System"]
-    M10 --> M11["M11: Production Hardening, Testing, and Verification"]
+    M10 --> M11["M11: Testing, CI CD, and Production Hardening"]
 ```
 
 ---
@@ -50,6 +51,8 @@ flowchart TD
 * [x] **1.3 Fastify WebSocket Registration**: Register `@fastify/websocket` with ping/pong heartbeat handling.
 * [x] **1.4 Environment Configuration**: Create typed config parser `src/config/env.ts` using zod for `PORT`, `DATABASE_URL`, `REDIS_URL`, `JWT_SECRET`, `S3_ENDPOINT`.
 * [x] **1.5 Client Styling Tokens**: Configure Matrix Emerald `#1FAE7A`, Cyan Depth `#1B8F97`, Obsidian `#0B0F12`, and AMOLED `#000000` tokens inside `client/app/globals.css`.
+* [x] **1.6 Health Check Endpoint**: Register `GET /health` returning server uptime, timestamp, memory metrics, and basic server readiness.
+* [x] **1.7 Docker Compose Local Stack**: Create `docker-compose.yml` defining local development containers for PostgreSQL, Redis, and MinIO local S3 storage.
 
 ---
 
@@ -64,6 +67,8 @@ flowchart TD
   * `marketplace_listings`: Seller ID, game_account_title, price, proof_images, status.
   * `reviews_ratings`: Reviewer ID, target_type, rating, feedback.
 * [ ] **2.3 Migration Scripts**: Configure `drizzle.config.ts` and verify automated migration generation via drizzle-kit.
+* [ ] **2.4 Database Seeding Pipeline**: Create seed script `src/db/seed.ts` populating preset gaming avatars, default MLBB boosting pricing matrix, initial admin account, and sample tournaments.
+* [ ] **2.5 Data Layer Health Probe**: Extend `GET /health` to verify live PostgreSQL connection pool query readiness.
 
 ---
 
@@ -77,6 +82,8 @@ flowchart TD
   * Implement `POST /api/auth/revoke-all` to purge all user keys from Redis, triggering immediate WS and HTTP disconnects.
 * [ ] **3.4 Device Fingerprinting**: Capture User-Agent and IP to populate active sessions list in Settings.
 * [ ] **3.5 Auth Endpoints**: Implement `/register`, `/login`, `/logout`, `/refresh`, `/me`.
+* [ ] **3.6 Distributed Rate Limiting**: Register `@fastify/rate-limit` backed by Redis enforcing strict limits on `/api/auth/*` (5 req/min) and global API ingress (100 req/min) as specified in HLD Section 6.
+* [ ] **3.7 Transactional Email and Password Recovery**: Integrate transactional email delivery, implement `POST /api/auth/forgot-password` generating expiring single-use reset tokens stored in Redis, and `POST /api/auth/reset-password`.
 
 ---
 
@@ -119,6 +126,9 @@ flowchart TD
 * [ ] **7.3 Dynamic Price-Drop Badges**:
   * Price lowered: automatically compute percentage discount and assign Good Deal badge.
   * Price increased or newly listed premium: assign Hot badge.
+* [ ] **7.4 Media Verification and Next Image Whitelist**:
+  * Implement image magic byte binary inspection to block disguised malicious payloads.
+  * Configure `images.remotePatterns` in Next.js `next.config.ts` for safe image optimization.
 
 ---
 
@@ -151,19 +161,30 @@ flowchart TD
 * [ ] **10.3 Pure AMOLED and Dark Theme Engine**:
   * Implement Matrix Emerald `#1FAE7A`, Cyan Depth `#1B8F97`, Obsidian `#0B0F12`, and AMOLED `#000000` via Tailwind v4.
   * Enforce strict 120ms physical transforms with zero frosted glass blur.
+* [ ] **10.4 Dynamic OpenGraph and Metadata Engine**:
+  * Implement Next.js 16 dynamic OpenGraph image generators `opengraph-image.tsx` for tournament detail cards and boosting services.
+  * Configure automated `sitemap.ts` and `robots.ts` for search engine crawler indexing.
 
 ---
 
-### Milestone 11: Production Hardening, Testing, and Verification
+### Milestone 11: Production Hardening, Testing, and CI CD Pipeline
 * [ ] **11.1 Automated Test Suites**:
   * Unit tests for pricing logic and bracket advancement.
   * Fastify integration tests for auth and session revocation.
-* [ ] **11.2 Build Verification**:
-  * Next.js Turbopack client build via `pnpm --filter @smex/client build`.
-  * TSDown Rolldown server bundle via `pnpm --filter @smex/server build`.
-* [ ] **11.3 Accessibility and Motion Compliance**:
+* [ ] **11.2 Continuous Integration Pipeline**:
+  * GitHub Actions workflow `.github/workflows/ci.yml` triggered on pull requests and pushes to main.
+  * Parallel jobs for monorepo linting, typechecking, unit tests, and build verification with pnpm store caching.
+  * Automated Drizzle schema drift check to ensure SQL migrations match the TypeScript data layer.
+* [ ] **11.3 Production Containerization**:
+  * Multi-stage production Dockerfile for Next.js SSR client and Fastify TSDown bundle.
+  * Health check endpoints and graceful shutdown signal handling.
+* [ ] **11.4 Continuous Deployment Pipeline**:
+  * GitHub Actions workflow `.github/workflows/deploy.yml` for automated container image publishing.
+  * Automated deployment webhook or runner trigger to production host upon merge to main.
+  * Post-deployment health check probing and automatic rollback trigger on probe failure.
+* [ ] **11.5 Accessibility and Motion Compliance**:
   * WCAG 2.1 AA contrast verification across Dark and AMOLED palettes.
   * Reduced-motion media query compliance.
-* [ ] **11.4 Production Containerization**:
-  * Multi-stage production Dockerfile for Next.js SSR client and Fastify backend.
-  * Health check endpoints and graceful shutdown handling.
+* [ ] **11.6 Structured Observability and RFC 7807 Error Handling**:
+  * Configure Pino structured JSON logging with correlation IDs and request ID propagation across HTTP and WebSockets.
+  * Enforce RFC 7807 problem details specification for all API errors.

@@ -1,0 +1,82 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: smex-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: smex_store
+    ports:
+      - "5432:5432"
+    volumes:
+      - smex_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d smex_store"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - smex-network
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: smex-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - smex_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - smex-network
+
+  minio:
+    image: minio/minio:latest
+    container_name: smex-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - smex_minio_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - smex-network
+
+  minio-init:
+    image: minio/mc:latest
+    container_name: smex-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      /usr/bin/mc alias set localminio http://minio:9000 minioadmin minioadmin;
+      /usr/bin/mc mb localminio/smex-storage --ignore-existing;
+      /usr/bin/mc anonymous set download localminio/smex-storage;
+      exit 0;
+      "
+    networks:
+      - smex-network
+
+volumes:
+  smex_postgres_data:
+  smex_redis_data:
+  smex_minio_data:
+
+networks:
+  smex-network:
+    driver: bridge

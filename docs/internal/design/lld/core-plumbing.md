@@ -237,13 +237,75 @@ flowchart LR
 * **Prohibited Visual Effects**:
   * Frosted-glass filter effects (`backdrop-filter: blur(...)`) are strictly prohibited due to GPU fill-rate degradation.
   * Heavy layered box-shadow glows are banned to prevent composite thread stalling.
-* **Hardware Compositing**: Only GPU-accelerated CSS properties (`transform`, `opacity`) are permitted for micro-interactions; modifying layout triggers (`height`, `width`, `top`, `margin`) is disallowed.
+* **Health and Readiness Probe**: Server status, uptime, and system memory metrics reporting.
+* **Local Infrastructure Emulation**: Containerized local development stack for PostgreSQL, Redis, and MinIO.
 
 ---
 
-## 6. Integration and Bootstrap Flow
+## 6. Health Probe and Observability Module
 
-### 6.1 Server Initialization Sequence
+*Target Source: `server/src/routes/health.ts`*
+
+### 6.1 Endpoint Specification and Metric Schema
+
+The health check endpoint provides a lightweight, non-blocking probe for load balancers, orchestrators, and monitoring agents to evaluate process liveness and memory health.
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `status` | `string` | High-level service status, returns `'ok'` |
+| `uptime` | `number` | Process uptime in seconds with floating-point precision |
+| `timestamp` | `string` | ISO 8601 formatted UTC timestamp |
+| `environment` | `string` | Active runtime environment from configuration |
+| `memory.rss` | `integer` | Resident Set Size memory allocation in bytes |
+| `memory.heapTotal` | `integer` | Total allocated V8 heap memory in bytes |
+| `memory.heapUsed` | `integer` | Actual used V8 heap memory in bytes |
+| `memory.external` | `integer` | Memory bound to C++ objects managed by V8 |
+
+### 6.2 Health Response Payload Example
+
+```json
+{
+  "status": "ok",
+  "uptime": 142.85,
+  "timestamp": "2026-10-10T07:05:00.000Z",
+  "environment": "development",
+  "memory": {
+    "rss": 54231040,
+    "heapTotal": 29818880,
+    "heapUsed": 18452304,
+    "external": 1945820
+  }
+}
+```
+
+---
+
+## 7. Local Infrastructure Topology
+
+*Target Source: `docker-compose.yml`*
+
+### 7.1 Containerized Backing Services
+
+Local development uses Docker Compose to provide full parity with production backing services without cloud dependencies:
+
+| Service | Container Name | Image | Port Mapping | Purpose |
+| :--- | :--- | :--- | :--- | :--- |
+| `postgres` | `smex-postgres` | `postgres:16-alpine` | `5432:5432` | Relational database with ACID transaction support |
+| `redis` | `smex-redis` | `redis:7.2-alpine` | `6379:6379` | Session store, rate limiter, and pub/sub bus |
+| `minio` | `smex-minio` | `minio/minio:latest` | `9000:9000`, `9001:9001` | S3 compatible local object storage for proofs |
+| `minio-init` | `smex-minio-init` | `minio/mc:latest` | None | Automated bucket provisioner creating `smex-storage` |
+
+### 7.2 Container Network and Volume Architecture
+
+* **Isolated Bridge Network**: All services communicate across `smex-network`.
+* **Named Volumes**: Data persists across restarts via `smex_postgres_data`, `smex_redis_data`, and `smex_minio_data`.
+* **Automated Health Probes**: `postgres` runs `pg_isready`, `redis` runs `redis-cli ping`, and `minio` runs `mc ready local`.
+
+---
+
+## 8. Integration and Bootstrap Flow
+
+### 8.1 Server Initialization Sequence
 
 ```mermaid
 sequenceDiagram
@@ -266,12 +328,12 @@ sequenceDiagram
     Server->>CORS: Register CORS gateway with origin policies
     Server->>WS: Register WebSocket gateway
     WS->>WS: Initialize heartbeat monitor timer
-    Server->>Routes: Register REST endpoints and WS routes
+    Server->>Routes: Register REST endpoints, Health probe, and WS routes
     Runtime->>Server: listen(port, host)
     Server-->>Runtime: Ready to accept ingress traffic
 ```
 
-### 6.2 Error Handling and Observability Invariants
+### 8.2 Error Handling and Observability Invariants
 
 * **Zero Silent Failures**: Uncaught configuration errors or unhandled socket exceptions must log structured JSON entries with correlation context.
 * **Deterministic Status Codes**: CORS origin rejections return HTTP 403 Forbidden with standard RFC 7807 error responses.
