@@ -37,21 +37,21 @@ The configuration module encapsulates all interactions with process environment 
 
 ### 2.2 Configuration Schema Contract
 
-| Key | Type | Constraints and Defaults | Semantic Purpose |
-| :--- | :--- | :--- | :--- |
-| `NODE_ENV` | `enum` | `'development'`, `'test'`, `'production'`; default `'development'` | Runtime environment switch |
-| `PORT` | `integer` | Positive integer; default `3001` | TCP port for Fastify HTTP listener |
-| `HOST` | `string` | IP string; default `'0.0.0.0'` | Network binding interface |
-| `DATABASE_URL` | `string` | Valid URI with `postgresql://` scheme | PostgreSQL primary connection pool |
-| `REDIS_URL` | `string` | Valid URI with `redis://` or `rediss://` scheme | Redis session and pub/sub cluster |
-| `JWT_SECRET` | `string` | Minimum length 32 characters | Secret for short-lived access tokens |
-| `JWT_REFRESH_SECRET` | `string` | Minimum length 32 characters | Secret for long-lived session tokens |
-| `CORS_ORIGIN` | `string` | Comma-delimited origins or wildcard; default `'http://localhost:3000'` | Allowed web clients |
-| `S3_ENDPOINT` | `string` | Valid HTTP/HTTPS URI; optional | Direct-to-storage API endpoint |
-| `S3_REGION` | `string` | Default `'auto'` | Target object storage region |
-| `S3_BUCKET` | `string` | Default `'smex-storage'` | Bucket identifier for uploads |
-| `S3_ACCESS_KEY_ID` | `string` | Optional in dev, required in production | S3 access key credential |
-| `S3_SECRET_ACCESS_KEY`| `string` | Optional in dev, required in production | S3 secret key credential |
+| Key                      | Type        | Constraints and Defaults                                                   | Semantic Purpose                     |
+| :----------------------- | :---------- | :------------------------------------------------------------------------- | :----------------------------------- |
+| `NODE_ENV`             | `enum`    | `'development'`, `'test'`, `'production'`; default `'development'` | Runtime environment switch           |
+| `PORT`                 | `integer` | Positive integer; default`3001`                                          | TCP port for Fastify HTTP listener   |
+| `HOST`                 | `string`  | IP string; default`'0.0.0.0'`                                            | Network binding interface            |
+| `DATABASE_URL`         | `string`  | Valid URI with`postgresql://` scheme                                     | PostgreSQL primary connection pool   |
+| `REDIS_URL`            | `string`  | Valid URI with`redis://` or `rediss://` scheme                         | Redis session and pub/sub cluster    |
+| `JWT_SECRET`           | `string`  | Minimum length 32 characters                                               | Secret for short-lived access tokens |
+| `JWT_REFRESH_SECRET`   | `string`  | Minimum length 32 characters                                               | Secret for long-lived session tokens |
+| `CORS_ORIGIN`          | `string`  | Comma-delimited origins or wildcard; default`'http://localhost:3000'`    | Allowed web clients                  |
+| `S3_ENDPOINT`          | `string`  | Valid HTTP/HTTPS URI; optional                                             | Direct-to-storage API endpoint       |
+| `S3_REGION`            | `string`  | Default`'auto'`                                                          | Target object storage region         |
+| `S3_BUCKET`            | `string`  | Default`'smex-storage'`                                                  | Bucket identifier for uploads        |
+| `S3_ACCESS_KEY_ID`     | `string`  | Optional in dev, required in production                                    | S3 access key credential             |
+| `S3_SECRET_ACCESS_KEY` | `string`  | Optional in dev, required in production                                    | S3 secret key credential             |
 
 ### 2.3 Interface Signatures
 
@@ -160,6 +160,7 @@ stateDiagram-v2
 ```
 
 #### Protocol Timing Parameters
+
 * **Heartbeat Interval**: 30,000 ms (30 seconds).
 * **Dead Connection Threshold**: 1 missed pong cycle (maximum dead connection lifetime: 60 seconds).
 * **Termination Action**: Calls immediate socket termination (`terminate`) to release socket file descriptors and memory.
@@ -180,6 +181,7 @@ export interface WsEnvelope<T = unknown> {
 ```
 
 #### Standard System Events
+
 * `SYSTEM_PING`: `{ event: "ping", channel: "system", data: {}, timestamp: number }`
 * `SYSTEM_PONG`: `{ event: "pong", channel: "system", data: {}, timestamp: number }`
 * `SYSTEM_ERROR`: `{ event: "error", channel: "system", data: { code: string, message: string }, timestamp: number }`
@@ -217,19 +219,19 @@ flowchart LR
 
 ### 5.2 Palette Mapping and Contrast Matrix
 
-| Semantic Token | Dark Mode Value | AMOLED Mode Value | Purpose and Scope |
-| :--- | :--- | :--- | :--- |
-| `--color-emerald-primary` | `#1FAE7A` | `#1FAE7A` | Primary actions, CTA buttons, active states |
-| `--color-emerald-hover` | `#178C62` | `#178C62` | Interactive hover state for primary elements |
-| `--color-cyan-depth` | `#1B8F97` | `#1B8F97` | Secondary badges, accents, captain badges |
-| `--color-bg-canvas` | `#0B0F12` | `#000000` | Main application viewport background |
-| `--color-bg-surface` | `#12181D` | `#0A0A0A` | Card bodies, dropdown panels, modal sheets |
-| `--color-bg-elevated` | `#182026` | `#121212` | Popovers, tooltips, elevated containers |
-| `--color-border-subtle` | `#1E262C` | `#1F1F1F` | Card outlines, dividers, structural borders |
-| `--color-border-focus` | `#1FAE7A` | `#1FAE7A` | Keyboard focus indicator (WCAG 2.1 AA) |
-| `--color-text-primary` | `#EDEDED` | `#EDEDED` | Headings, high-contrast readable content |
-| `--color-text-secondary` | `#9BA3AF` | `#9BA3AF` | Body text, descriptions, secondary details |
-| `--color-text-muted` | `#5B626E` | `#5B626E` | Form placeholders, timestamps, footnotes |
+| Semantic Token              | Dark Mode Value | AMOLED Mode Value | Purpose and Scope                            |
+| :-------------------------- | :-------------- | :---------------- | :------------------------------------------- |
+| `--color-emerald-primary` | `#1FAE7A`     | `#1FAE7A`       | Primary actions, CTA buttons, active states  |
+| `--color-emerald-hover`   | `#178C62`     | `#178C62`       | Interactive hover state for primary elements |
+| `--color-cyan-depth`      | `#1B8F97`     | `#1B8F97`       | Secondary badges, accents, captain badges    |
+| `--color-bg-canvas`       | `#0B0F12`     | `#000000`       | Main application viewport background         |
+| `--color-bg-surface`      | `#12181D`     | `#0A0A0A`       | Card bodies, dropdown panels, modal sheets   |
+| `--color-bg-elevated`     | `#182026`     | `#121212`       | Popovers, tooltips, elevated containers      |
+| `--color-border-subtle`   | `#1E262C`     | `#1F1F1F`       | Card outlines, dividers, structural borders  |
+| `--color-border-focus`    | `#1FAE7A`     | `#1FAE7A`       | Keyboard focus indicator (WCAG 2.1 AA)       |
+| `--color-text-primary`    | `#EDEDED`     | `#EDEDED`       | Headings, high-contrast readable content     |
+| `--color-text-secondary`  | `#9BA3AF`     | `#9BA3AF`       | Body text, descriptions, secondary details   |
+| `--color-text-muted`      | `#5B626E`     | `#5B626E`       | Form placeholders, timestamps, footnotes     |
 
 ### 5.3 Motion Guardrails and Performance Invariants
 
@@ -250,16 +252,16 @@ flowchart LR
 
 The health check endpoint provides a lightweight, non-blocking probe for load balancers, orchestrators, and monitoring agents to evaluate process liveness and memory health.
 
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `status` | `string` | High-level service status, returns `'ok'` |
-| `uptime` | `number` | Process uptime in seconds with floating-point precision |
-| `timestamp` | `string` | ISO 8601 formatted UTC timestamp |
-| `environment` | `string` | Active runtime environment from configuration |
-| `memory.rss` | `integer` | Resident Set Size memory allocation in bytes |
-| `memory.heapTotal` | `integer` | Total allocated V8 heap memory in bytes |
-| `memory.heapUsed` | `integer` | Actual used V8 heap memory in bytes |
-| `memory.external` | `integer` | Memory bound to C++ objects managed by V8 |
+| Field                | Type        | Description                                             |
+| :------------------- | :---------- | :------------------------------------------------------ |
+| `status`           | `string`  | High-level service status, returns`'ok'`              |
+| `uptime`           | `number`  | Process uptime in seconds with floating-point precision |
+| `timestamp`        | `string`  | ISO 8601 formatted UTC timestamp                        |
+| `environment`      | `string`  | Active runtime environment from configuration           |
+| `memory.rss`       | `integer` | Resident Set Size memory allocation in bytes            |
+| `memory.heapTotal` | `integer` | Total allocated V8 heap memory in bytes                 |
+| `memory.heapUsed`  | `integer` | Actual used V8 heap memory in bytes                     |
+| `memory.external`  | `integer` | Memory bound to C++ objects managed by V8               |
 
 ### 6.2 Health Response Payload Example
 
@@ -288,12 +290,12 @@ The health check endpoint provides a lightweight, non-blocking probe for load ba
 
 Local development uses Docker Compose to provide full parity with production backing services without cloud dependencies:
 
-| Service | Container Name | Image | Port Mapping | Purpose |
-| :--- | :--- | :--- | :--- | :--- |
-| `postgres` | `smex-postgres` | `postgres:16-alpine` | `5432:5432` | Relational database with ACID transaction support |
-| `redis` | `smex-redis` | `redis:7.2-alpine` | `6379:6379` | Session store, rate limiter, and pub/sub bus |
-| `minio` | `smex-minio` | `minio/minio:latest` | `9000:9000`, `9001:9001` | S3 compatible local object storage for proofs |
-| `minio-init` | `smex-minio-init` | `minio/mc:latest` | None | Automated bucket provisioner creating `smex-storage` |
+| Service        | Container Name      | Image                  | Port Mapping                 | Purpose                                               |
+| :------------- | :------------------ | :--------------------- | :--------------------------- | :---------------------------------------------------- |
+| `postgres`   | `smex-postgres`   | `postgres:16-alpine` | `5432:5432`                | Relational database with ACID transaction support     |
+| `redis`      | `smex-redis`      | `redis:7.2-alpine`   | `6379:6379`                | Session store, rate limiter, and pub/sub bus          |
+| `minio`      | `smex-minio`      | `minio/minio:latest` | `9000:9000`, `9001:9001` | S3 compatible local object storage for proofs         |
+| `minio-init` | `smex-minio-init` | `minio/mc:latest`    | None                         | Automated bucket provisioner creating`smex-storage` |
 
 ### 7.2 Container Network and Volume Architecture
 
