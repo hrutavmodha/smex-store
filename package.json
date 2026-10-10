@@ -1,6 +1,7 @@
 {
   "name": "smex-store",
   "version": "1.0.0",
+  "type": "module",
   "private": true,
   "packageManager": "pnpm@12.10.1",
   "scripts": {
