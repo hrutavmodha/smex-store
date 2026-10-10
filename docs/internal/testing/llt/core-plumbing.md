@@ -42,13 +42,13 @@ flowchart TD
 *Test Source: `server/test/config/env.test.ts`*  
 *LLD Specification Reference: `docs/internal/design/lld/core-plumbing.md` Section 2*
 
-| Test ID | Test Name | Inputs and Preconditions | Expected Assertions | Result |
-| :--- | :--- | :--- | :--- | :--- |
-| 1 | Default development schema parsing | `envSchema.safeParse({})` with empty object | `result.success === true`, `NODE_ENV === 'development'`, `PORT === 3001`, `CORS_ORIGIN === 'http://localhost:3000'`, `DATABASE_URL` starts with `postgresql://`, `REDIS_URL` starts with `redis://` | Passed |
-| 2 | Invalid URL format rejection | `envSchema.safeParse({ DATABASE_URL: 'not-a-valid-url' })` | `result.success === false` with Zod URI format validation failure | Passed |
-| 3 | Short JWT secret rejection | `envSchema.safeParse({ JWT_SECRET: 'too-short' })` | `result.success === false` enforcing minimum 32 character boundary | Passed |
-| 4 | Production dev-secret rejection | `envSchema.safeParse({ NODE_ENV: 'production', JWT_SECRET: 'development_jwt_secret_key_needs_to_be_32_chars_minimum!' })` | `result.success === false` triggering production secret refinement constraint | Passed |
-| 5 | Runtime configuration loader | Execution of `loadEnv()` against active process environment | Returns typed immutable `EnvConfig` object where `typeof config.PORT === 'number'` | Passed |
+| Test ID | Test Description | Test Data | Expected Result | Actual Result | Status |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| 1 | Default development schema parsing | `envSchema.safeParse({})` with empty object | `result.success === true`, `NODE_ENV === 'development'`, `PORT === 3001`, `CORS_ORIGIN === 'http://localhost:3000'`, `DATABASE_URL` starts with `postgresql://`, `REDIS_URL` starts with `redis://` | Parsed with valid defaults; Postgres and Redis URL schemes verified | Passed |
+| 2 | Invalid URL format rejection | `envSchema.safeParse({ DATABASE_URL: 'not-a-valid-url' })` | `result.success === false` with Zod URI format validation failure | Schema rejected invalid URL with validation error | Passed |
+| 3 | Short JWT secret rejection | `envSchema.safeParse({ JWT_SECRET: 'too-short' })` | `result.success === false` enforcing minimum 32 character boundary | Schema rejected string shorter than 32 characters | Passed |
+| 4 | Production dev-secret rejection | `envSchema.safeParse({ NODE_ENV: 'production', JWT_SECRET: 'development_jwt_secret_key_needs_to_be_32_chars_minimum!' })` | `result.success === false` triggering production secret refinement constraint | Schema rejected development secret in production mode | Passed |
+| 5 | Runtime configuration loader | Execution of `loadEnv()` against active process environment | Returns typed immutable `EnvConfig` object where `typeof config.PORT === 'number'` | Config loaded successfully with numeric port and typed keys | Passed |
 
 ---
 
@@ -58,11 +58,11 @@ flowchart TD
 *Test Source: `server/test/plugins/cors.test.ts`*  
 *LLD Specification Reference: `docs/internal/design/lld/core-plumbing.md` Section 3*
 
-| Test ID | Test Name | Inputs and Preconditions | Expected Assertions | Result |
-| :--- | :--- | :--- | :--- | :--- |
-| 6 | Localhost client origin resolution | HTTP `GET /` with header `Origin: http://localhost:3000` | HTTP 200, `access-control-allow-origin: http://localhost:3000`, `access-control-allow-credentials: true` | Passed |
-| 7 | Preflight request caching and max age | HTTP `OPTIONS /` with preflight headers `Origin: http://localhost:3000`, `access-control-request-method: POST` | HTTP 204 No Content, `access-control-max-age: 86400`, `access-control-allow-credentials: true` | Passed |
-| 8 | Non-browser ingress without origin header | HTTP `GET /` without `Origin` request header | HTTP 200 OK allowing internal health and RPC probe ingress | Passed |
+| Test ID | Test Description | Test Data | Expected Result | Actual Result | Status |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| 6 | Localhost client origin resolution | HTTP `GET /` with header `Origin: http://localhost:3000` | HTTP 200, `access-control-allow-origin: http://localhost:3000`, `access-control-allow-credentials: true` | HTTP 200 with matching origin and credentials allowed | Passed |
+| 7 | Preflight request caching and max age | HTTP `OPTIONS /` with preflight headers `Origin: http://localhost:3000`, `access-control-request-method: POST` | HTTP 204 No Content, `access-control-max-age: 86400`, `access-control-allow-credentials: true` | HTTP 204 with max-age set to 86400 seconds | Passed |
+| 8 | Non-browser ingress without origin header | HTTP `GET /` without `Origin` request header | HTTP 200 OK allowing internal health and RPC probe ingress | HTTP 200 returned without CORS header restrictions | Passed |
 
 ---
 
@@ -72,10 +72,10 @@ flowchart TD
 *Test Source: `server/test/plugins/websocket.test.ts`*  
 *LLD Specification Reference: `docs/internal/design/lld/core-plumbing.md` Section 4*
 
-| Test ID | Test Name | Inputs and Preconditions | Expected Assertions | Result |
-| :--- | :--- | :--- | :--- | :--- |
-| 9 | Fastify instance gateway decoration | Fastify server boot via test harness `build(t)` | `app.wsGateway` decorated, `broadcastToChannel` is function, `getActiveClientCount() === 0` | Passed |
-| 10 | Socket registration, pong recovery, and teardown | Mock WebSocket client registered with `userId = 'user-123'`, simulation of missed pong followed by `'pong'` and `'close'` events | `getActiveClientCount() === 1`, `meta.isAlive === true`, pong restores `isAlive = true`, close decreases active client count to `0` | Passed |
+| Test ID | Test Description | Test Data | Expected Result | Actual Result | Status |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| 9 | Fastify instance gateway decoration | Fastify server boot via test harness `build(t)` | `app.wsGateway` decorated, `broadcastToChannel` is function, `getActiveClientCount() === 0` | Gateway decorated on Fastify instance with 0 active clients | Passed |
+| 10 | Socket registration, pong recovery, and teardown | Mock WebSocket client registered with `userId = 'user-123'`, simulation of missed pong followed by `'pong'` and `'close'` events | `getActiveClientCount() === 1`, `meta.isAlive === true`, pong restores `isAlive = true`, close decreases active client count to `0` | Client registered, isAlive restored on pong, client removed on close | Passed |
 
 ---
 
@@ -85,9 +85,9 @@ flowchart TD
 *Test Source: `server/test/routes/health.test.ts`*  
 *LLD Specification Reference: `docs/internal/design/lld/core-plumbing.md` Section 6*
 
-| Test ID | Test Name | Inputs and Preconditions | Expected Assertions | Result |
-| :--- | :--- | :--- | :--- | :--- |
-| 11 | Liveness and memory diagnostic probe | HTTP `GET /health` | HTTP 200 OK, `status === 'ok'`, `uptime` is numeric, `timestamp` is valid ISO string, `memory.rss`, `memory.heapTotal`, and `memory.heapUsed` are positive integers | Passed |
+| Test ID | Test Description | Test Data | Expected Result | Actual Result | Status |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| 11 | Liveness and memory diagnostic probe | HTTP `GET /health` | HTTP 200 OK, `status === 'ok'`, `uptime` is numeric, `timestamp` is valid ISO string, `memory.rss`, `memory.heapTotal`, and `memory.heapUsed` are positive integers | HTTP 200 returned with valid status, uptime, and V8 memory metrics | Passed |
 
 ---
 
@@ -96,11 +96,11 @@ flowchart TD
 *Test Targets: `server/src/routes/root.ts`, `server/src/routes/example/index.ts`, `server/src/plugins/support.ts`*  
 *Test Sources: `server/test/routes/root.test.ts`, `server/test/routes/example.test.ts`, `server/test/plugins/support.test.ts`*
 
-| Test ID | Test Name | Inputs and Preconditions | Expected Assertions | Result |
-| :--- | :--- | :--- | :--- | :--- |
-| 12 | Fastify root ingress response | HTTP `GET /` | HTTP 200 OK, JSON payload `{ root: true }` | Passed |
-| 13 | Autoloaded example route registration | HTTP `GET /example` | HTTP 200 OK, text payload `'this is an example'` | Passed |
-| 14 | Support utility plugin decorator | Standalone Fastify registration of `Support` plugin | `fastify.someSupport() === 'hugs'` | Passed |
+| Test ID | Test Description | Test Data | Expected Result | Actual Result | Status |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| 12 | Fastify root ingress response | HTTP `GET /` | HTTP 200 OK, JSON payload `{ root: true }` | HTTP 200 returned with `{ root: true }` | Passed |
+| 13 | Autoloaded example route registration | HTTP `GET /example` | HTTP 200 OK, text payload `'this is an example'` | HTTP 200 returned with `'this is an example'` | Passed |
+| 14 | Support utility plugin decorator | Standalone Fastify registration of `Support` plugin | `fastify.someSupport() === 'hugs'` | Plugin decorated helper returning `'hugs'` | Passed |
 
 ---
 
