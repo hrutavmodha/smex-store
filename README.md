@@ -147,7 +147,7 @@ flowchart TD
 ```
 smex-store/
 ├── assets/                          # Platform visual assets and logos
-│   └── smexstore-logo.png           # Official Smex Store & Esports emblem
+│   └── logo.png                     # Official Smex Store & Esports emblem
 ├── client/                          # Next.js 16 App Router frontend package
 │   ├── app/
 │   │   ├── globals.css              # AMOLED tokens, Emerald palette, and motion rules
@@ -296,8 +296,6 @@ pnpm typecheck
 pnpm lint
 ```
 
-
-
 ---
 
 ## Architecture and Design Documentation
@@ -309,21 +307,6 @@ Detailed engineering documentation is maintained in `docs/internal/`:
 * **Visual & AMOLED Guidelines**: [`docs/internal/design/ui.md`](docs/internal/design/ui.md) (Design tokens and motion constraints)
 * **Master Test Plan**: [`docs/internal/testing/plan.md`](docs/internal/testing/plan.md) (Quality strategy and test pyramid)
 * **Engineering Roadmap**: [`docs/internal/roadmap.md`](docs/internal/roadmap.md) (11-Milestone phased delivery plan)
-
----
-
-## Operational Rules and Guardrails
-
-1. **No In-App Payment Gateways**: Direct payment gateway integrations (Stripe, Razorpay, etc.) are strictly excluded. All transactions utilize direct external communication links (WhatsApp, Discord, Telegram) as specified in `docs/internal/adr/payment.md`.
-2. **Motion and Styling Constraints**:
-   * Transitions must never exceed 120ms.
-   * `backdrop-filter: blur()` is strictly prohibited across all surfaces.
-   * Heavy layered box-shadow glows are banned to prevent composite thread stalling.
-3. **Documentation Heading Integrity**:
-   * Zero round brackets `()`, square brackets `[]`, or curly braces `{}` in any markdown heading.
-   * Zero file paths in any markdown heading.
-4. **1:1 Naming Symmetry**:
-   * Every file in `docs/internal/design/lld/<module>.md` must have a twin verification file in `docs/internal/testing/llt/<module>.md`.
 
 ---
 
