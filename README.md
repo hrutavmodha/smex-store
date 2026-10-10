@@ -296,16 +296,7 @@ pnpm typecheck
 pnpm lint
 ```
 
-### Current Verification Metrics
 
-Milestone 1 test suite execution results:
-
-| Metric | Target Floor | Achieved Result | Quality Gate Status |
-| :--- | :--- | :--- | :--- |
-| **Line Coverage** | $\ge 80.0\%$ | **89.74%** | Passed |
-| **Branch Coverage** | $\ge 75.0\%$ | **88.24%** | Passed |
-| **Function Coverage** | $\ge 80.0\%$ | **88.64%** | Passed |
-| **Total Automated Tests** | All passing | **14 / 14 Passed** | Passed |
 
 ---
 
@@ -318,16 +309,6 @@ Detailed engineering documentation is maintained in `docs/internal/`:
 * **Visual & AMOLED Guidelines**: [`docs/internal/design/ui.md`](docs/internal/design/ui.md) (Design tokens and motion constraints)
 * **Master Test Plan**: [`docs/internal/testing/plan.md`](docs/internal/testing/plan.md) (Quality strategy and test pyramid)
 * **Engineering Roadmap**: [`docs/internal/roadmap.md`](docs/internal/roadmap.md) (11-Milestone phased delivery plan)
-
-### Low Level Design Documents
-
-* **Milestone 1**: [`docs/internal/design/lld/core-plumbing.md`](docs/internal/design/lld/core-plumbing.md)
-* **Milestone 2**: [`docs/internal/design/lld/data-layer.md`](docs/internal/design/lld/data-layer.md)
-
-### Low Level Test Catalogs
-
-* **Milestone 1**: [`docs/internal/testing/llt/core-plumbing.md`](docs/internal/testing/llt/core-plumbing.md)
-* **Milestone 2**: [`docs/internal/testing/llt/data-layer.md`](docs/internal/testing/llt/data-layer.md)
 
 ---
 
