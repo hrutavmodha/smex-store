@@ -6,4 +6,5 @@ import { argv } from 'node:process'
 execSync(`
     git add .
     git commit -m "${argv[2]}"
+    git push origin main
 `)
