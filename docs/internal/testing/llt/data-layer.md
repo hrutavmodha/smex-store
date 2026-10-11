@@ -2,95 +2,135 @@
 
 ## 1. Overview and Quality Objectives
 
-This document specifies the Low-Level Test verification catalog for the PostgreSQL database, Drizzle ORM persistence layer, and Next.js Client UI Shell designed in Milestone 2 of the platform roadmap. It serves as the direct 1:1 verification counterpart to `docs/internal/design/lld/data-layer.md`.
+This document specifies the Low-Level Test (LLT) verification catalog for **Milestone 2: Data Layer and Client UI Shell** of the Smex Store platform. It serves as the direct 1:1 verification counterpart to `docs/internal/design/lld/data-layer.md`.
 
-* **Verification Objective**: Validate connection pool lifecycle, foreign key cascade behaviors, compound unique constraints, check constraints, schema migration consistency, seed pipeline idempotency, active health check database readiness pings, client root layout hydration, sticky navigation bar rendering, AMOLED theme toggling, and platform footer taxonomy.
-* **Test Toolchain**: Native Node.js Test Runner (`node:test`), Node Strict Assertions (`node:assert`), Fastify CLI Test Helper (`fastify-cli/helper.js`), Drizzle Kit (`drizzle-kit`), React Testing Library, and V8 Code Coverage Engine (`c8`).
-* **Backing Service Environment**: Containerized PostgreSQL 16 on port 5432 provided via `docker-compose.yml`.
-* **Execution Status**: Specification Ready. Test cases queued for execution alongside Milestone 2 implementation.
-* **Target Coverage Thresholds**: Minimum 80.0% lines, 75.0% branches, 80.0% functions across all database and UI shell modules.
+* **Verification Objective**: Rigorously validate pooled PostgreSQL connections, graceful server teardown, relational schema constraints, foreign key cascades, migration generation and drift detection, idempotent seeding, extended database health metrics, and Next.js client shell rendering across Dark and AMOLED themes.
+* **Test Toolchain**:
+  * **Backend**: Native Node.js Test Runner (`node:test`), Node Strict Assertions (`node:assert`), Fastify CLI Test Helper (`fastify-cli/helper.js`), Drizzle ORM, and V8 Coverage Engine (`c8`).
+  * **Frontend**: Next.js 16 Test Suite, React Testing Library / Test Harness, and accessibility contrast auditing.
+* **Quality Gate Targets**:
+  * Line Coverage: $\ge 80.0\%$
+  * Branch Coverage: $\ge 75.0\%$
+  * Function Coverage: $\ge 80.0\%$
+  * Zero failing tests, zero skipped tests, zero unhandled promise rejections.
 
 ```mermaid
 flowchart TD
-    subgraph TestSuite["Milestone 2 Test Execution Matrix"]
-        TC_POOL["Connection Pool & Lifecycle: 3 Tests"]
-        TC_SCHEMA["Schema Constraints & Cascades: 11 Tests"]
-        TC_MIGRATION["Migrations & Drift Detection: 2 Tests"]
-        TC_SEED["Seed Pipeline & Idempotency: 2 Tests"]
-        TC_HEALTH["Health Probe & Latency: 2 Tests"]
-        TC_UI_SHELL["Client UI Shell & Layout: 5 Tests"]
+    subgraph TestSuite["Milestone 2 Test Execution Suite"]
+        TC_POOL["Drizzle Pool & Teardown: 3 Tests"]
+        TC_SCHEMA["Relational Constraints & Cascades: 16 Tests"]
+        TC_MIGRATE["Migration & Schema Drift: 2 Tests"]
+        TC_SEED["Seeding Pipeline Idempotency: 4 Tests"]
+        TC_HEALTH["Data Layer Health Probe: 2 Tests"]
+        TC_SHELL["Client Root Layout & AMOLED Shell: 5 Tests"]
     end
 
     subgraph QualityGate["Quality Gate Enforcement"]
-        TOTAL["25 Test Cases Ready"]
-        ISOLATION["Transactional Isolation & Rollback"]
-        GATE["Coverage Floor: >= 80% Threshold"]
+        READY["32 Test Cases Specified & Ready"]
+        COV["Coverage Target: >= 80% Line / Branch / Function"]
+        A11Y["WCAG 2.1 AA Contrast & Motion Verification"]
     end
 
-    TC_POOL --> TOTAL
-    TC_SCHEMA --> TOTAL
-    TC_MIGRATION --> TOTAL
-    TC_SEED --> TOTAL
-    TC_HEALTH --> TOTAL
-    TC_UI_SHELL --> TOTAL
-    TOTAL --> ISOLATION
-    ISOLATION --> GATE
+    TC_POOL --> READY
+    TC_SCHEMA --> READY
+    TC_MIGRATE --> READY
+    TC_SEED --> READY
+    TC_HEALTH --> READY
+    TC_SHELL --> READY
+    READY --> COV
+    READY --> A11Y
 ```
 
 ---
 
 ## 2. Test Case Catalog and Verification Matrix
 
-### 2.1 Connection Pool and Lifecycle Test Cases
+### 2.1 Drizzle Connection Pool and Teardown Test Cases
 
-*Test Target: `server/src/db/index.ts`*  
-*Test Source: `server/test/db/connection.test.ts`*  
+*Test Target: `server/src/plugins/db.ts`*  
+*Test Source: `server/test/plugins/db.test.ts`*  
 *LLD Specification Reference: `docs/internal/design/lld/data-layer.md` Section 2*
 
 | Test ID | Test Description | Test Data | Expected Result | Actual Result | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| 1 | Connection pool initialization and readiness query | `createDatabaseManager()` called with valid `DATABASE_URL` | Pool initializes, `SELECT 1 AS readiness` returns rows, `pool.totalCount >= 1` | Pending execution | Ready |
-| 2 | Connection pool timeout on unreachable database | `createDatabaseManager()` called with unreachable host and `connectionTimeoutMillis = 500` | Rejection occurs within 2 seconds with connection timeout error | Pending execution | Ready |
-| 3 | Graceful connection pool draining on shutdown | Fastify server instance boot with DB plugin, query executed, followed by `app.close()` | `pool.end()` resolves, active connections cleanly terminated, subsequent query rejects | Pending execution | Ready |
+| 1 | Fastify DB Instance Decoration | Fastify server boot with DB plugin via test harness `build(t)` | `app.db` is defined, `app.dbPool` is instance of `pg.Pool`, `SELECT 1` query resolves successfully | Pending execution | Ready |
+| 2 | Bounded connection pool sizing and timeout parameters | Inspection of initialized `pg.Pool` configuration against `EnvConfig` | `max <= 20`, `idleTimeoutMillis === 30000`, `connectionTimeoutMillis === 5000` | Pending execution | Ready |
+| 3 | Graceful connection pool draining on server close | Trigger server lifecycle teardown via `await app.close()` | Fastify `onClose` hook invokes `pool.end()`, terminating active connections; subsequent queries rejected | Pending execution | Ready |
 
 ---
 
-### 2.2 Relational Schema Constraints and Cascades Test Cases
+### 2.2 Relational Schema Definitions and Constraint Test Cases
 
-*Test Targets: `server/src/db/schema/users.ts`, `server/src/db/schema/sessions.ts`, `server/src/db/schema/teams.ts`, `server/src/db/schema/tournaments.ts`, `server/src/db/schema/boosting.ts`, `server/src/db/schema/marketplace.ts`, `server/src/db/schema/governance.ts`*  
+*Test Target: `server/src/db/schema/*.ts`*  
 *Test Source: `server/test/db/schema.test.ts`*  
 *LLD Specification Reference: `docs/internal/design/lld/data-layer.md` Section 3*
 
+#### A. Users, Credentials, and Profiles (Domain 1)
+
 | Test ID | Test Description | Test Data | Expected Result | Actual Result | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| 4 | User unique email constraint enforcement | Insert user with email `duplicate@smex.store`, then insert second user with same email | Second insert throws PostgreSQL unique violation error code `23505` | Pending execution | Ready |
-| 5 | Profile foreign key cascade deletion on user removal | Insert user and profile record, execute `DELETE FROM users WHERE id = user_id` | Profile record is automatically deleted via `ON DELETE CASCADE` | Pending execution | Ready |
-| 6 | Session foreign key cascade deletion on user removal | Insert user and active session record, execute `DELETE FROM users WHERE id = user_id` | Session record is automatically deleted via `ON DELETE CASCADE` | Pending execution | Ready |
-| 7 | Squad unique name and captain foreign key constraint | Insert team with duplicate name or non-existent captain UUID | Duplicate name throws unique error `23505`; invalid captain throws FK violation `23503` | Pending execution | Ready |
-| 8 | Team member composite uniqueness preventing duplicate roster entry | Add user to team, attempt to insert identical `(team_id, user_id)` pair | Second insert throws unique violation on compound key `(team_id, user_id)` | Pending execution | Ready |
-| 9 | Tournament participant compound unique constraint | Register team for tournament, attempt second insert with identical `(tournament_id, team_id)` | Duplicate registration throws unique violation on compound key `(tournament_id, team_id)` | Pending execution | Ready |
-| 10 | Tournament match foreign key reference integrity | Insert match with valid tournament and team foreign keys, verify invalid foreign key rejection | Match persists with valid keys; invalid tournament ID throws FK violation `23503` | Pending execution | Ready |
-| 11 | Boosting orders decimal precision and rank enum persistence | Insert boosting order with `calculated_price_inr = '1450.50'` and status `'pending_contact'` | Retains exact 2 decimal places, enum values parse correctly, timestamps default to `now()` | Pending execution | Ready |
-| 12 | Marketplace listing cascade deletion to proof images | Insert listing, attach 3 `listing_proofs` records, delete parent listing | All 3 proof records are automatically removed via `ON DELETE CASCADE` | Pending execution | Ready |
-| 13 | Reviews check constraint score boundary enforcement | Insert review with `rating = 0` or `rating = 6` | Insert throws PostgreSQL check constraint violation enforcing `rating >= 1 AND rating <= 5` | Pending execution | Ready |
-| 14 | Activity logs structured jsonb metadata serialization | Insert audit log with `{ action: 'BAN_USER', reason: 'ToS violation', target: 'u-123' }` | Record persists, JSONB structure preserved, querying by JSON key resolves accurately | Pending execution | Ready |
+| 4 | User unique email constraint enforcement | Sequential insertion of two records into `users` table with identical email `'player@smexstore.com'` | Second insertion rejected with PostgreSQL unique violation error code `23505` | Pending execution | Ready |
+| 5 | User to profile foreign key cascade deletion | Create parent record in `users` and linked record in `profiles`, then execute `DELETE FROM users WHERE id = :id` | Associated child record in `profiles` is automatically removed | Pending execution | Ready |
+| 6 | Profile username uniqueness and default attributes | Insert profile with existing username; assert default `avatar_preset`, `theme_pref`, `density_pref` | Duplicate username rejected with `23505`; defaults populated as `'preset_default_01'`, `'dark'`, `'comfortable'` | Pending execution | Ready |
+
+#### B. Sessions and Device Management (Domain 2)
+
+| Test ID | Test Description | Test Data | Expected Result | Actual Result | Status |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| 7 | Session foreign key cascade on user account deletion | Create user with multiple active device records in `sessions`, then delete user | All associated session records in `sessions` are cascaded and removed | Pending execution | Ready |
+
+#### C. Teams, Captaincy, and Rosters (Domain 3)
+
+| Test ID | Test Description | Test Data | Expected Result | Actual Result | Status |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| 8 | Captain account deletion restriction (`ON DELETE RESTRICT`) | Insert squad in `teams` with `captain_id`, then attempt `DELETE FROM users WHERE id = :captainId` | Deletion blocked with PostgreSQL foreign key constraint violation `23503` | Pending execution | Ready |
+| 9 | Team member capacity boundary check constraint | Insert squad with invalid `member_cap` values `0` and `15` | Insert rejected with PostgreSQL check constraint violation `23514` (`member_cap >= 1 AND member_cap <= 10`) | Pending execution | Ready |
+| 10 | Team member composite uniqueness and dynamic open slots | Insert same user into `team_members` twice for same `team_id`; query dynamic slot count | Duplicate insertion rejected with `23505`; query computes `member_cap - COUNT(members)` | Pending execution | Ready |
+
+#### D. Tournaments, Formats, and Brackets (Domain 4)
+
+| Test ID | Test Description | Test Data | Expected Result | Actual Result | Status |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| 11 | Tournament participant composite uniqueness | Register identical `team_id` twice into `tournament_participants` for same `tournament_id` | Second registration rejected with unique violation error code `23505` | Pending execution | Ready |
+| 12 | Tournament match round ordering and winner team foreign key | Insert match node with `round_number`, `match_order`, and `winner_id`; delete winning team | Match record links successfully; team deletion sets `winner_id` to `NULL` (`onDelete: 'set null'`) | Pending execution | Ready |
+
+#### E. Boosting Matrix and Orders (Domain 5)
+
+| Test ID | Test Description | Test Data | Expected Result | Actual Result | Status |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| 13 | Boosting rate positive price check constraint | Attempt inserting boosting rate record with negative price `price_inr = -50.00` | Insert rejected with PostgreSQL check constraint violation `23514` (`price_inr > 0`) | Pending execution | Ready |
+| 14 | Boosting order initial status default and exact price precision | Create new record in `boosting_orders` with valid rank parameters and `calculated_price_inr = 600.00` | Record created with default status `'inquiry'` and exact numeric representation `600.00` | Pending execution | Ready |
+
+#### F. Marketplace, Badges, and Proof Screenshots (Domain 6)
+
+| Test ID | Test Description | Test Data | Expected Result | Actual Result | Status |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| 15 | Marketplace price floor boundary check constraint | Attempt inserting marketplace listing with `price_inr = 50.00` below ₹100 floor | Insert rejected with PostgreSQL check constraint violation `23514` (`marketplace_price_floor_chk`) | Pending execution | Ready |
+| 16 | Marketplace listing cascade deletion to screenshot proofs | Insert listing in `marketplace_listings` with linked records in `listing_proofs`, then delete listing | All linked screenshot proof records in `listing_proofs` are automatically deleted | Pending execution | Ready |
+
+#### G. Seller Reviews and Activity Audit Logs (Domain 7)
+
+| Test ID | Test Description | Test Data | Expected Result | Actual Result | Status |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| 17 | Seller review self-rating prohibition check constraint | Attempt inserting review in `seller_ratings` where `seller_id === buyer_id` | Insert rejected with PostgreSQL check constraint violation `23514` (`seller_ratings_no_self_review_chk`) | Pending execution | Ready |
+| 18 | Seller rating score boundary and duplicate review enforcement | Insert rating with score `6` (out of range), and duplicate review from same buyer for same listing | Score `6` rejected by check constraint `1 <= rating <= 5`; duplicate review rejected by unique index | Pending execution | Ready |
+| 19 | Activity log JSONB metadata persistence and retrieval | Insert record into `activity_logs` with structured JSON metadata `{ action: 'view_tournament', targetId: '123' }` | Record persisted; retrieved JSON payload matches original structure with full deep equality | Pending execution | Ready |
 
 ---
 
-### 2.3 Migration Lifecycle and Drift Detection Test Cases
+### 2.3 Migration Scripts and Schema Drift Test Cases
 
-*Test Target: `server/drizzle.config.ts`*  
-*Test Source: `server/test/db/migration.test.ts`*  
+*Test Target: `server/drizzle.config.ts` and `server/src/db/migrations/`*  
 *LLD Specification Reference: `docs/internal/design/lld/data-layer.md` Section 4*
 
 | Test ID | Test Description | Test Data | Expected Result | Actual Result | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| 15 | Migration execution and history ledger tracking | Execute Drizzle migration runner against an empty test database | All SQL migrations execute in transaction, `__drizzle_migrations` records applied hashes | Pending execution | Ready |
-| 16 | Automated schema drift verification | Run `drizzle-kit generate --dry-run` or compare current TypeScript schema with snapshots | Exits with code 0 indicating zero unmigrated schema drift | Pending execution | Ready |
+| 20 | Clean migration replay on fresh database schema | Execute programmatic migration runner against empty PostgreSQL database | All sequential SQL migration scripts execute in order without syntax or ordering errors | Pending execution | Ready |
+| 21 | Automated Drizzle schema drift check | Run `drizzle-kit check` against TypeScript schema definitions and migration directory | Zero unmigrated schema changes detected; command exits with return code 0 | Pending execution | Ready |
 
 ---
 
-### 2.4 Seed Pipeline and Idempotency Test Cases
+### 2.4 Database Seeding Pipeline Test Cases
 
 *Test Target: `server/src/db/seed.ts`*  
 *Test Source: `server/test/db/seed.test.ts`*  
@@ -98,12 +138,14 @@ flowchart TD
 
 | Test ID | Test Description | Test Data | Expected Result | Actual Result | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| 17 | Deterministic fixture population across all domains | Execute `seed()` pipeline on fresh database | Rates matrix, default admin account, avatar presets, and sample tournament are created | Pending execution | Ready |
-| 18 | Seed pipeline idempotency on consecutive executions | Execute `seed()` twice consecutively on the same database instance | Second execution completes with exit code 0 without unique key errors or duplicated rows | Pending execution | Ready |
+| 22 | Initial platform admin account provisioning | Run `seed()` on clean database | User record for `admin@smexstore.com` exists with role `'admin'` and `email_verified === true` | Pending execution | Ready |
+| 23 | Default MLBB boosting pricing matrix population | Run `seed()` on clean database | Contains 3 fixed tier jump rates (₹400, ₹300, ₹600) and 4 per-star rates (₹20, ₹30, ₹35, ₹40) | Pending execution | Ready |
+| 24 | Preset gaming avatars catalog initialization | Run `seed()` on clean database | All 12 preset avatar definitions populated and verified | Pending execution | Ready |
+| 25 | Seeding pipeline consecutive execution idempotency | Execute `seed()` twice consecutively on the same database instance | Second execution completes without error; row counts in `users`, `boosting_rates`, and `tournaments` remain unchanged | Pending execution | Ready |
 
 ---
 
-### 2.5 Health Probe and Readiness Diagnostic Test Cases
+### 2.5 Extended Database Health Probe Test Cases
 
 *Test Target: `server/src/routes/health.ts`*  
 *Test Source: `server/test/routes/health.test.ts`*  
@@ -111,46 +153,49 @@ flowchart TD
 
 | Test ID | Test Description | Test Data | Expected Result | Actual Result | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| 19 | Health probe query ping and latency reporting | HTTP `GET /health` with healthy PostgreSQL connection pool | HTTP 200 OK, `payload.database.status === 'connected'`, `typeof payload.database.latencyMs === 'number'` | Pending execution | Ready |
-| 20 | Health probe service unavailable on database disconnect | HTTP `GET /health` when PostgreSQL connection pool is severed or closed | HTTP 503 Service Unavailable, `payload.database.status === 'error'` | Pending execution | Ready |
+| 26 | Active database query ping and latency reporting | HTTP `GET /health` with healthy PostgreSQL connection pool | HTTP 200 OK, `status === 'ok'`, `database.status === 'connected'`, `typeof database.latencyMs === 'number'`, pool stats present | Pending execution | Ready |
+| 27 | Degraded health probe on database connection failure | HTTP `GET /health` when PostgreSQL connection pool is severed or closed | HTTP 503 Service Unavailable, `status === 'degraded'`, `database.status === 'disconnected'`, zero exposed credentials in payload | Pending execution | Ready |
 
 ---
 
-### 2.6 Client UI Shell and Layout Test Cases
+### 2.6 Client Root Layout and AMOLED Shell Test Cases
 
-*Test Targets: `client/app/layout.tsx`, `client/src/components/navigation/navbar.tsx`, `client/src/components/navigation/footer.tsx`, `client/src/components/theme/theme-toggle.tsx`*  
+*Test Targets: `client/app/layout.tsx`, `client/components/shell/Navbar.tsx`, `client/components/shell/Footer.tsx`*  
 *Test Source: `client/test/shell.test.tsx`*  
 *LLD Specification Reference: `docs/internal/design/lld/data-layer.md` Section 7*
 
 | Test ID | Test Description | Test Data | Expected Result | Actual Result | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| 21 | Root layout TanStack Query provider and DOM hydration initialization | Mount `RootLayout` with child consumer executing `useQuery` | Query client context is available, child renders successfully, zero hydration warning | Pending execution | Ready |
-| 22 | Sticky navigation bar brand emblem and route links | Render `Navbar` component | Official `/logo.png` renders at 36x36, brand label SMEX STORE displays, navigation links to `/tournaments`, `/squads`, `/boosting`, `/marketplace` exist | Pending execution | Ready |
-| 23 | AMOLED and Obsidian theme toggle transition | Render `ThemeToggle` and click theme toggle button | HTML document class switches between `amoled` and `obsidian`, local storage updates, 120ms transition styling applied | Pending execution | Ready |
-| 24 | Platform footer navigation taxonomy and external links | Render `Footer` component | 4 column taxonomy renders, WhatsApp, Telegram, Discord direct links formatted with target `_blank`, copyright notice visible | Pending execution | Ready |
-| 25 | Mobile viewport responsive drawer menu trigger | Simulate mobile viewport width under 768px and click hamburger icon | Hamburger button toggles mobile navigation drawer open, revealing navigation links and close button | Pending execution | Ready |
+| 28 | Root layout TanStack Query provider and context initialization | Mount `RootLayout` with child component executing `useQueryClient()` | Query client context is available, child renders successfully, zero React hydration warnings | Pending execution | Ready |
+| 29 | Sticky navigation bar brand emblem and primary route links | Render `Navbar` component | Official logo renders with link to `/`, 6 primary navigation links rendered (`/tournaments`, `/teams`, `/marketplace`, `/boosting`, `/leaderboard`, `/about`) | Pending execution | Ready |
+| 30 | AMOLED and Dark mode runtime theme switching | Render `Navbar` theme toggle and simulate user toggle click | `document.documentElement` updates `data-theme` attribute to `'amoled'` or `'dark'`; transition duration token is `<= 120ms` | Pending execution | Ready |
+| 31 | Verified owner social directory and legal links rendering | Render `Footer` component | 5 verified social links render (YouTube, Twitch, Discord, Twitter/X, Instagram) matching Requirements Section 6.8 | Pending execution | Ready |
+| 32 | Prohibited visual effects audit and WCAG AA contrast check | Automated inspection of CSS classes and computed styles in Navbar and Footer | Zero `backdrop-filter: blur` rules found; zero opacity fades; contrast ratios pass WCAG AA (>= 4.5:1 text, >= 3:1 UI components) | Pending execution | Ready |
 
 ---
 
-## 3. Test Coverage Strategy and Isolation Invariants
+## 3. Code Coverage and Quality Gates Report
 
-### 3.1 Transactional Rollback and Test Isolation
+### 3.1 Module Coverage Metrics
 
-To guarantee deterministic, non-flaky execution when tests run concurrently or sequentially:
+Instrumentation provided by `c8` (V8 coverage engine) across all server and client source modules:
 
-* **Transactional Wrapping**: Schema and query tests wrap operations in a PostgreSQL transaction (`BEGIN`) and issue a `ROLLBACK` at the end of each test case.
-* **Deterministic Fixture State**: Tests requiring pre-existing records (e.g., users, teams) rely on scoped factory utilities that clean up created keys in `t.after()`.
-* **Zero Cross-Suite Pollution**: Test databases are never shared with development state; tests execute against `smex_store_test` or clean schemas.
+| Source File | Line Coverage | Branch Coverage | Function Coverage | Quality Gate Status |
+| :--- | :--- | :--- | :--- | :--- |
+| `server/src/plugins/db.ts` | $\ge 85.0\%$ | $\ge 80.0\%$ | $\ge 85.0\%$ | Required |
+| `server/src/db/schema/index.ts` | $\ge 90.0\%$ | $\ge 85.0\%$ | $\ge 90.0\%$ | Required |
+| `server/src/db/seed.ts` | $\ge 85.0\%$ | $\ge 75.0\%$ | $\ge 85.0\%$ | Required |
+| `server/src/routes/health.ts` | $\ge 90.0\%$ | $\ge 80.0\%$ | $\ge 90.0\%$ | Required |
+| `client/app/layout.tsx` | $\ge 85.0\%$ | $\ge 80.0\%$ | $\ge 85.0\%$ | Required |
+| `client/components/shell/Navbar.tsx` | $\ge 80.0\%$ | $\ge 75.0\%$ | $\ge 80.0\%$ | Required |
+| `client/components/shell/Footer.tsx` | $\ge 85.0\%$ | $\ge 80.0\%$ | $\ge 85.0\%$ | Required |
+| **All Files Aggregate** | **$\ge 85.0\%$** | **$\ge 80.0\%$** | **$\ge 85.0\%$** | **Pass Floor: $\ge 80.0\%$** |
 
-### 3.2 Target Quality Gate Floors
+### 3.2 Quality Gate Threshold Verification
 
-Any pull request introducing persistence logic must satisfy the quantitative coverage floors enforced in `docs/internal/testing/plan.md`:
-
-| Metric | Minimum Floor | Production Target |
-| :--- | :--- | :--- |
-| **Line Coverage** | $\ge 80.0\%$ | $\ge 85.0\%$ |
-| **Branch Coverage** | $\ge 75.0\%$ | $\ge 80.0\%$ |
-| **Function Coverage** | $\ge 80.0\%$ | $\ge 85.0\%$ |
+* **Minimum Line Coverage Requirement**: $\ge 80.0\%$ (Target: **$\ge 85.0\%$**).
+* **Defect Severity**: 0 failures, 0 regressions, 0 unhandled promise rejections.
+* **Exit Status**: Clean exit code 0 across the entire test suite.
 
 ---
 
@@ -160,67 +205,71 @@ This matrix maps each architectural requirement from `docs/internal/design/lld/d
 
 | LLD Section | Architectural Specification | Verifying Test Cases | Verification Method |
 | :--- | :--- | :--- | :--- |
-| **LLD 2.1** | Bounded connection pool sizing and readiness ping | 1 | Pool startup asserting total connections and query resolution |
-| **LLD 2.1** | Fail-fast connection timeout on unreachable host | 2 | Connection error assertion within 2000ms threshold |
-| **LLD 2.2** | Graceful connection pool draining on server close | 3 | Server shutdown assertion verifying pool termination |
-| **LLD 3.2** | User unique email constraint | 4 | Duplicate email insertion checking error code `23505` |
-| **LLD 3.2** | Profile foreign key cascade deletion | 5 | User deletion asserting profile row removal |
-| **LLD 3.2** | Session foreign key cascade deletion | 6 | User deletion asserting session row removal |
-| **LLD 3.3** | Squad unique name and captain foreign key | 7 | Constraint testing on team creation |
-| **LLD 3.3** | Team member composite uniqueness | 8 | Duplicate `(team_id, user_id)` insertion rejection |
-| **LLD 3.4** | Tournament participant composite uniqueness | 9 | Duplicate `(tournament_id, team_id)` insertion rejection |
-| **LLD 3.4** | Tournament match foreign key integrity | 10 | Foreign key validation on match participant links |
-| **LLD 3.5** | Boosting order price decimal precision | 11 | Decimal serialization and retrieval assertion |
-| **LLD 3.6** | Marketplace listing cascade deletion to proofs | 12 | Parent listing deletion asserting proof rows cascade |
-| **LLD 3.7** | Review score check constraint boundary | 13 | Rating boundary test checking `1 <= rating <= 5` |
-| **LLD 3.7** | Activity log JSONB metadata persistence | 14 | JSON payload insertion asserting structured querying |
-| **LLD 4.2** | Drizzle migration execution and history ledger | 15 | Migration runner execution asserting `__drizzle_migrations` |
-| **LLD 4.3** | Automated schema drift prevention check | 16 | Drizzle dry-run comparison between schema and snapshots |
-| **LLD 5.2** | Deterministic seeding across all domain entities | 17 | Seeding verification asserting row counts across tables |
-| **LLD 5.3** | Idempotency on consecutive seed script executions | 18 | Repeated execution asserting zero duplicate errors |
-| **LLD 6.1** | Database query ping and latency metrics | 19 | HTTP probe assertion checking database status and latency |
-| **LLD 6.1** | Health probe 503 error on database failure | 20 | Disconnected pool assertion checking 503 status code |
-| **LLD 7.1** | Root layout and TanStack Query provider initialization | 21 | React component mounting asserting QueryClientProvider context |
-| **LLD 7.2** | Sticky navigation bar with official logo and links | 22 | DOM query asserting logo image, links, and sticky positioning |
-| **LLD 7.4** | AMOLED and Obsidian palette toggle transitions | 23 | Button click simulation checking DOM class and storage |
-| **LLD 7.3** | Platform footer taxonomy and legal links | 24 | Component assertion verifying footer columns and external links |
-| **LLD 7.2** | Mobile viewport drawer collapse and toggle | 25 | Viewport emulation asserting hamburger drawer toggle |
+| **LLD 2.1** | Fastify DB instance decoration and pool connectivity | 1 | Server test harness boot checking `app.db` and query execution |
+| **LLD 2.1** | Bounded connection pool sizing and timeout parameters | 2 | Inspection of pool configuration parameters against `EnvConfig` |
+| **LLD 2.2** | Graceful connection pool draining on server close | 3 | Server shutdown assertion verifying pool termination via `onClose` hook |
+| **LLD 3.1** | User unique email constraint enforcement | 4 | Duplicate email insertion checking PostgreSQL error code `23505` |
+| **LLD 3.1** | Profile foreign key cascade deletion | 5 | User deletion asserting associated profile row cascade removal |
+| **LLD 3.1** | Profile username uniqueness and default preferences | 6 | Duplicate username insertion checking error code `23505` and defaults |
+| **LLD 3.2** | Session foreign key cascade deletion | 7 | User deletion asserting all associated session rows removal |
+| **LLD 3.3** | Squad captain foreign key deletion restriction (`RESTRICT`) | 8 | Captain user deletion checking foreign key restriction error `23503` |
+| **LLD 3.3** | Team member capacity boundary check constraint | 9 | Invalid `member_cap` insertion checking check constraint error `23514` |
+| **LLD 3.3** | Team member composite uniqueness and open slots formula | 10 | Duplicate `(team_id, user_id)` insertion rejection and slot computation |
+| **LLD 3.4** | Tournament participant composite uniqueness | 11 | Duplicate `(tournament_id, team_id)` registration error `23505` |
+| **LLD 3.4** | Tournament match round ordering and winner foreign key | 12 | Foreign key validation and `onDelete: 'set null'` assertion |
+| **LLD 3.5** | Boosting rate positive price check constraint | 13 | Negative price insertion checking check constraint error `23514` |
+| **LLD 3.5** | Boosting order initial status default and exact pricing | 14 | Insertion assertion checking default status `'inquiry'` and decimal format |
+| **LLD 3.6** | Marketplace price floor check constraint ($\ge 100$) | 15 | Price `< 100` insertion checking check constraint error `23514` |
+| **LLD 3.6** | Marketplace listing cascade deletion to proofs | 16 | Parent listing deletion asserting linked `listing_proofs` cascade removal |
+| **LLD 3.7** | Seller review self-rating prohibition check constraint | 17 | `seller_id === buyer_id` insertion checking check constraint error `23514` |
+| **LLD 3.7** | Seller rating score boundary and duplicate review check | 18 | Score `6` check constraint error `23514` and unique index check |
+| **LLD 3.7** | Activity log JSONB metadata persistence and retrieval | 19 | JSON payload insertion asserting structured querying and deep equality |
+| **LLD 4.1-4.2** | Clean migration execution and history ledger | 20 | Migration runner execution asserting clean sequential execution |
+| **LLD 4.2** | Automated Drizzle schema drift check | 21 | `drizzle-kit check` comparison between schema definitions and SQL |
+| **LLD 5.1-5.2** | Initial platform admin account provisioning | 22 | Seeding verification asserting admin user and profile creation |
+| **LLD 5.2** | Default MLBB boosting pricing matrix population | 23 | Seeding verification asserting 7 active rate matrix records |
+| **LLD 5.2** | Preset gaming avatars catalog initialization | 24 | Seeding verification asserting 12 preset avatar records |
+| **LLD 5.1** | Seeding pipeline consecutive execution idempotency | 25 | Consecutive seed runs asserting zero duplicate errors and stable row counts |
+| **LLD 6.1** | Active database query ping and latency reporting | 26 | HTTP probe assertion checking database status `connected` and latency |
+| **LLD 6.2** | Degraded health probe on database failure | 27 | Disconnected pool assertion checking HTTP 503 and sanitized error payload |
+| **LLD 7.1** | Root layout TanStack Query provider initialization | 28 | React mounting assertion verifying `QueryClientProvider` context |
+| **LLD 7.3** | Sticky navigation bar brand emblem and route links | 29 | DOM assertion verifying logo, brand label, and 6 primary route links |
+| **LLD 7.3** | AMOLED and Dark mode runtime theme switching | 30 | Button click simulation checking `data-theme` attribute and 120ms timing |
+| **LLD 7.4** | Verified owner social directory and legal links | 31 | Component assertion verifying 5 official social links and legal links |
+| **LLD 7.3** | Prohibited visual effects audit and WCAG AA contrast | 32 | DOM and CSS inspection asserting zero blur/fade and WCAG AA compliance |
 
 ---
 
 ## 5. Execution Procedures and Local Verification
 
-### 5.1 Prerequisites and Container Startup
-
-Prior to executing the data layer test suite, ensure local PostgreSQL is running:
-
-```bash
-docker compose up -d postgres
-```
-
-### 5.2 Test Execution Commands
-
-Run the full database test suite with coverage instrumentation:
+### 5.1 Test Suite Execution Command
 
 ```bash
 pnpm --filter @smex/server test
 ```
 
-Run schema constraint tests in isolation:
+### 5.2 Underlying Execution Pipeline
+
+The command executes three sequential stages:
+1. **TSDown Bundle Check**: Compiles TypeScript modules to verify syntax and bundle structure (`tsdown`).
+2. **Type Check**: Validates test file type safety against tsconfig (`tsc -p test/tsconfig.json`).
+3. **Node.js Test Runner with Coverage**:
+   ```bash
+   FASTIFY_AUTOLOAD_TYPESCRIPT=1 node --test --experimental-test-coverage --loader ts-node/esm test/**/*.ts
+   ```
+
+### 5.3 Frontend Test and Typecheck Commands
 
 ```bash
-FASTIFY_AUTOLOAD_TYPESCRIPT=1 node --test --loader ts-node/esm test/db/schema.test.ts
-```
-
-Verify migration status and schema drift:
-
-```bash
-pnpm --filter @smex/server db:check
-```
-
-Run client UI shell component tests:
-
-```bash
+pnpm --filter @smex/client typecheck
+pnpm --filter @smex/client lint
 pnpm --filter @smex/client test
 ```
 
+### 5.4 Database Migration and Seeding Commands
+
+```bash
+pnpm --filter @smex/server db:generate
+pnpm --filter @smex/server db:migrate
+pnpm --filter @smex/server db:seed
+```
