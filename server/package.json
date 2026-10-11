@@ -9,7 +9,8 @@
     "test": "test"
   },
   "scripts": {
-    "test": "tsdown && tsc -p test/tsconfig.json && TS_NODE_TRANSPILE_ONLY=1 FASTIFY_AUTOLOAD_TYPESCRIPT=1 node --test --experimental-test-coverage --loader ts-node/esm test/**/*.test.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "clean": "node -e \"require('fs').rmSync('dist', {recursive: true, force: true})\"",
     "start": "fastify start -l info dist/app.mjs",
     "build": "tsdown",
@@ -46,6 +47,7 @@
   "devDependencies": {
     "@types/node": "^26.0.0",
     "@types/pg": "^8.23.1",
+    "@vitest/coverage-v8": "^5.0.3",
     "c8": "^12.0.0",
     "concurrently": "^10.0.1",
     "drizzle-kit": "^0.31.11",
@@ -54,6 +56,7 @@
     "ts-node": "^10.4.0",
     "tsdown": "^0.23.0",
     "typescript": "~6.0.2",
-    "typescript-eslint": "^8.71.1"
+    "typescript-eslint": "^8.71.1",
+    "vitest": "^5.0.3"
   }
 }

@@ -1,4 +1,4 @@
-import { test } from 'node:test';
+import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import { execSync } from 'node:child_process';
 import * as fs from 'node:fs';
@@ -10,10 +10,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const migrationsDir = path.resolve(__dirname, '../../src/db/migrations');
 
-test('Migration Scripts and Schema Drift Suite', async (suite) => {
-  await suite.test('Test 20: Clean migration replay on fresh database schema', async (t) => {
-    const app = await build(t);
-    const pool = app.dbPool;
+describe('Migration Scripts and Schema Drift Suite', () => {
+  test('Test 20: Clean migration replay on fresh database schema', async (t) => {
+    await build(t);
 
     // Verify migration directory and files exist
     assert.ok(fs.existsSync(migrationsDir), 'Migrations directory must exist');
@@ -34,7 +33,7 @@ test('Migration Scripts and Schema Drift Suite', async (suite) => {
     }
   });
 
-  await suite.test('Test 21: Automated Drizzle schema drift check', async () => {
+  test('Test 21: Automated Drizzle schema drift check', async () => {
     // Run drizzle-kit check using child process
     const rootServerDir = path.resolve(__dirname, '../..');
     const output = execSync('npx drizzle-kit check', {

@@ -1,15 +1,24 @@
-import { test } from 'node:test';
+import { test, describe, beforeAll, afterAll } from 'node:test';
 import assert from 'node:assert/strict';
 import { eq } from 'drizzle-orm';
 import { build } from '../helper.js';
 import { seed, PRESET_AVATARS } from '../../src/db/seed.js';
 import { users, profiles, boostingRates, tournaments, type BoostingRate } from '../../src/db/schema/index.js';
 
-test('Database Seeding Pipeline Suite', async (suite) => {
-  const app = await build(suite);
-  const db = app.db;
+describe('Database Seeding Pipeline Suite', () => {
+  let app: any;
+  let db: any;
 
-  await suite.test('Test 22: Initial platform admin account provisioning', async () => {
+  beforeAll(async () => {
+    app = await build();
+    db = app.db;
+  });
+
+  afterAll(async () => {
+    await app?.close();
+  });
+
+  test('Test 22: Initial platform admin account provisioning', async () => {
     await seed(db);
 
     const adminEmail = 'admin@smexstore.com';
@@ -32,7 +41,7 @@ test('Database Seeding Pipeline Suite', async (suite) => {
     assert.strictEqual(adminProfile.avatarPreset, 'preset_admin_01');
   });
 
-  await suite.test('Test 23: Default MLBB boosting pricing matrix population', async () => {
+  test('Test 23: Default MLBB boosting pricing matrix population', async () => {
     await seed(db);
 
     const rates = await db.select().from(boostingRates);
@@ -56,7 +65,7 @@ test('Database Seeding Pipeline Suite', async (suite) => {
     assert.ok(starPrices.includes('40.00'));
   });
 
-  await suite.test('Test 24: Preset gaming avatars catalog initialization', async () => {
+  test('Test 24: Preset gaming avatars catalog initialization', async () => {
     const result = await seed(db);
 
     assert.strictEqual(
@@ -69,7 +78,7 @@ test('Database Seeding Pipeline Suite', async (suite) => {
     assert.ok(PRESET_AVATARS.includes('preset_default_12'));
   });
 
-  await suite.test('Test 25: Seeding pipeline consecutive execution idempotency', async () => {
+  test('Test 25: Seeding pipeline consecutive execution idempotency', async () => {
     // Initial run
     await seed(db);
 

@@ -1,4 +1,4 @@
-import { test } from 'node:test';
+import { test, describe, beforeAll, afterAll } from 'node:test';
 import assert from 'node:assert/strict';
 import { eq, sql } from 'drizzle-orm';
 import { build } from '../helper.js';
@@ -29,11 +29,20 @@ function hasPgErrorCode(err: any, expectedCode: string): boolean {
   );
 }
 
-test('Relational Schema Constraints and Cascades Suite', async (suite) => {
-  const app = await build(suite);
-  const db = app.db;
+describe('Relational Schema Constraints and Cascades Suite', () => {
+  let app: any;
+  let db: any;
 
-  await suite.test('Test 4: User unique email constraint enforcement', async () => {
+  beforeAll(async () => {
+    app = await build();
+    db = app.db;
+  });
+
+  afterAll(async () => {
+    await app?.close();
+  });
+
+  test('Test 4: User unique email constraint enforcement', async () => {
     const email = `player_${Date.now()}@smexstore.com`;
 
     await db.insert(users).values({
@@ -53,7 +62,7 @@ test('Relational Schema Constraints and Cascades Suite', async (suite) => {
     );
   });
 
-  await suite.test('Test 5: User to profile foreign key cascade deletion', async () => {
+  test('Test 5: User to profile foreign key cascade deletion', async () => {
     const email = `cascade_${Date.now()}@smexstore.com`;
     const [user] = await db
       .insert(users)
@@ -82,7 +91,7 @@ test('Relational Schema Constraints and Cascades Suite', async (suite) => {
     assert.strictEqual(remainingProfile.length, 0);
   });
 
-  await suite.test('Test 6: Profile username uniqueness and default attributes', async () => {
+  test('Test 6: Profile username uniqueness and default attributes', async () => {
     const [u1] = await db
       .insert(users)
       .values({ email: `u1_${Date.now()}@smexstore.com`, passwordHash: 'hash' })
@@ -113,7 +122,7 @@ test('Relational Schema Constraints and Cascades Suite', async (suite) => {
     );
   });
 
-  await suite.test('Test 7: Session foreign key cascade on user account deletion', async () => {
+  test('Test 7: Session foreign key cascade on user account deletion', async () => {
     const [user] = await db
       .insert(users)
       .values({ email: `session_${Date.now()}@smexstore.com`, passwordHash: 'hash' })
@@ -145,7 +154,7 @@ test('Relational Schema Constraints and Cascades Suite', async (suite) => {
     assert.strictEqual(remainingSessions.length, 0);
   });
 
-  await suite.test('Test 8: Captain account deletion restriction (ON DELETE RESTRICT)', async () => {
+  test('Test 8: Captain account deletion restriction (ON DELETE RESTRICT)', async () => {
     const [captain] = await db
       .insert(users)
       .values({ email: `captain_${Date.now()}@smexstore.com`, passwordHash: 'hash' })
@@ -166,7 +175,7 @@ test('Relational Schema Constraints and Cascades Suite', async (suite) => {
     );
   });
 
-  await suite.test('Test 9: Team member capacity boundary check constraint', async () => {
+  test('Test 9: Team member capacity boundary check constraint', async () => {
     const [captain] = await db
       .insert(users)
       .values({ email: `cap9_${Date.now()}@smexstore.com`, passwordHash: 'hash' })
@@ -199,7 +208,7 @@ test('Relational Schema Constraints and Cascades Suite', async (suite) => {
     );
   });
 
-  await suite.test('Test 10: Team member composite uniqueness and dynamic open slots', async () => {
+  test('Test 10: Team member composite uniqueness and dynamic open slots', async () => {
     const [captain] = await db
       .insert(users)
       .values({ email: `cap10_${Date.now()}@smexstore.com`, passwordHash: 'hash' })
@@ -252,7 +261,7 @@ test('Relational Schema Constraints and Cascades Suite', async (suite) => {
     assert.strictEqual(slotCalc.openSlots, 4);
   });
 
-  await suite.test('Test 11: Tournament participant composite uniqueness', async () => {
+  test('Test 11: Tournament participant composite uniqueness', async () => {
     const [captain] = await db
       .insert(users)
       .values({ email: `cap11_${Date.now()}@smexstore.com`, passwordHash: 'hash' })
@@ -293,7 +302,7 @@ test('Relational Schema Constraints and Cascades Suite', async (suite) => {
     );
   });
 
-  await suite.test('Test 12: Tournament match round ordering and winner team foreign key', async () => {
+  test('Test 12: Tournament match round ordering and winner team foreign key', async () => {
     const [captain] = await db
       .insert(users)
       .values({ email: `cap12_${Date.now()}@smexstore.com`, passwordHash: 'hash' })
@@ -339,7 +348,7 @@ test('Relational Schema Constraints and Cascades Suite', async (suite) => {
     assert.strictEqual(updatedMatch.winnerId, null);
   });
 
-  await suite.test('Test 13: Boosting rate positive price check constraint', async () => {
+  test('Test 13: Boosting rate positive price check constraint', async () => {
     await assert.rejects(
       async () => {
         await db.insert(boostingRates).values({
@@ -353,7 +362,7 @@ test('Relational Schema Constraints and Cascades Suite', async (suite) => {
     );
   });
 
-  await suite.test('Test 14: Boosting order initial status default and exact price precision', async () => {
+  test('Test 14: Boosting order initial status default and exact price precision', async () => {
     const [order] = await db
       .insert(boostingOrders)
       .values({
@@ -370,7 +379,7 @@ test('Relational Schema Constraints and Cascades Suite', async (suite) => {
     assert.strictEqual(order.calculatedPriceInr, '600.00');
   });
 
-  await suite.test('Test 15: Marketplace price floor boundary check constraint', async () => {
+  test('Test 15: Marketplace price floor boundary check constraint', async () => {
     const [seller] = await db
       .insert(users)
       .values({ email: `seller15_${Date.now()}@smexstore.com`, passwordHash: 'hash' })
@@ -391,7 +400,7 @@ test('Relational Schema Constraints and Cascades Suite', async (suite) => {
     );
   });
 
-  await suite.test('Test 16: Marketplace listing cascade deletion to screenshot proofs', async () => {
+  test('Test 16: Marketplace listing cascade deletion to screenshot proofs', async () => {
     const [seller] = await db
       .insert(users)
       .values({ email: `seller16_${Date.now()}@smexstore.com`, passwordHash: 'hash' })
@@ -433,7 +442,7 @@ test('Relational Schema Constraints and Cascades Suite', async (suite) => {
     assert.strictEqual(remainingProofs.length, 0);
   });
 
-  await suite.test('Test 17: Seller review self-rating prohibition check constraint', async () => {
+  test('Test 17: Seller review self-rating prohibition check constraint', async () => {
     const [user] = await db
       .insert(users)
       .values({ email: `self17_${Date.now()}@smexstore.com`, passwordHash: 'hash' })
@@ -466,7 +475,7 @@ test('Relational Schema Constraints and Cascades Suite', async (suite) => {
     );
   });
 
-  await suite.test('Test 18: Seller rating score boundary and duplicate review enforcement', async () => {
+  test('Test 18: Seller rating score boundary and duplicate review enforcement', async () => {
     const [seller] = await db
       .insert(users)
       .values({ email: `seller18_${Date.now()}@smexstore.com`, passwordHash: 'hash' })
@@ -525,7 +534,7 @@ test('Relational Schema Constraints and Cascades Suite', async (suite) => {
     );
   });
 
-  await suite.test('Test 19: Activity log JSONB metadata persistence and retrieval', async () => {
+  test('Test 19: Activity log JSONB metadata persistence and retrieval', async () => {
     const [user] = await db
       .insert(users)
       .values({ email: `act19_${Date.now()}@smexstore.com`, passwordHash: 'hash' })

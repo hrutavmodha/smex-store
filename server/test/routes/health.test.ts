@@ -1,9 +1,9 @@
-import { test } from 'node:test';
+import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import { build } from '../helper.js';
 
-test('Data Layer Extended Health Probe Suite', async (suite) => {
-  await suite.test('Test 26: Active database query ping and latency reporting', async (t) => {
+describe('Data Layer Extended Health Probe Suite', () => {
+  test('Test 26: Active database query ping and latency reporting', async (t) => {
     const app = await build(t);
 
     const res = await app.inject({
@@ -33,7 +33,7 @@ test('Data Layer Extended Health Probe Suite', async (suite) => {
     assert.strictEqual(typeof payload.database.pool.waitingCount, 'number');
   });
 
-  await suite.test('Test 27: Degraded health probe on database connection failure', async (t) => {
+  test('Test 27: Degraded health probe on database connection failure', async (t) => {
     const app = await build(t);
 
     // Close the dbPool to simulate connection severance / DB outage

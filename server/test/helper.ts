@@ -4,7 +4,8 @@ import * as test from 'node:test';
 import appPlugin, { options as defaultOptions } from '../src/app.js';
 
 export type TestContext = {
-  after: typeof test.after;
+  after?: (fn: () => any) => void;
+  onTestFinished?: (fn: () => any) => void;
 };
 
 function config() {
@@ -30,8 +31,12 @@ async function build(t?: TestContext): Promise<FastifyInstance> {
     }
   }
 
-  if (t?.after) {
-    t.after(() => void app.close());
+  if (t) {
+    if ('onTestFinished' in t && typeof (t as any).onTestFinished === 'function') {
+      (t as any).onTestFinished(() => void app.close());
+    } else if ('after' in t && typeof (t as any).after === 'function') {
+      (t as any).after(() => void app.close());
+    }
   }
 
   return app;
