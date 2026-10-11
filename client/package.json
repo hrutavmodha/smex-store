@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test test/**/*.test.tsx"
+    "test": "tsx --import ./test/setup.ts --test test/**/*.test.tsx"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.104.1",

@@ -1,52 +1,12 @@
 import { test, describe, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import React from 'react';
-import { JSDOM } from 'jsdom';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-// Setup JSDOM globals before component imports that may reference window/document
-const dom = new JSDOM('<!doctype html><html><body><div id="root"></div></body></html>', {
-  url: 'http://localhost:3000',
-});
-(global as any).window = dom.window;
-(global as any).document = dom.window.document;
-(global as any).self = dom.window;
-Object.defineProperty(global, 'navigator', {
-  value: dom.window.navigator,
-  configurable: true,
-  writable: true,
-});
-(global as any).HTMLElement = dom.window.HTMLElement;
-(global as any).Element = dom.window.Element;
-(global as any).Node = dom.window.Node;
-(global as any).Event = dom.window.Event;
-(global as any).MouseEvent = dom.window.MouseEvent;
-
-// Setup mock localStorage
-const mockStorage: Record<string, string> = {};
-const localStorageMock = {
-  getItem: (k: string) => mockStorage[k] || null,
-  setItem: (k: string, v: string) => {
-    mockStorage[k] = v;
-  },
-  removeItem: (k: string) => {
-    delete mockStorage[k];
-  },
-  clear: () => {
-    for (const key of Object.keys(mockStorage)) delete mockStorage[key];
-  },
-};
-Object.defineProperty(dom.window, 'localStorage', {
-  value: localStorageMock,
-  configurable: true,
-  writable: true,
-});
-(global as any).localStorage = localStorageMock;
 
 import { render, fireEvent, waitFor, cleanup } from '@testing-library/react';
 import { LoginForm } from '../components/auth/LoginForm';

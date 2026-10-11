@@ -94,7 +94,7 @@ export function Navbar({ user, onLogout, onOpenAuthModal }: NavbarProps) {
   };
 
   const handleCycleDensity = () => {
-    const cycleMap: Record<ThemeMode, DensityMode> = {
+    const cycleMap: Record<DensityMode, DensityMode> = {
       comfortable: 'compact',
       compact: 'spacious',
       spacious: 'comfortable',
