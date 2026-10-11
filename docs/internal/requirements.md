@@ -145,7 +145,8 @@ The platform supports two core roles — **Normal User** and **Admin**. It is de
 
 ### 6.8 Social Media Links Page
 
-1. Dedicated portal featuring verified external links to the platform owner's YouTube, Twitch, Discord, Twitter/X, and Instagram channels.
+1. Dedicated portal featuring verified external links to the platform owner's official **WhatsApp Channel** and **Instagram Handle**, managed dynamically via environment configuration.
+2. The platform strictly restricts social directory links to these two channels; all other social platforms are prohibited from appearing in the owner directory.
 
 ### 6.9 About Us Page
 

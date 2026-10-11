@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 
 import { QueryProvider } from '../providers/QueryProvider';
 import { Navbar, NAV_LINKS } from '../components/shell/Navbar';
-import { Footer, SOCIAL_LINKS } from '../components/shell/Footer';
+import { Footer } from '../components/shell/Footer';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -123,37 +123,78 @@ test('Client Root Layout and AMOLED Shell Test Suite', async (suite) => {
   );
 
   await suite.test(
-    'Test 31: Verified owner social directory and legal links rendering',
+    'Test 31: Configurable owner social directory (WhatsApp and Instagram whitelist) and legal links',
     async () => {
-      const html = renderToString(<Footer />);
+      // 1. With configured environment variables
+      const originalWhatsApp = process.env.NEXT_PUBLIC_SOCIAL_WHATSAPP_CHANNEL;
+      const originalInstagram = process.env.NEXT_PUBLIC_SOCIAL_INSTAGRAM;
 
-      // 5 verified owner channels per Requirements Section 6.8
-      const expectedSocialHrefs = [
-        'https://youtube.com/@smexstore',
-        'https://twitch.tv/smexstore',
-        'https://discord.gg/smexstore',
-        'https://x.com/smexstore',
-        'https://instagram.com/smexstore',
-      ];
+      const mockWhatsAppUrl = 'https://whatsapp.com/channel/0029VbDEVo70G0XbUx6MK90w';
+      const mockInstagramUrl = 'https://www.instagram.com/smex_official_store?srtk=MTB0aXRheHBvOGk5YQ==';
 
-      for (const socialHref of expectedSocialHrefs) {
-        assert.ok(
-          html.includes(`href="${socialHref}"`),
-          `Footer must render verified link for ${socialHref}`
-        );
+      process.env.NEXT_PUBLIC_SOCIAL_WHATSAPP_CHANNEL = mockWhatsAppUrl;
+      process.env.NEXT_PUBLIC_SOCIAL_INSTAGRAM = mockInstagramUrl;
+
+      const htmlWithChannels = renderToString(<Footer />);
+
+      // Verify configured channels rendered
+      assert.ok(
+        htmlWithChannels.includes(`href="${mockWhatsAppUrl}"`),
+        'Configured WhatsApp Channel link must be rendered'
+      );
+      assert.ok(
+        htmlWithChannels.includes(`href="${mockInstagramUrl}"`),
+        'Configured Instagram link must be rendered'
+      );
+
+      // Verify security attributes
+      assert.ok(htmlWithChannels.includes('target="_blank"'));
+      assert.ok(htmlWithChannels.includes('rel="noopener noreferrer"'));
+
+      // Verify platform whitelist: prohibited platforms must not be rendered
+      assert.strictEqual(
+        htmlWithChannels.includes('youtube.com') ||
+          htmlWithChannels.includes('twitch.tv') ||
+          htmlWithChannels.includes('discord.gg') ||
+          htmlWithChannels.includes('twitter.com') ||
+          htmlWithChannels.includes('x.com'),
+        false,
+        'Prohibited platforms must be strictly excluded from owner directory'
+      );
+
+      // 2. Test omission logic when unconfigured
+      delete process.env.NEXT_PUBLIC_SOCIAL_WHATSAPP_CHANNEL;
+      delete process.env.NEXT_PUBLIC_SOCIAL_INSTAGRAM;
+
+      const htmlWithoutChannels = renderToString(<Footer />);
+      assert.strictEqual(
+        htmlWithoutChannels.includes('whatsapp.com'),
+        false,
+        'Unconfigured channels must be omitted'
+      );
+      assert.strictEqual(
+        htmlWithoutChannels.includes('instagram.com'),
+        false,
+        'Unconfigured channels must be omitted'
+      );
+
+      // Restore environment variables
+      if (originalWhatsApp !== undefined) {
+        process.env.NEXT_PUBLIC_SOCIAL_WHATSAPP_CHANNEL = originalWhatsApp;
+      }
+      if (originalInstagram !== undefined) {
+        process.env.NEXT_PUBLIC_SOCIAL_INSTAGRAM = originalInstagram;
       }
 
-      assert.strictEqual(SOCIAL_LINKS.length, 5);
-
-      // Verify directory and legal links
-      assert.ok(html.includes('/tournaments'));
-      assert.ok(html.includes('/boosting'));
-      assert.ok(html.includes('/teams'));
-      assert.ok(html.includes('/marketplace'));
-      assert.ok(html.includes('/legal/terms'));
-      assert.ok(html.includes('/legal/privacy'));
-      assert.ok(html.includes('/legal/seller-protection'));
-      assert.ok(html.includes('/legal/community-guidelines'));
+      // Verify directory and legal links always render
+      assert.ok(htmlWithChannels.includes('/tournaments'));
+      assert.ok(htmlWithChannels.includes('/boosting'));
+      assert.ok(htmlWithChannels.includes('/teams'));
+      assert.ok(htmlWithChannels.includes('/marketplace'));
+      assert.ok(htmlWithChannels.includes('/legal/terms'));
+      assert.ok(htmlWithChannels.includes('/legal/privacy'));
+      assert.ok(htmlWithChannels.includes('/legal/seller-protection'));
+      assert.ok(htmlWithChannels.includes('/legal/community-guidelines'));
     }
   );
 

@@ -624,14 +624,15 @@ flowchart TD
 
 *Target Source: `client/components/shell/Footer.tsx`*
 
-#### Structure & Official Links
+#### Structure & Social Directory Architecture
 1. **Brand Showcase**: Smex Store logo, tagline, and platform mission.
-2. **Verified Owner Social Directory** (Requirements Section 6.8):
-   * YouTube (`https://youtube.com/@smexstore`)
-   * Twitch (`https://twitch.tv/smexstore`)
-   * Discord (`https://discord.gg/smexstore`)
-   * Twitter/X (`https://x.com/smexstore`)
-   * Instagram (`https://instagram.com/smexstore`)
+2. **Owner Social Channels Directory Contract** (Requirements Section 6.8):
+   - Restricted strictly to two platform-supported channels (all other platforms prohibited):
+     * **WhatsApp Channel**: Sourced via client environment configuration `NEXT_PUBLIC_SOCIAL_WHATSAPP_CHANNEL`.
+     * **Instagram Handle**: Sourced via client environment configuration `NEXT_PUBLIC_SOCIAL_INSTAGRAM`.
+   - Dynamic Resolution: Components render anchor tags only when the corresponding environment variable is present and non-empty; unconfigured channels are omitted gracefully without layout shift.
+   - Platform Whitelist & Boundary: Only WhatsApp and Instagram channels are permitted; hardcoded or dynamic rendering of other third-party networks (YouTube, Twitch, Discord, Twitter/X) is strictly prohibited.
+   - Security Attributes: All external links enforce `target="_blank"` and `rel="noopener noreferrer"`.
 3. **Platform Directory Links**: Tournaments, Boosting Calculator, Team Recruitment, Seller Protection Policy.
 4. **Legal & Compliance**: Terms of Service, Privacy Policy, Community Guidelines, Copyright 2026.
 5. **Responsive Behavior**: Stacked single-column on mobile ($< 640\text{px}$); 4-column balanced grid on desktop ($\ge 1024\text{px}$).

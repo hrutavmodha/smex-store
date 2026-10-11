@@ -169,7 +169,7 @@ flowchart TD
 | 28 | Root layout TanStack Query provider and context initialization | Mount `RootLayout` with child component executing `useQueryClient()` | Query client context is available, child renders successfully, zero React hydration warnings | QueryClient context accessible, child component rendered | Passed |
 | 29 | Sticky navigation bar brand emblem and primary route links | Render `Navbar` component | Official logo renders with link to `/`, 6 primary navigation links rendered (`/tournaments`, `/teams`, `/marketplace`, `/boosting`, `/leaderboard`, `/about`) | Official logo and all 6 navigation links verified | Passed |
 | 30 | AMOLED and Dark mode runtime theme switching | Render `Navbar` theme toggle and simulate user toggle click | `document.documentElement` updates `data-theme` attribute to `'amoled'` or `'dark'`; transition duration token is `<= 120ms` | Theme attribute cycle verified, transition token `<= 120ms` | Passed |
-| 31 | Verified owner social directory and legal links rendering | Render `Footer` component | 5 verified social links render (YouTube, Twitch, Discord, Twitter/X, Instagram) matching Requirements Section 6.8 | 5 verified owner channels and legal links verified | Passed |
+| 31 | Configurable owner social directory (WhatsApp and Instagram whitelist) and legal links | Render `Footer` component with mock `NEXT_PUBLIC_SOCIAL_WHATSAPP_CHANNEL` and `NEXT_PUBLIC_SOCIAL_INSTAGRAM` | Renders configured WhatsApp and Instagram links with `target="_blank"` and `rel="noopener noreferrer"`; strictly excludes unapproved platforms; omits unconfigured channels without error; renders legal links | Dynamic configuration rendering, platform whitelist, and omission logic verified | Passed |
 | 32 | Prohibited visual effects audit and WCAG AA contrast check | Automated inspection of CSS classes and computed styles in Navbar and Footer | Zero `backdrop-filter: blur` rules found; zero opacity fades; contrast ratios pass WCAG AA (>= 4.5:1 text, >= 3:1 UI components) | Zero blur, zero opacity fades, WCAG AA contrast verified | Passed |
 
 ---
@@ -235,7 +235,7 @@ This matrix maps each architectural requirement from `docs/internal/design/lld/d
 | **LLD 7.1** | Root layout TanStack Query provider initialization | 28 | React mounting assertion verifying `QueryClientProvider` context |
 | **LLD 7.3** | Sticky navigation bar brand emblem and route links | 29 | DOM assertion verifying logo, brand label, and 6 primary route links |
 | **LLD 7.3** | AMOLED and Dark mode runtime theme switching | 30 | Button click simulation checking `data-theme` attribute and 120ms timing |
-| **LLD 7.4** | Verified owner social directory and legal links | 31 | Component assertion verifying 5 official social links and legal links |
+| **LLD 7.4** | Configurable owner social directory (WhatsApp & Instagram whitelist) and legal links | 31 | Component assertion verifying environment configuration rendering, platform exclusion, and secure attributes |
 | **LLD 7.3** | Prohibited visual effects audit and WCAG AA contrast | 32 | DOM and CSS inspection asserting zero blur/fade and WCAG AA compliance |
 
 ---
