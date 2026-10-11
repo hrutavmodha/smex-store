@@ -11,6 +11,11 @@ import {
   Sliders,
   Menu,
   X,
+  User,
+  ChevronDown,
+  LogOut,
+  ShieldAlert,
+  Laptop,
 } from 'lucide-react';
 
 export const NAV_LINKS = [
@@ -25,20 +30,36 @@ export const NAV_LINKS = [
 export type ThemeMode = 'dark' | 'amoled' | 'light';
 export type DensityMode = 'compact' | 'comfortable' | 'spacious';
 
+export interface UserProfile {
+  id: string;
+  email: string;
+  inGameId?: string;
+  avatarPreset?: string;
+  emailVerified: boolean;
+  role?: string;
+}
+
+export interface NavbarProps {
+  user?: UserProfile | null;
+  onLogout?: () => void;
+  onOpenAuthModal?: () => void;
+}
+
 function subscribeStorage(callback: () => void) {
   window.addEventListener('storage', callback);
   return () => window.removeEventListener('storage', callback);
 }
 
-export function Navbar() {
+export function Navbar({ user, onLogout, onOpenAuthModal }: NavbarProps) {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
 
   const theme = useSyncExternalStore<ThemeMode>(
     subscribeStorage,
     () => {
-      if (typeof window === 'undefined') return 'dark';
-      const stored = localStorage.getItem('smex_theme') as ThemeMode;
+      if (typeof window === 'undefined' || !window.localStorage) return 'dark';
+      const stored = window.localStorage.getItem('smex_theme') as ThemeMode;
       return stored || 'dark';
     },
     () => 'dark'
@@ -47,8 +68,8 @@ export function Navbar() {
   const density = useSyncExternalStore<DensityMode>(
     subscribeStorage,
     () => {
-      if (typeof window === 'undefined') return 'comfortable';
-      const stored = localStorage.getItem('smex_density') as DensityMode;
+      if (typeof window === 'undefined' || !window.localStorage) return 'comfortable';
+      const stored = window.localStorage.getItem('smex_density') as DensityMode;
       return stored || 'comfortable';
     },
     () => 'comfortable'
@@ -61,22 +82,49 @@ export function Navbar() {
       light: 'dark',
     };
     const nextTheme = cycleMap[theme];
-    localStorage.setItem('smex_theme', nextTheme);
-    document.documentElement.setAttribute('data-theme', nextTheme);
-    window.dispatchEvent(new Event('storage'));
+    if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.setItem('smex_theme', nextTheme);
+    }
+    if (typeof document !== 'undefined') {
+      document.documentElement.setAttribute('data-theme', nextTheme);
+    }
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('storage'));
+    }
   };
 
   const handleCycleDensity = () => {
-    const cycleMap: Record<DensityMode, DensityMode> = {
+    const cycleMap: Record<ThemeMode, DensityMode> = {
       comfortable: 'compact',
       compact: 'spacious',
       spacious: 'comfortable',
     };
     const nextDensity = cycleMap[density];
-    localStorage.setItem('smex_density', nextDensity);
-    document.documentElement.setAttribute('data-density', nextDensity);
-    window.dispatchEvent(new Event('storage'));
+    if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.setItem('smex_density', nextDensity);
+    }
+    if (typeof document !== 'undefined') {
+      document.documentElement.setAttribute('data-density', nextDensity);
+    }
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('storage'));
+    }
   };
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/v1/auth/logout', { method: 'POST' });
+    } catch {
+      // Ignore network errors on logout dispatch
+    }
+    if (onLogout) {
+      onLogout();
+    }
+    setIsProfileDropdownOpen(false);
+  };
+
+  const avatarPreset = user?.avatarPreset || 'preset_default_01';
+  const ign = user?.inGameId || user?.email?.split('@')[0] || 'Player';
 
   return (
     <header className="sticky top-0 z-50 h-16 w-full border-b border-border-subtle bg-bg-surface transition-colors duration-[120ms]">
@@ -161,13 +209,116 @@ export function Navbar() {
             <Sliders className="h-4 w-4" />
           </button>
 
-          {/* Login / Register Primary CTA */}
-          <Link
-            href="/login"
-            className="flex items-center justify-center px-4 py-2 text-sm font-semibold text-black bg-emerald-primary hover:bg-emerald-hover rounded-lg transition-transform duration-[80ms] active:scale-[0.98] shadow-sm min-h-[40px]"
-          >
-            Sign In
-          </Link>
+          {/* User Profile Dropdown OR Sign In CTA */}
+          {user ? (
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
+                className="flex items-center gap-2 px-2.5 py-1.5 text-xs font-semibold text-text-primary bg-bg-surface-elevated hover:bg-bg-canvas rounded-lg border border-border-subtle transition-colors duration-[120ms] min-h-[40px]"
+                aria-label="User Profile Menu"
+                aria-expanded={isProfileDropdownOpen}
+                data-testid="user-profile-button"
+              >
+                {/* Avatar Preset Badge */}
+                <span
+                  data-testid="user-avatar-badge"
+                  data-preset={avatarPreset}
+                  className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-primary/20 text-emerald-primary text-[10px] font-bold border border-emerald-primary/40"
+                >
+                  {ign.charAt(0).toUpperCase()}
+                </span>
+                <span data-testid="user-ign" className="font-medium text-text-primary max-w-[120px] truncate">
+                  {ign}
+                </span>
+
+                {/* Email unverified warning indicator */}
+                {!user.emailVerified && (
+                  <span
+                    data-testid="unverified-email-dot"
+                    title="Email unverified"
+                    className="flex h-2 w-2 rounded-full bg-amber-400"
+                  />
+                )}
+
+                <ChevronDown className="h-3.5 w-3.5 text-text-muted" />
+              </button>
+
+              {/* Profile Dropdown Menu */}
+              {isProfileDropdownOpen && (
+                <div
+                  data-testid="user-profile-dropdown"
+                  className="absolute right-0 mt-2 w-56 rounded-xl border border-border-subtle bg-bg-surface shadow-2xl p-1.5 z-50 flex flex-col gap-1 transition-transform duration-[120ms]"
+                >
+                  {/* Unverified Email Alert Banner */}
+                  {!user.emailVerified && (
+                    <div
+                      data-testid="unverified-email-banner"
+                      className="flex items-center gap-2 p-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-medium"
+                    >
+                      <ShieldAlert className="h-4 w-4 shrink-0 text-amber-400" />
+                      <div className="flex flex-col">
+                        <span className="font-bold">Email Not Verified</span>
+                        <span className="text-[10px] text-amber-300/80">Some features restricted</span>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="px-2 py-1.5 text-[11px] text-text-muted border-b border-border-subtle">
+                    Signed in as <span className="font-semibold text-text-primary">{user.email}</span>
+                  </div>
+
+                  <Link
+                    href="/profile"
+                    onClick={() => setIsProfileDropdownOpen(false)}
+                    className="flex items-center gap-2 px-2.5 py-2 text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-bg-surface-elevated rounded-lg transition-colors duration-[120ms] min-h-[36px]"
+                  >
+                    <User className="h-4 w-4" />
+                    <span>My Profile</span>
+                  </Link>
+
+                  <Link
+                    href="/settings"
+                    onClick={() => setIsProfileDropdownOpen(false)}
+                    className="flex items-center gap-2 px-2.5 py-2 text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-bg-surface-elevated rounded-lg transition-colors duration-[120ms] min-h-[36px]"
+                  >
+                    <Sliders className="h-4 w-4" />
+                    <span>Settings</span>
+                  </Link>
+
+                  <Link
+                    href="/settings/devices"
+                    onClick={() => setIsProfileDropdownOpen(false)}
+                    className="flex items-center gap-2 px-2.5 py-2 text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-bg-surface-elevated rounded-lg transition-colors duration-[120ms] min-h-[36px]"
+                  >
+                    <Laptop className="h-4 w-4" />
+                    <span>Device Management</span>
+                  </Link>
+
+                  <div className="border-t border-border-subtle my-0.5" />
+
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    data-testid="logout-button"
+                    className="flex items-center gap-2 w-full px-2.5 py-2 text-xs font-semibold text-red-400 hover:bg-red-950/30 rounded-lg transition-colors duration-[120ms] min-h-[36px]"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    <span>Sign Out</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={onOpenAuthModal}
+              data-testid="nav-sign-in-button"
+              className="flex items-center justify-center px-4 py-2 text-sm font-semibold text-black bg-emerald-primary hover:bg-emerald-hover rounded-lg transition-transform duration-[80ms] active:scale-[0.98] shadow-sm min-h-[40px]"
+            >
+              Sign In
+            </button>
+          )}
         </div>
 
         {/* Mobile Hamburger & Controls Trigger */}
@@ -215,6 +366,17 @@ export function Navbar() {
           </button>
         </div>
 
+        {/* User banner in drawer if logged in */}
+        {user && (
+          <div className="mt-4 p-3 rounded-lg bg-bg-surface-elevated border border-border-subtle flex flex-col gap-1">
+            <span className="font-bold text-sm text-text-primary">{ign}</span>
+            <span className="text-xs text-text-muted">{user.email}</span>
+            {!user.emailVerified && (
+              <span className="text-[10px] text-amber-400 font-semibold mt-1">⚠️ Email unverified</span>
+            )}
+          </div>
+        )}
+
         <nav className="mt-6 flex flex-col gap-2" aria-label="Mobile Navigation">
           {NAV_LINKS.map((link) => (
             <Link
@@ -226,16 +388,41 @@ export function Navbar() {
               {link.label}
             </Link>
           ))}
+
+          {user && (
+            <>
+              <Link
+                href="/settings/devices"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="px-3 py-3 text-base font-medium text-text-secondary hover:text-text-primary hover:bg-bg-surface-elevated rounded-lg transition-colors duration-[120ms] min-h-[44px] flex items-center"
+              >
+                Device Management
+              </Link>
+            </>
+          )}
         </nav>
 
         <div className="mt-8 pt-6 border-t border-border-subtle flex flex-col gap-3">
-          <Link
-            href="/login"
-            onClick={() => setIsMobileMenuOpen(false)}
-            className="flex items-center justify-center w-full py-3 text-center text-sm font-semibold text-black bg-emerald-primary rounded-lg min-h-[44px]"
-          >
-            Sign In
-          </Link>
+          {user ? (
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="flex items-center justify-center w-full py-3 text-center text-sm font-semibold text-red-400 bg-red-950/20 border border-red-900/30 rounded-lg min-h-[44px]"
+            >
+              Sign Out
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                setIsMobileMenuOpen(false);
+                if (onOpenAuthModal) onOpenAuthModal();
+              }}
+              className="flex items-center justify-center w-full py-3 text-center text-sm font-semibold text-black bg-emerald-primary rounded-lg min-h-[44px]"
+            >
+              Sign In
+            </button>
+          )}
         </div>
       </div>
     </header>
