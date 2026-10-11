@@ -33,25 +33,32 @@ export function DeviceManagementDashboard() {
   const [revokingId, setRevokingId] = useState<string | null>(null);
   const [isRevokingOthers, setIsRevokingOthers] = useState(false);
 
-  const fetchSessions = async () => {
-    setIsLoading(true);
-    setErrorMessage(null);
-    try {
-      const response = await fetch('/api/v1/devices/sessions');
-      if (!response.ok) {
-        throw new Error('Failed to load active device sessions');
-      }
-      const data = await response.json();
-      setSessions(data.sessions || []);
-    } catch (err: any) {
-      setErrorMessage(err.message || 'Error fetching active sessions');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   useEffect(() => {
-    fetchSessions();
+    let ignore = false;
+    const load = async () => {
+      try {
+        const response = await fetch('/api/v1/devices/sessions');
+        if (!response.ok) {
+          throw new Error('Failed to load active device sessions');
+        }
+        const data = await response.json();
+        if (!ignore) {
+          setSessions(data.sessions || []);
+        }
+      } catch (err: unknown) {
+        if (!ignore) {
+          setErrorMessage(err instanceof Error ? err.message : 'Error fetching active sessions');
+        }
+      } finally {
+        if (!ignore) {
+          setIsLoading(false);
+        }
+      }
+    };
+    void load();
+    return () => {
+      ignore = true;
+    };
   }, []);
 
   const handleRevokeSingle = async (sessionId: string) => {
@@ -67,8 +74,8 @@ export function DeviceManagementDashboard() {
       }
       setSessions((prev) => prev.filter((s) => s.sessionId !== sessionId));
       setSuccessMessage('Device session successfully revoked');
-    } catch (err: any) {
-      setErrorMessage(err.message || 'Failed to revoke session');
+    } catch (err: unknown) {
+      setErrorMessage(err instanceof Error ? err.message : 'Failed to revoke session');
     } finally {
       setRevokingId(null);
     }
@@ -88,8 +95,8 @@ export function DeviceManagementDashboard() {
       // Retain only current session
       setSessions((prev) => prev.filter((s) => s.isCurrent));
       setSuccessMessage('All other sessions successfully terminated');
-    } catch (err: any) {
-      setErrorMessage(err.message || 'Failed to revoke other sessions');
+    } catch (err: unknown) {
+      setErrorMessage(err instanceof Error ? err.message : 'Failed to revoke other sessions');
     } finally {
       setIsRevokingOthers(false);
     }

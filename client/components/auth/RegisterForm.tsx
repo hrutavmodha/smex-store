@@ -97,8 +97,8 @@ export function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFormProps) 
       if (onSuccess) {
         onSuccess();
       }
-    } catch (err: any) {
-      setErrorMessage(err.message || 'Registration failed. Please try again.');
+    } catch (err: unknown) {
+      setErrorMessage(err instanceof Error ? err.message : 'Registration failed. Please try again.');
     } finally {
       setIsLoading(false);
     }

@@ -63,8 +63,8 @@ export function LoginForm({
       if (onSuccess) {
         onSuccess();
       }
-    } catch (err: any) {
-      setErrorMessage(err.message || 'Authentication failed. Please try again.');
+    } catch (err: unknown) {
+      setErrorMessage(err instanceof Error ? err.message : 'Authentication failed. Please try again.');
     } finally {
       setIsLoading(false);
     }
