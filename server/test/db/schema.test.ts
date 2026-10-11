@@ -19,6 +19,16 @@ import {
   activityLogs,
 } from '../../src/db/schema/index.js';
 
+function hasPgErrorCode(err: any, expectedCode: string): boolean {
+  const inner = err?.cause || err;
+  return (
+    inner?.code === expectedCode ||
+    err?.code === expectedCode ||
+    Boolean(inner?.message?.includes(expectedCode)) ||
+    Boolean(err?.message?.includes(expectedCode))
+  );
+}
+
 test('Relational Schema Constraints and Cascades Suite', async (suite) => {
   const app = await build(suite);
   const db = app.db;
@@ -38,9 +48,7 @@ test('Relational Schema Constraints and Cascades Suite', async (suite) => {
           passwordHash: 'dummy_hash_duplicate',
         });
       },
-      (err: any) => {
-        return err.code === '23505' || err.message.includes('unique constraint');
-      },
+      (err: any) => hasPgErrorCode(err, '23505'),
       'Duplicate email must be rejected with unique constraint error 23505'
     );
   });
@@ -101,7 +109,7 @@ test('Relational Schema Constraints and Cascades Suite', async (suite) => {
       async () => {
         await db.insert(profiles).values({ userId: u2.id, username });
       },
-      (err: any) => err.code === '23505' || err.message.includes('unique constraint')
+      (err: any) => hasPgErrorCode(err, '23505')
     );
   });
 
@@ -111,17 +119,14 @@ test('Relational Schema Constraints and Cascades Suite', async (suite) => {
       .values({ email: `session_${Date.now()}@smexstore.com`, passwordHash: 'hash' })
       .returning();
 
-    const [s1] = await db
-      .insert(sessions)
-      .values({
-        userId: user.id,
-        refreshTokenHash: 'hash1',
-        deviceName: 'Pixel 9 Pro',
-        ipAddress: '127.0.0.1',
-        userAgent: 'Chrome',
-        expiresAt: new Date(Date.now() + 86400000),
-      })
-      .returning();
+    await db.insert(sessions).values({
+      userId: user.id,
+      refreshTokenHash: 'hash1',
+      deviceName: 'Pixel 9 Pro',
+      ipAddress: '127.0.0.1',
+      userAgent: 'Chrome',
+      expiresAt: new Date(Date.now() + 86400000),
+    });
 
     const existingSessions = await db
       .select()
@@ -152,12 +157,12 @@ test('Relational Schema Constraints and Cascades Suite', async (suite) => {
       captainId: captain.id,
     });
 
-    // Attempting to delete captain must be rejected with 23503 foreign key violation
+    // Attempting to delete captain must be rejected with 23503 foreign key restriction
     await assert.rejects(
       async () => {
         await db.delete(users).where(eq(users.id, captain.id));
       },
-      (err: any) => err.code === '23503' || err.message.includes('violates foreign key')
+      (err: any) => hasPgErrorCode(err, '23503')
     );
   });
 
@@ -177,7 +182,7 @@ test('Relational Schema Constraints and Cascades Suite', async (suite) => {
           memberCap: 0,
         });
       },
-      (err: any) => err.code === '23514' || err.message.includes('check constraint')
+      (err: any) => hasPgErrorCode(err, '23514')
     );
 
     // Capacity 15 (> 10) must be rejected
@@ -190,7 +195,7 @@ test('Relational Schema Constraints and Cascades Suite', async (suite) => {
           memberCap: 15,
         });
       },
-      (err: any) => err.code === '23514' || err.message.includes('check constraint')
+      (err: any) => hasPgErrorCode(err, '23514')
     );
   });
 
@@ -227,7 +232,7 @@ test('Relational Schema Constraints and Cascades Suite', async (suite) => {
           userId: member.id,
         });
       },
-      (err: any) => err.code === '23505' || err.message.includes('unique constraint')
+      (err: any) => hasPgErrorCode(err, '23505')
     );
 
     // Dynamic open slots computation: member_cap - COUNT(team_members)
@@ -284,7 +289,7 @@ test('Relational Schema Constraints and Cascades Suite', async (suite) => {
           seed: 2,
         });
       },
-      (err: any) => err.code === '23505' || err.message.includes('unique constraint')
+      (err: any) => hasPgErrorCode(err, '23505')
     );
   });
 
@@ -344,7 +349,7 @@ test('Relational Schema Constraints and Cascades Suite', async (suite) => {
           priceInr: '-50.00',
         });
       },
-      (err: any) => err.code === '23514' || err.message.includes('check constraint')
+      (err: any) => hasPgErrorCode(err, '23514')
     );
   });
 
@@ -382,7 +387,7 @@ test('Relational Schema Constraints and Cascades Suite', async (suite) => {
           contactHandle: '+919999999999',
         });
       },
-      (err: any) => err.code === '23514' || err.message.includes('check constraint')
+      (err: any) => hasPgErrorCode(err, '23514')
     );
   });
 
@@ -457,7 +462,7 @@ test('Relational Schema Constraints and Cascades Suite', async (suite) => {
           reviewText: 'Great seller (me)!',
         });
       },
-      (err: any) => err.code === '23514' || err.message.includes('check constraint')
+      (err: any) => hasPgErrorCode(err, '23514')
     );
   });
 
@@ -493,7 +498,7 @@ test('Relational Schema Constraints and Cascades Suite', async (suite) => {
           rating: 6,
         });
       },
-      (err: any) => err.code === '23514' || err.message.includes('check constraint')
+      (err: any) => hasPgErrorCode(err, '23514')
     );
 
     // Valid review
@@ -516,7 +521,7 @@ test('Relational Schema Constraints and Cascades Suite', async (suite) => {
           reviewText: 'Duplicate review',
         });
       },
-      (err: any) => err.code === '23505' || err.message.includes('unique constraint')
+      (err: any) => hasPgErrorCode(err, '23505')
     );
   });
 

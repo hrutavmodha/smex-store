@@ -27,7 +27,11 @@ const dbPlugin: FastifyPluginAsync<DbPluginOptions> = async (fastify, opts) => {
   fastify.decorate('db', db);
 
   fastify.addHook('onClose', async (instance) => {
-    if (instance.dbPool) {
+    if (
+      instance.dbPool &&
+      !(instance.dbPool as any).ending &&
+      !(instance.dbPool as any).ended
+    ) {
       await instance.dbPool.end();
     }
   });

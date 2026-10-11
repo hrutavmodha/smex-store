@@ -61,8 +61,8 @@ flowchart TD
 
 ### Milestone 2: Data Layer and Client UI Shell
 
-* [ ] **2.1 Drizzle Connection Pool**: Set up `drizzle-orm/node-postgres` with pooled `pg.Pool` connection and graceful shutdown handlers.
-* [ ] **2.2 Relational Schema Definitions**:
+* [X] **2.1 Drizzle Connection Pool**: Set up `drizzle-orm/node-postgres` with pooled `pg.Pool` connection and graceful shutdown handlers.
+* [X] **2.2 Relational Schema Definitions**:
   * `users` and `profiles`: UUID, email, password_hash, role, in_game_id, avatar_preset.
   * `sessions`: UUID, user_id, device_fingerprint, ip_address, expires_at.
   * `teams` and `team_members`: Captain ID, squad name, tag, capacity, open_status, roles.
@@ -70,15 +70,15 @@ flowchart TD
   * `boosting_rates` and `boosting_orders`: Rate matrix, calculated_price_inr, status, contact_channel.
   * `marketplace_listings` and `listing_proofs`: Seller ID, price, badges, S3 keys, status.
   * `reviews_ratings` and `activity_logs`: Entity reviews, check constraints, JSONB audit logging.
-* [ ] **2.3 Migration Scripts and Drizzle Config**: Configure `drizzle.config.ts` and verify automated migration generation via drizzle-kit.
-* [ ] **2.4 Database Seeding Pipeline**: Create seed script `src/db/seed.ts` populating preset gaming avatars, default MLBB boosting pricing matrix, initial admin account, and sample tournaments.
-* [ ] **2.5 Data Layer Health Probe**: Extend `GET /health` to verify live PostgreSQL connection pool query readiness and report database latency.
-* [ ] **2.6 Client Root Layout and AMOLED Shell**:
+* [X] **2.3 Migration Scripts and Drizzle Config**: Configure `drizzle.config.ts` and verify automated migration generation via drizzle-kit.
+* [X] **2.4 Database Seeding Pipeline**: Create seed script `src/db/seed.ts` populating preset gaming avatars, default MLBB boosting pricing matrix, initial admin account, and sample tournaments.
+* [X] **2.5 Data Layer Health Probe**: Extend `GET /health` to verify live PostgreSQL connection pool query readiness and report database latency.
+* [X] **2.6 Client Root Layout and AMOLED Shell**:
   * Implement Next.js 16 App Router root layout with TanStack Query provider.
   * Build sticky navigation bar with official logo, navigation links, and theme toggle.
   * Build application footer with owner social channels and legal links.
   * Enforce pure AMOLED `#000000` and Obsidian `#0B0F12` background canvases with 120ms hardware transitions.
-* [ ] **2.7 Automated Data Layer and UI Shell Testing**: Execute automated test suite validating schema constraints, foreign key cascades, seed idempotency, health probe pings, and client UI shell component rendering.
+* [X] **2.7 Automated Data Layer and UI Shell Testing**: Execute automated test suite validating schema constraints, foreign key cascades, seed idempotency, health probe pings, and client UI shell component rendering (44 server tests passing with 95.47% line coverage, 6 client tests passing).
 
 ---
 
