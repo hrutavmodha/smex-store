@@ -1,43 +1,40 @@
-// This file contains code that we reuse between our tests.
-import helper from 'fastify-cli/helper.js'
-import * as test from 'node:test'
-import * as path from 'node:path'
-import { fileURLToPath } from 'node:url'
+import Fastify, { type FastifyInstance } from 'fastify';
+import fp from 'fastify-plugin';
+import * as test from 'node:test';
+import appPlugin, { options as defaultOptions } from '../src/app.js';
 
 export type TestContext = {
-  after: typeof test.after
-}
+  after: typeof test.after;
+};
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
-const AppPath = path.join(__dirname, '..', 'src', 'app.ts')
-
-// Fill in this config with all the configurations
-// needed for testing the application
-function config () {
+function config() {
   return {
-    skipOverride: true // Register our application with fastify-plugin
+    skipOverride: true,
+  };
+}
+
+async function build(t?: TestContext): Promise<FastifyInstance> {
+  const app = Fastify({
+    logger: false,
+  });
+
+  // Wrap appPlugin with fastify-plugin to ensure all decorators are exposed at the root instance
+  await app.register(fp(appPlugin as any, { name: 'app-test-wrapper' }), defaultOptions);
+  await app.ready();
+
+  // Clear any residual rate-limit keys from prior runs to ensure test determinism
+  if (app.redis) {
+    const rlKeys = await app.redis.keys('fastify-rate-limit-*');
+    if (rlKeys.length > 0) {
+      await app.redis.del(...rlKeys);
+    }
   }
+
+  if (t?.after) {
+    t.after(() => void app.close());
+  }
+
+  return app;
 }
 
-// Automatically build and tear down our instance
-async function build (t: TestContext) {
-  // you can set all the options supported by the fastify CLI command
-  const argv = [AppPath]
-
-  // fastify-plugin ensures that all decorators
-  // are exposed for testing purposes, this is
-  // different from the production setup
-  const app = await helper.build(argv, config())
-
-  // Tear down our app after we are done
-  // eslint-disable-next-line no-void
-  t.after(() => void app.close())
-
-  return app
-}
-
-export {
-  config,
-  build
-}
+export { config, build };
