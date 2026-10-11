@@ -37,6 +37,31 @@
   --border-prominent: #2E2E2E;
 }
 
+/* Light Mode Overrides */
+[data-theme="light"] {
+  --bg-canvas: #F4FAF8;
+  --bg-surface: #FFFFFF;
+  --bg-surface-elevated: #E8F4F0;
+  --border-subtle: #D5E5DF;
+  --border-prominent: #B8D5CB;
+  --text-primary: #0B1A15;
+  --text-secondary: #2C483F;
+  --text-muted: #5D7A71;
+}
+
+/* Interface Density Modifiers */
+[data-density="compact"] {
+  --density-touch-target: 36px;
+}
+
+[data-density="comfortable"] {
+  --density-touch-target: 44px;
+}
+
+[data-density="spacious"] {
+  --density-touch-target: 48px;
+}
+
 @theme inline {
   --color-emerald-primary: var(--emerald-primary);
   --color-emerald-hover: var(--emerald-hover);

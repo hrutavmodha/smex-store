@@ -15,7 +15,11 @@
     "build": "tsdown",
     "typecheck": "tsc --noEmit",
     "watch": "tsdown -w",
-    "dev": "fastify start -w -l info src/app.ts"
+    "dev": "fastify start -w -l info src/app.ts",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:seed": "node --loader ts-node/esm src/db/seed.ts",
+    "db:studio": "drizzle-kit studio"
   },
   "keywords": [],
   "author": "",
@@ -25,15 +29,19 @@
     "@fastify/sensible": "^6.0.0",
     "@fastify/websocket": "^11.3.3",
     "dotenv": "^18.0.6",
+    "drizzle-orm": "^0.45.4",
     "fastify": "^5.0.0",
     "fastify-cli": "^8.0.3",
     "fastify-plugin": "^6.0.0",
+    "pg": "^8.23.1",
     "zod": "^4.6.5"
   },
   "devDependencies": {
     "@types/node": "^26.0.0",
+    "@types/pg": "^8.23.1",
     "c8": "^12.0.0",
     "concurrently": "^10.0.1",
+    "drizzle-kit": "^0.31.11",
     "fastify-tsconfig": "^3.0.0",
     "ts-node": "^10.4.0",
     "tsdown": "^0.23.0",

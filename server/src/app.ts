@@ -3,6 +3,7 @@ import sensiblePlugin from './plugins/sensible.js'
 import supportPlugin from './plugins/support.js'
 import corsPlugin from './plugins/cors.js'
 import websocketPlugin from './plugins/websocket.js'
+import dbPlugin from './plugins/db.js'
 import { loadEnv } from './config/env.js'
 import rootRoutes from './routes/root.js'
 import healthRoutes from './routes/health.js'
@@ -27,6 +28,7 @@ const app: FastifyPluginAsync<AppOptions> = async (
   await fastify.register(websocketPlugin)
   await fastify.register(sensiblePlugin)
   await fastify.register(supportPlugin)
+  await fastify.register(dbPlugin)
 
   // Register routes
   await fastify.register(rootRoutes)
