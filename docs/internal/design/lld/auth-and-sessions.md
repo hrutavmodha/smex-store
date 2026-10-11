@@ -53,13 +53,13 @@ flowchart TD
 
 All user passwords are encrypted exclusively using **Argon2id** (OWASP recommended parameters) to defend against GPU-accelerated brute-force attacks and side-channel timing analysis:
 
-| Parameter | Value | Semantic Purpose |
-| :--- | :--- | :--- |
-| `type` | `argon2id` | Hybrid defense against side-channel and GPU cracking |
-| `memoryCost` | `65536` (64 MB) | Memory-hardness resisting ASIC/GPU parallelization |
-| `timeCost` | `3` | Iteration count tuning execution latency (~50-80ms) |
-| `parallelism` | `4` | Concurrency thread lanes matching server CPU topology |
-| `hashLength` | `32` bytes | Cryptographic digest length |
+| Parameter       | Value             | Semantic Purpose                                      |
+| :-------------- | :---------------- | :---------------------------------------------------- |
+| `type`        | `argon2id`      | Hybrid defense against side-channel and GPU cracking  |
+| `memoryCost`  | `65536` (64 MB) | Memory-hardness resisting ASIC/GPU parallelization    |
+| `timeCost`    | `3`             | Iteration count tuning execution latency (~50-80ms)   |
+| `parallelism` | `4`             | Concurrency thread lanes matching server CPU topology |
+| `hashLength`  | `32` bytes      | Cryptographic digest length                           |
 
 ### 2.2 Interface Contracts
 
@@ -71,6 +71,7 @@ export interface PasswordHasher {
 ```
 
 #### Operational Invariants
+
 1. **Plaintext Lifetime**: Plaintext passwords exist in memory only during request parsing and are never logged, cached, or persisted.
 2. **Constant-Time Verification**: Verification uses constant-time byte comparisons provided by the underlying Argon2 C-bindings to prevent timing oracle attacks.
 3. **Password Policy Enforcement**: Validated prior to hashing via Zod: minimum 8 characters, maximum 128 characters, containing at least one uppercase letter, one lowercase letter, and one number.
@@ -103,6 +104,7 @@ sequenceDiagram
 ```
 
 #### A. Access Token (Short-Lived JWT)
+
 - **Lifetime**: `900` seconds (15 minutes).
 - **Transport**: `Authorization: Bearer <token>` HTTP header.
 - **Payload Schema**:
@@ -118,6 +120,7 @@ sequenceDiagram
 - **Signing**: Signed with `JWT_SECRET` using `HS256` or `EdDSA`.
 
 #### B. Refresh Token (Long-Lived Cookie)
+
 - **Lifetime**: `2,592,000` seconds (30 days).
 - **Transport**: `Set-Cookie: __Host-refresh-token=<random_string>; Path=/api/v1/auth; HttpOnly; Secure; SameSite=Strict; Max-Age=2592000`.
 - **Generation**: `crypto.randomBytes(32).toString('hex')` (256 bits of cryptographic entropy).
@@ -163,15 +166,16 @@ To revoke a stateless 15-minute Access Token immediately without waiting for tok
 ```mermaid
 flowchart TD
     REQ["Incoming API Request"] --> VERIFY_JWT["Verify JWT Signature & Expiry"]
-    VERIFY_JWT -->|Invalid / Expired| ERR_401["Return 401 Unauthorized"]
-    VERIFY_JWT -->|Valid| BLACKLIST_CHK["Redis: EXISTS revoked_token:{sessionId}"]
-    BLACKLIST_CHK -->|Key Exists (Tombstone)| ERR_REVOKED["Return 401 (Session Revoked)"]
-    BLACKLIST_CHK -->|Key Missing| ATTACH_USER["Decorate request.user and Proceed"]
+    VERIFY_JWT -->|"Invalid / Expired"| ERR_401["Return 401 Unauthorized"]
+    VERIFY_JWT -->|"Valid"| BLACKLIST_CHK["Redis: EXISTS revoked_token:sessionId"]
+    BLACKLIST_CHK -->|"Tombstone Exists"| ERR_REVOKED["Return 401 Session Revoked"]
+    BLACKLIST_CHK -->|"Tombstone Missing"| ATTACH_USER["Decorate request.user and Proceed"]
 ```
 
 ### 4.2 Revocation Endpoints Specification
 
 #### A. Revoke Single Session: `POST /api/v1/auth/revoke-session`
+
 - **Request Body**: `{ sessionId: string }`
 - **Execution Flow**:
   1. Validates `sessionId` belongs to the authenticated `request.user.sub`.
@@ -182,6 +186,7 @@ flowchart TD
 - **Response**: `200 OK` `{ success: true, message: "Session revoked successfully" }`.
 
 #### B. Revoke All Sessions: `POST /api/v1/auth/revoke-all`
+
 - **Request Body**: `{}`
 - **Execution Flow**:
   1. Queries Redis keys matching `session:{userId}:*`.
@@ -209,6 +214,7 @@ export function parseDeviceMetadata(userAgent: string, ipAddress: string): Devic
 ```
 
 ### IP and Header Trust Rules
+
 - Reverse-proxy client IP extracted from `request.ip` with Fastify `trustProxy: true`.
 - User-Agent parsed into a human-readable label: `<BrowserName> on <OperatingSystem>`. Fallback to `"Unknown Device"`.
 
@@ -222,12 +228,12 @@ Backed by `@fastify/rate-limit` using Redis sliding window sorted sets (`ZADD`, 
 
 ### 6.1 Endpoint Limit Policies
 
-| Route Pattern | Window Duration | Max Allowed | Key Identifier | Action on Exceeded |
-| :--- | :--- | :--- | :--- | :--- |
-| `POST /api/v1/auth/login` | 60 seconds | 5 requests | `rl:login:${clientIp}:${normalizedEmail}` | 429 Too Many Requests |
-| `POST /api/v1/auth/register` | 3600 seconds (1 hour) | 3 requests | `rl:register:${clientIp}` | 429 Too Many Requests |
-| `POST /api/v1/auth/forgot-password` | 3600 seconds (1 hour) | 3 requests | `rl:forgot:${clientIp}:${normalizedEmail}` | 429 Too Many Requests |
-| `ALL /api/v1/*` (Global Default) | 60 seconds | 300 requests | `rl:global:${clientIp}` | 429 Too Many Requests |
+| Route Pattern                         | Window Duration       | Max Allowed  | Key Identifier                               | Action on Exceeded    |
+| :------------------------------------ | :-------------------- | :----------- | :------------------------------------------- | :-------------------- |
+| `POST /api/v1/auth/login`           | 60 seconds            | 5 requests   | `rl:login:${clientIp}:${normalizedEmail}`  | 429 Too Many Requests |
+| `POST /api/v1/auth/register`        | 3600 seconds (1 hour) | 3 requests   | `rl:register:${clientIp}`                  | 429 Too Many Requests |
+| `POST /api/v1/auth/forgot-password` | 3600 seconds (1 hour) | 3 requests   | `rl:forgot:${clientIp}:${normalizedEmail}` | 429 Too Many Requests |
+| `ALL /api/v1/*` (Global Default)    | 60 seconds            | 300 requests | `rl:global:${clientIp}`                    | 429 Too Many Requests |
 
 ### 6.2 Rate Limit Error Contract (RFC 7807)
 
@@ -241,6 +247,7 @@ Backed by `@fastify/rate-limit` using Redis sliding window sorted sets (`ZADD`, 
   "code": "RATE_LIMIT_EXCEEDED"
 }
 ```
+
 *HTTP Response Headers*: `Retry-After: 48`, `X-RateLimit-Limit: 5`, `X-RateLimit-Remaining: 0`.
 
 ---
@@ -282,6 +289,7 @@ sequenceDiagram
 ```
 
 #### Security Safeguards
+
 1. **Timing Attack Defense**: `POST /forgot-password` returns the exact same 200 response and latency whether the email exists or not.
 2. **Single-Use Enforcement**: Token is purged immediately via `DEL` upon successful lookup before updating the database.
 3. **Session Invalidation**: Resetting a password automatically invokes `revokeAllSessions(userId)` to kick out attackers on stolen sessions.
@@ -292,18 +300,18 @@ sequenceDiagram
 
 ### 8.1 Endpoint Catalog
 
-| Method | Route Path | Auth Required | Description |
-| :--- | :--- | :--- | :--- |
-| `POST` | `/api/v1/auth/register` | No | Creates new user account & profile; dispatches verification email |
-| `POST` | `/api/v1/auth/login` | No | Validates credentials; mints JWT and sets refresh cookie |
-| `POST` | `/api/v1/auth/logout` | Yes | Revokes current session from Redis & clears refresh cookie |
-| `POST` | `/api/v1/auth/refresh` | No (Cookie) | Rotates refresh token and issues new 15-minute access JWT |
-| `GET` | `/api/v1/auth/me` | Yes | Returns authenticated user profile, role, and active session ID |
-| `POST` | `/api/v1/auth/forgot-password`| No | Dispatches time-limited password reset email |
-| `POST` | `/api/v1/auth/reset-password` | No | Validates single-use token and updates password |
-| `GET` | `/api/v1/devices/sessions` | Yes | Lists all active device sessions for authenticated user |
-| `DELETE`| `/api/v1/devices/sessions/:id`| Yes | Remotely revokes a specific device session |
-| `DELETE`| `/api/v1/devices/sessions/all`| Yes | Remotely revokes all other device sessions |
+| Method     | Route Path                       | Auth Required | Description                                                       |
+| :--------- | :------------------------------- | :------------ | :---------------------------------------------------------------- |
+| `POST`   | `/api/v1/auth/register`        | No            | Creates new user account & profile; dispatches verification email |
+| `POST`   | `/api/v1/auth/login`           | No            | Validates credentials; mints JWT and sets refresh cookie          |
+| `POST`   | `/api/v1/auth/logout`          | Yes           | Revokes current session from Redis & clears refresh cookie        |
+| `POST`   | `/api/v1/auth/refresh`         | No (Cookie)   | Rotates refresh token and issues new 15-minute access JWT         |
+| `GET`    | `/api/v1/auth/me`              | Yes           | Returns authenticated user profile, role, and active session ID   |
+| `POST`   | `/api/v1/auth/forgot-password` | No            | Dispatches time-limited password reset email                      |
+| `POST`   | `/api/v1/auth/reset-password`  | No            | Validates single-use token and updates password                   |
+| `GET`    | `/api/v1/devices/sessions`     | Yes           | Lists all active device sessions for authenticated user           |
+| `DELETE` | `/api/v1/devices/sessions/:id` | Yes           | Remotely revokes a specific device session                        |
+| `DELETE` | `/api/v1/devices/sessions/all` | Yes           | Remotely revokes all other device sessions                        |
 
 ---
 
