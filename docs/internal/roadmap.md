@@ -84,22 +84,22 @@ flowchart TD
 
 ### Milestone 3: Zero-Trust Authentication and User Profiles
 
-* [ ] **3.1 Password Security**: Implement hashing and verification via argon2.
-* [ ] **3.2 Dual-Token Session Pipeline**:
+* [X] **3.1 Password Security**: Implement hashing and verification via argon2.
+* [X] **3.2 Dual-Token Session Pipeline**:
   * Short-lived Access Token JWT (15m).
   * Long-lived Refresh Token stored in Redis with unique session_id.
-* [ ] **3.3 Remote Session Revocation**:
+* [X] **3.3 Remote Session Revocation**:
   * Implement `POST /api/auth/revoke-session` to terminate a single device.
   * Implement `POST /api/auth/revoke-all` to purge all user keys from Redis, triggering immediate WS and HTTP disconnects.
-* [ ] **3.4 Device Fingerprinting**: Capture User-Agent and IP to populate active sessions list in Settings.
-* [ ] **3.5 Auth Endpoints**: Implement `/register`, `/login`, `/logout`, `/refresh`, `/me`.
-* [ ] **3.6 Distributed Rate Limiting**: Register `@fastify/rate-limit` backed by Redis enforcing strict limits on `/api/auth/*` (5 req/min) and global API ingress (100 req/min).
-* [ ] **3.7 Transactional Email and Password Recovery**: Integrate transactional email delivery, implement `POST /api/auth/forgot-password` generating expiring single-use reset tokens stored in Redis, and `POST /api/auth/reset-password`.
-* [ ] **3.8 Client Authentication and Account UI**:
+* [X] **3.4 Device Fingerprinting**: Capture User-Agent and IP to populate active sessions list in Settings.
+* [X] **3.5 Auth Endpoints**: Implement `/register`, `/login`, `/logout`, `/refresh`, `/me`.
+* [X] **3.6 Distributed Rate Limiting**: Register `@fastify/rate-limit` backed by Redis enforcing strict limits on `/api/auth/*` (5 req/min) and global API ingress (100 req/min).
+* [X] **3.7 Transactional Email and Password Recovery**: Integrate transactional email delivery, implement `POST /api/auth/forgot-password` generating expiring single-use reset tokens stored in Redis, and `POST /api/auth/reset-password`.
+* [X] **3.8 Client Authentication and Account UI**:
   * Build modal and standalone views for Login, Registration, and Password Reset.
   * Build User Profile dropdown in navigation bar showing avatar preset and IGN.
   * Build Settings page displaying active sessions with device names, IP addresses, and remote revocation buttons.
-* [ ] **3.9 Automated Auth and Security Testing**: Execute automated test suite verifying Argon2 hashing, token rotation, Redis session revocation and purge, rate limiting enforcement, and frontend auth state management.
+* [X] **3.9 Automated Auth and Security Testing**: Execute automated test suite verifying Argon2 hashing, token rotation, Redis session revocation and purge, rate limiting enforcement, and frontend auth state management (66 server tests passing with 92.3% devices coverage, 13 client tests passing).
 
 ---
 

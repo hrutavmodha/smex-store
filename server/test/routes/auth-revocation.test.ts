@@ -262,4 +262,112 @@ describe('Disambiguated Session Revocation and Fast-Path Tombstones (LLT 2.3)', 
     });
     assert.equal(meRes.statusCode, 401);
   });
+
+  test('Test 13b: Query active device sessions via GET /api/v1/devices/sessions with current session flag and device types', async (t) => {
+    const app = await build(t);
+    const ip = '10.10.1.5';
+
+    const testUser = {
+      email: `devices_test_${Date.now()}@smexstore.com`,
+      password: 'ValidPassword123!',
+      username: `dev_${Date.now().toString().slice(-6)}`,
+    };
+
+    // Register user
+    const regRes = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/register',
+      remoteAddress: ip,
+      payload: testUser,
+    });
+    assert.equal(regRes.statusCode, 201);
+
+    // Unauthenticated GET /api/v1/devices/sessions must return 401
+    const unauthRes = await app.inject({
+      method: 'GET',
+      url: '/api/v1/devices/sessions',
+    });
+    assert.equal(unauthRes.statusCode, 401);
+
+    // Login from Device 1 (Desktop)
+    const log1 = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/login',
+      remoteAddress: '103.21.244.10',
+      headers: { 'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0' },
+      payload: { email: testUser.email, password: testUser.password },
+    });
+    assert.equal(log1.statusCode, 200);
+    const token1 = JSON.parse(log1.body).accessToken;
+    const cookieHeader1 = Array.isArray(log1.headers['set-cookie'])
+      ? log1.headers['set-cookie'][0]
+      : (log1.headers['set-cookie'] as string);
+    const sessionId1 = cookieHeader1.match(/__Host-refresh-token=([^;]+)/)![1].split('.')[0];
+
+    // Login from Device 2 (Mobile)
+    const log2 = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/login',
+      remoteAddress: '103.21.244.20',
+      headers: { 'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148 Safari/604.1' },
+      payload: { email: testUser.email, password: testUser.password },
+    });
+    assert.equal(log2.statusCode, 200);
+    const cookieHeader2 = Array.isArray(log2.headers['set-cookie'])
+      ? log2.headers['set-cookie'][0]
+      : (log2.headers['set-cookie'] as string);
+    const sessionId2 = cookieHeader2.match(/__Host-refresh-token=([^;]+)/)![1].split('.')[0];
+
+    // Query active sessions using Device 1 token
+    const devicesRes = await app.inject({
+      method: 'GET',
+      url: '/api/v1/devices/sessions',
+      headers: { authorization: `Bearer ${token1}` },
+    });
+    assert.equal(devicesRes.statusCode, 200);
+    const body = JSON.parse(devicesRes.body);
+    assert.ok(Array.isArray(body.sessions), 'sessions must be an array');
+    assert.equal(body.sessions.length, 2, 'Must have 2 active sessions');
+
+    // Find sessions in response
+    const currentSession = body.sessions.find((s: any) => s.isCurrent === true);
+    const peerSession = body.sessions.find((s: any) => s.isCurrent === false);
+
+    assert.ok(currentSession, 'Current device session must be present and flagged isCurrent: true');
+    assert.ok(peerSession, 'Peer device session must be present and flagged isCurrent: false');
+
+    // Verify unified contract: both id and sessionId are provided
+    assert.equal(currentSession.id, sessionId1);
+    assert.equal(currentSession.sessionId, sessionId1);
+    assert.equal(currentSession.deviceType, 'desktop');
+    assert.equal(currentSession.deviceName, 'Chrome on Windows');
+    assert.equal(currentSession.ipAddress, '103.21.244.10');
+    assert.ok(currentSession.lastActive, 'lastActive string must be present');
+    assert.ok(currentSession.lastActiveAt, 'lastActiveAt must be present');
+    assert.ok(currentSession.createdAt, 'createdAt must be present');
+
+    assert.equal(peerSession.id, sessionId2);
+    assert.equal(peerSession.sessionId, sessionId2);
+    assert.equal(peerSession.deviceType, 'mobile');
+    assert.equal(peerSession.deviceName, 'Safari on iOS');
+    assert.equal(peerSession.ipAddress, '103.21.244.20');
+
+    // Revoke Device 2 and re-query
+    const revokeRes = await app.inject({
+      method: 'DELETE',
+      url: `/api/v1/devices/sessions/${sessionId2}`,
+      headers: { authorization: `Bearer ${token1}` },
+    });
+    assert.equal(revokeRes.statusCode, 200);
+
+    const afterRevokeRes = await app.inject({
+      method: 'GET',
+      url: '/api/v1/devices/sessions',
+      headers: { authorization: `Bearer ${token1}` },
+    });
+    assert.equal(afterRevokeRes.statusCode, 200);
+    const afterBody = JSON.parse(afterRevokeRes.body);
+    assert.equal(afterBody.sessions.length, 1, 'Only Device 1 should remain active');
+    assert.equal(afterBody.sessions[0].sessionId, sessionId1);
+  });
 });

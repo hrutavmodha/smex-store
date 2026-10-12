@@ -337,4 +337,66 @@ describe('Milestone 3: Client Authentication & UI Shell Suite (LLT Tests 24-29)'
       'AuthModal must specify subtle #1F1F1F border for AMOLED contrast'
     );
   });
+
+  test('Test 27b: DeviceManagementDashboard reconciles backend payload format with id and lastActiveAt', async () => {
+    // Test that client gracefully handles raw backend responses with "id" and "lastActiveAt"
+    const backendSessions = [
+      {
+        id: 'sess_backend_1',
+        deviceName: 'Chrome on Windows',
+        deviceType: 'desktop',
+        ipAddress: '10.0.0.1',
+        isCurrent: true,
+        lastActiveAt: '2026-10-12T04:00:00.000Z',
+        createdAt: '2026-10-12T04:00:00.000Z',
+      },
+      {
+        id: 'sess_backend_2',
+        deviceName: 'Safari on iOS',
+        deviceType: 'mobile',
+        ipAddress: '10.0.0.2',
+        isCurrent: false,
+        lastActiveAt: '2026-10-12T03:30:00.000Z',
+        createdAt: '2026-10-12T03:30:00.000Z',
+      },
+    ];
+
+    let deleteSessionUrl: string | null = null;
+    const originalFetch = global.fetch;
+    global.fetch = async (url: any, options: any) => {
+      const urlStr = String(url);
+      if (options?.method === 'DELETE') {
+        deleteSessionUrl = urlStr;
+        return { ok: true, json: async () => ({ success: true }) } as any;
+      }
+      if (urlStr.includes('/api/v1/devices/sessions')) {
+        return {
+          ok: true,
+          json: async () => ({ sessions: backendSessions }),
+        } as any;
+      }
+      return originalFetch(url, options);
+    };
+
+    const { container } = render(<DeviceManagementDashboard />);
+
+    await waitFor(() => {
+      const cards = container.querySelectorAll('[data-testid="device-session-card"]');
+      assert.strictEqual(cards.length, 2, 'Must render both cards even when response only provides "id"');
+    });
+
+    // Revoke remote card (sess_backend_2)
+    const revokeBtn = container.querySelector('[data-testid="revoke-session-button"]') as HTMLButtonElement;
+    assert.ok(revokeBtn, 'Revoke button must be present for remote card');
+    fireEvent.click(revokeBtn);
+
+    await waitFor(() => {
+      assert.ok(
+        deleteSessionUrl?.includes('/api/v1/devices/sessions/sess_backend_2'),
+        'Revoke URL must contain valid session ID from backend "id" field'
+      );
+    });
+
+    global.fetch = originalFetch;
+  });
 });

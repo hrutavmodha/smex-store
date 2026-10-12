@@ -2,4 +2,4 @@
 
 import { execSync } from 'node:child_process'
 
-console.log(execSync('cloc . --exclude-ext=json,yaml,yml --exclude-dir=node_modules,.next,dist').toString('utf-8'))
+console.log(execSync('cloc . --exclude-ext=json,yaml,yml --exclude-dir=node_modules,.next,dist,coverage').toString('utf-8'))

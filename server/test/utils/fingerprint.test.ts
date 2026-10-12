@@ -14,6 +14,7 @@ describe('Device Fingerprinting and Metadata (LLT 2.4)', () => {
 
     const winMeta = parseDeviceMetadata(windowsChromeUa, '103.21.244.12', lang);
     assert.equal(winMeta.deviceName, 'Chrome on Windows');
+    assert.equal(winMeta.deviceType, 'desktop');
     assert.equal(winMeta.ipAddress, '103.21.244.12');
     const expectedWinFp = crypto
       .createHash('sha256')
@@ -23,15 +24,22 @@ describe('Device Fingerprinting and Metadata (LLT 2.4)', () => {
 
     const iosMeta = parseDeviceMetadata(iosSafariUa, '103.21.244.13', lang);
     assert.equal(iosMeta.deviceName, 'Safari on iOS');
+    assert.equal(iosMeta.deviceType, 'mobile');
     const expectedIosFp = crypto
       .createHash('sha256')
       .update(iosSafariUa + lang)
       .digest('hex');
     assert.equal(iosMeta.deviceFingerprint, expectedIosFp);
 
+    // Tablet detection
+    const ipadUa = 'Mozilla/5.0 (iPad; CPU OS 16_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Mobile/15E148 Safari/604.1';
+    const tabletMeta = parseDeviceMetadata(ipadUa, '103.21.244.14', lang);
+    assert.equal(tabletMeta.deviceType, 'tablet');
+
     // Fallback on unknown
     const unknownMeta = parseDeviceMetadata('', '');
     assert.equal(unknownMeta.deviceName, 'Unknown Device');
+    assert.equal(unknownMeta.deviceType, 'unknown');
   });
 
   test('Test 15: Client IP resolution under reverse proxy headers', () => {

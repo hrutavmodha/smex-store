@@ -1,10 +1,27 @@
 import crypto from 'node:crypto';
 
+export type DeviceType = 'desktop' | 'mobile' | 'tablet' | 'unknown';
+
 export interface DeviceMetadata {
   deviceName: string;
+  deviceType?: DeviceType;
   deviceFingerprint: string;
   ipAddress: string;
   userAgent: string;
+}
+
+export function resolveDeviceType(userAgent: string): DeviceType {
+  const ua = userAgent || '';
+  if (/ipad|tablet|(android(?!.*mobile))/i.test(ua)) {
+    return 'tablet';
+  }
+  if (/mobi|iphone|ipod|android/i.test(ua)) {
+    return 'mobile';
+  }
+  if (/windows|macintosh|mac os x|linux|cros/i.test(ua)) {
+    return 'desktop';
+  }
+  return 'unknown';
 }
 
 export function parseDeviceMetadata(
@@ -50,6 +67,8 @@ export function parseDeviceMetadata(
       ? 'Unknown Device'
       : `${browser} on ${os}`;
 
+  const deviceType = resolveDeviceType(cleanUa);
+
   const deviceFingerprint = crypto
     .createHash('sha256')
     .update(cleanUa + cleanLang)
@@ -57,6 +76,7 @@ export function parseDeviceMetadata(
 
   return {
     deviceName,
+    deviceType,
     deviceFingerprint,
     ipAddress: cleanIp,
     userAgent: cleanUa,

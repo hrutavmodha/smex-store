@@ -422,6 +422,27 @@ sequenceDiagram
 | `DELETE`| `/api/v1/devices/sessions/others` | Auth Guard | Revokes all peer sessions, leaving caller logged in |
 | `POST` | `/api/v1/auth/revoke-all` | Auth Guard | Emergency kill-switch: purges 100% of user sessions including caller |
 
+### 10.1 Active Device Sessions Response Contract (`GET /api/v1/devices/sessions`)
+
+To prevent field naming mismatches between backend services and presentation clients, the endpoint provides a unified JSON payload:
+
+```typescript
+export interface ActiveSessionResponse {
+  sessions: {
+    id: string;               // Primary session UUID
+    sessionId: string;        // Explicit alias matching client DeviceSession contract
+    deviceType: 'desktop' | 'mobile' | 'tablet' | 'unknown'; // Derived from User-Agent
+    deviceName: string;       // Human-readable label (e.g. "Chrome on Windows")
+    ipAddress: string;        // Client IP address
+    userAgent: string;        // Raw User-Agent string
+    isCurrent: boolean;       // True if this session issued the request
+    lastActiveAt: string;     // ISO timestamp of last recorded activity
+    lastActive: string;       // Formatted timestamp string for display
+    createdAt: string;        // ISO timestamp of session creation
+  }[];
+}
+```
+
 ---
 
 ## 11. Client Authentication and Account UI Specification
@@ -443,6 +464,7 @@ sequenceDiagram
 
 ### 11.3 Device Management Dashboard (`client/app/settings/devices/page.tsx`)
 - Queries `GET /api/v1/devices/sessions`.
+- Normalizes sessions using unified fields `id` and `sessionId`, along with `deviceType` (`desktop`, `mobile`, `tablet`, `unknown`).
 - Renders cards with device icon, device name, IP address, approximate location, and "Current Device" badge.
 - Remote cards display "Revoke" button triggering `DELETE /api/v1/devices/sessions/:sessionId`.
 - Action bar displays "Revoke All Other Sessions" CTA triggering `DELETE /api/v1/devices/sessions/others`.

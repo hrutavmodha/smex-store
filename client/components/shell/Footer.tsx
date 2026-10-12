@@ -2,7 +2,6 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { ShieldCheck } from 'lucide-react';
 
 function WhatsAppIcon({ className }: { className?: string }) {
   return (
@@ -88,10 +87,6 @@ export function Footer() {
               The premier zero-trust esports platform for MLBB rank boosting, verified gaming ID
               trading, competitive tournament brackets, and squad recruitment.
             </p>
-            <div className="flex items-center gap-2 text-xs text-emerald-primary font-medium">
-              <ShieldCheck className="h-4 w-4" />
-              <span>Verified Direct-to-Storage Escrow</span>
-            </div>
           </div>
 
           {/* Column 2: Platform Directory */}

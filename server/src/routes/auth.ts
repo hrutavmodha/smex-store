@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 import { type FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
-import { eq, or } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { users, profiles } from '../db/schema/users.js';
 import { hashPassword, verifyPassword, passwordSchema } from '../utils/crypto.js';
 import { parseDeviceMetadata } from '../utils/fingerprint.js';

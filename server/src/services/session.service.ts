@@ -3,8 +3,8 @@ import type { Redis } from 'ioredis';
 import type { SmexDatabase } from '../db/index.js';
 import { eq, and, ne } from 'drizzle-orm';
 import { sessions } from '../db/schema/sessions.js';
-import { users, profiles } from '../db/schema/users.js';
-import type { DeviceMetadata } from '../utils/fingerprint.js';
+import { users } from '../db/schema/users.js';
+import { type DeviceMetadata, resolveDeviceType, type DeviceType } from '../utils/fingerprint.js';
 import type { WsGatewayDecorator } from '../plugins/websocket.js';
 
 export const REFRESH_TOKEN_TTL_SECONDS = 2592000; // 30 days
@@ -26,11 +26,14 @@ export interface RefreshSessionResult {
 
 export interface ActiveSessionView {
   id: string;
+  sessionId: string;
+  deviceType: DeviceType;
   deviceName: string;
   ipAddress: string;
   userAgent: string;
   isCurrent: boolean;
   lastActiveAt: Date;
+  lastActive: string;
   createdAt: Date;
 }
 
@@ -314,11 +317,14 @@ export class SessionService {
 
     return list.map((item) => ({
       id: item.id,
+      sessionId: item.id,
+      deviceType: resolveDeviceType(item.userAgent),
       deviceName: item.deviceName,
       ipAddress: item.ipAddress,
       userAgent: item.userAgent,
       isCurrent: item.id === currentSessionId,
       lastActiveAt: item.lastActiveAt,
+      lastActive: item.lastActiveAt ? item.lastActiveAt.toISOString() : item.createdAt.toISOString(),
       createdAt: item.createdAt,
     }));
   }

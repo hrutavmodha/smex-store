@@ -15,14 +15,16 @@ import {
 } from 'lucide-react';
 
 export interface DeviceSession {
+  id?: string;
   sessionId: string;
-  deviceType: 'desktop' | 'mobile' | 'tablet' | 'unknown';
+  deviceType?: 'desktop' | 'mobile' | 'tablet' | 'unknown';
   deviceName: string;
   ipAddress: string;
   location?: string;
   isCurrent: boolean;
   createdAt: string;
   lastActive?: string;
+  lastActiveAt?: string;
 }
 
 export function DeviceManagementDashboard() {
@@ -43,7 +45,19 @@ export function DeviceManagementDashboard() {
         }
         const data = await response.json();
         if (!ignore) {
-          setSessions(data.sessions || []);
+          const rawSessions = (data.sessions || []) as Record<string, unknown>[];
+          const normalized: DeviceSession[] = rawSessions.map((s) => ({
+            id: typeof s.id === 'string' ? s.id : (typeof s.sessionId === 'string' ? s.sessionId : undefined),
+            sessionId: typeof s.sessionId === 'string' ? s.sessionId : String(s.id || ''),
+            deviceType: (s.deviceType as DeviceSession['deviceType']) || 'unknown',
+            deviceName: typeof s.deviceName === 'string' ? s.deviceName : 'Unknown Device',
+            ipAddress: typeof s.ipAddress === 'string' ? s.ipAddress : '',
+            location: typeof s.location === 'string' ? s.location : undefined,
+            isCurrent: Boolean(s.isCurrent),
+            createdAt: typeof s.createdAt === 'string' ? s.createdAt : (s.createdAt ? new Date(String(s.createdAt)).toISOString() : ''),
+            lastActive: typeof s.lastActive === 'string' ? s.lastActive : (s.lastActiveAt ? new Date(String(s.lastActiveAt)).toISOString() : undefined),
+          }));
+          setSessions(normalized);
         }
       } catch (err: unknown) {
         if (!ignore) {
@@ -72,7 +86,7 @@ export function DeviceManagementDashboard() {
       if (!response.ok) {
         throw new Error('Failed to revoke session');
       }
-      setSessions((prev) => prev.filter((s) => s.sessionId !== sessionId));
+      setSessions((prev) => prev.filter((s) => s.sessionId !== sessionId && s.id !== sessionId));
       setSuccessMessage('Device session successfully revoked');
     } catch (err: unknown) {
       setErrorMessage(err instanceof Error ? err.message : 'Failed to revoke session');
@@ -102,7 +116,7 @@ export function DeviceManagementDashboard() {
     }
   };
 
-  const getDeviceIcon = (deviceType: string) => {
+  const getDeviceIcon = (deviceType?: string) => {
     switch (deviceType) {
       case 'desktop':
         return <Laptop className="h-5 w-5 text-emerald-primary" />;
