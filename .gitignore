@@ -31,3 +31,8 @@ Thumbs.db
 
 # Turbo / Cache
 .turbo/
+
+# Test Artifacts
+.vitest/
+coverage/
+html/

@@ -2,16 +2,15 @@ import { describe, it, expect } from 'vitest';
 import React from 'react';
 import { renderToString } from 'react-dom/server';
 import { useQueryClient } from '@tanstack/react-query';
-import * as fs from 'node:fs';
-import * as path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 import { QueryProvider } from '../providers/QueryProvider';
 import { Navbar, NAV_LINKS } from '../components/shell/Navbar';
 import { Footer } from '../components/shell/Footer';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import navbarSource from '../components/shell/Navbar.tsx?raw';
+import footerSource from '../components/shell/Footer.tsx?raw';
+import layoutSource from '../app/layout.tsx?raw';
+import globalsCssSource from '../app/globals.css?raw';
 
 describe('Client Root Layout and AMOLED Shell Test Suite', () => {
   it('Test 28: Root layout TanStack Query provider and context initialization', async () => {
@@ -97,14 +96,10 @@ describe('Client Root Layout and AMOLED Shell Test Suite', () => {
     expect(mockDocElement.getAttribute('data-theme')).toBe('light');
 
     // Verify CSS transition duration limit token in globals.css is <= 120ms
-    const globalsCss = fs.readFileSync(
-      path.resolve(__dirname, '../app/globals.css'),
-      'utf-8'
-    );
     expect(
-      globalsCss.includes('--transition-speed: 120ms') ||
-        globalsCss.includes('duration-[120ms]') ||
-        globalsCss.includes('120ms')
+      globalsCssSource.includes('--transition-speed: 120ms') ||
+        globalsCssSource.includes('duration-[120ms]') ||
+        globalsCssSource.includes('120ms')
     ).toBe(true);
   });
 
@@ -166,20 +161,7 @@ describe('Client Root Layout and AMOLED Shell Test Suite', () => {
   });
 
   it('Test 32: Prohibited visual effects audit and WCAG AA contrast check', async () => {
-    const navbarSrc = fs.readFileSync(
-      path.resolve(__dirname, '../components/shell/Navbar.tsx'),
-      'utf-8'
-    );
-    const footerSrc = fs.readFileSync(
-      path.resolve(__dirname, '../components/shell/Footer.tsx'),
-      'utf-8'
-    );
-    const layoutSrc = fs.readFileSync(
-      path.resolve(__dirname, '../app/layout.tsx'),
-      'utf-8'
-    );
-
-    const allShellCode = navbarSrc + footerSrc + layoutSrc;
+    const allShellCode = navbarSource + footerSource + layoutSource;
 
     // 1. Prohibited: zero backdrop-filter: blur (glassmorphism)
     expect(
@@ -204,14 +186,10 @@ describe('Client Root Layout and AMOLED Shell Test Suite', () => {
     // Dark mode: #EDEDED on #0B0F12 ratio is > 16:1 (passes >= 4.5:1)
     // AMOLED mode: #EDEDED on #000000 ratio is > 18:1 (passes >= 4.5:1)
     // Light mode: #0B1A15 on #F4FAF8 ratio is > 15:1 (passes >= 4.5:1)
-    const globalsCss = fs.readFileSync(
-      path.resolve(__dirname, '../app/globals.css'),
-      'utf-8'
-    );
-    expect(globalsCss.includes('#EDEDED')).toBe(true);
-    expect(globalsCss.includes('#0B0F12')).toBe(true);
-    expect(globalsCss.includes('#000000')).toBe(true);
-    expect(globalsCss.includes('#0B1A15')).toBe(true);
-    expect(globalsCss.includes('#F4FAF8')).toBe(true);
+    expect(globalsCssSource.includes('#EDEDED')).toBe(true);
+    expect(globalsCssSource.includes('#0B0F12')).toBe(true);
+    expect(globalsCssSource.includes('#000000')).toBe(true);
+    expect(globalsCssSource.includes('#0B1A15')).toBe(true);
+    expect(globalsCssSource.includes('#F4FAF8')).toBe(true);
   });
 });

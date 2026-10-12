@@ -1,12 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import React from 'react';
-import * as fs from 'node:fs';
-import * as path from 'node:path';
-import { fileURLToPath } from 'node:url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
 import { render, fireEvent, waitFor, cleanup } from '@testing-library/react';
 import { LoginForm } from '../components/auth/LoginForm';
 import { RegisterForm } from '../components/auth/RegisterForm';
@@ -14,6 +7,7 @@ import { AuthModal } from '../components/auth/AuthModal';
 import { Navbar, type UserProfile } from '../components/shell/Navbar';
 import { AppShell } from '../components/shell/AppShell';
 import { DeviceManagementDashboard, type DeviceSession } from '../app/settings/devices/page';
+import authModalSource from '../components/auth/AuthModal.tsx?raw';
 
 describe('Milestone 3: Client Authentication & UI Shell Suite (LLT Tests 24-29)', () => {
   beforeEach(() => {
@@ -157,9 +151,9 @@ describe('Milestone 3: Client Authentication & UI Shell Suite (LLT Tests 24-29)'
       },
     ];
 
-    // Mock global fetch for sessions API
-    const originalFetch = global.fetch;
-    global.fetch = async (url: any) => {
+    // Mock globalThis.fetch for sessions API
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = async (url: any) => {
       const urlStr = String(url);
       if (urlStr.includes('/api/v1/devices/sessions')) {
         return {
@@ -195,7 +189,7 @@ describe('Milestone 3: Client Authentication & UI Shell Suite (LLT Tests 24-29)'
     expect(remoteCard.textContent?.includes('Safari on iPhone 15')).toBe(true);
 
     // Restore fetch
-    global.fetch = originalFetch;
+    globalThis.fetch = originalFetch;
   });
 
   it('Test 28: Remote session revocation & others trigger (LLT 28)', async () => {
@@ -229,8 +223,8 @@ describe('Milestone 3: Client Authentication & UI Shell Suite (LLT Tests 24-29)'
       },
     ];
 
-    const originalFetch = global.fetch;
-    global.fetch = async (url: any, options: any) => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = async (url: any, options: any) => {
       const urlStr = String(url);
       if (options?.method === 'DELETE') {
         if (urlStr.includes('/others')) {
@@ -274,34 +268,31 @@ describe('Milestone 3: Client Authentication & UI Shell Suite (LLT Tests 24-29)'
       expect(othersRevokeUrl?.includes('/api/v1/devices/sessions/others')).toBe(true);
     });
 
-    global.fetch = originalFetch;
+    globalThis.fetch = originalFetch;
   });
 
   it('Test 29: AMOLED modal pure true-black #000000 audit (LLT 29)', async () => {
-    const modalFilePath = path.resolve(__dirname, '../components/auth/AuthModal.tsx');
-    const modalContent = fs.readFileSync(modalFilePath, 'utf-8');
-
     // 1. Prohibited: zero #0A0A0A in modal component
-    expect(modalContent.includes('#0A0A0A')).toBe(false);
+    expect(authModalSource.includes('#0A0A0A')).toBe(false);
 
     // 2. Pure True-Black: AMOLED surface must explicitly use #000000
-    expect(modalContent.includes('#000000')).toBe(true);
+    expect(authModalSource.includes('#000000')).toBe(true);
 
     // 3. Prohibited visual effects: zero backdrop-filter blur
-    expect(modalContent.includes('backdrop-blur') || modalContent.includes('backdrop-filter: blur')).toBe(false);
+    expect(authModalSource.includes('backdrop-blur') || authModalSource.includes('backdrop-filter: blur')).toBe(false);
 
     // 4. Prohibited animations: zero opacity fade animations
     expect(
-      modalContent.includes('animate-fade') ||
-        modalContent.includes('fade-in') ||
-        modalContent.includes('opacity-0')
+      authModalSource.includes('animate-fade') ||
+        authModalSource.includes('fade-in') ||
+        authModalSource.includes('opacity-0')
     ).toBe(false);
 
     // 5. Physical transition duration check: <= 120ms
-    expect(modalContent.includes('duration-[120ms]') || modalContent.includes('duration-[80ms]')).toBe(true);
+    expect(authModalSource.includes('duration-[120ms]') || authModalSource.includes('duration-[80ms]')).toBe(true);
 
     // 6. Border specification: #1F1F1F for AMOLED
-    expect(modalContent.includes('#1F1F1F')).toBe(true);
+    expect(authModalSource.includes('#1F1F1F')).toBe(true);
   });
 
   it('Test 27b: DeviceManagementDashboard reconciles backend payload format with id and lastActiveAt', async () => {
@@ -328,8 +319,8 @@ describe('Milestone 3: Client Authentication & UI Shell Suite (LLT Tests 24-29)'
     ];
 
     let deleteSessionUrl: string | null = null;
-    const originalFetch = global.fetch;
-    global.fetch = async (url: any, options: any) => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = async (url: any, options: any) => {
       const urlStr = String(url);
       if (options?.method === 'DELETE') {
         deleteSessionUrl = urlStr;
@@ -360,7 +351,7 @@ describe('Milestone 3: Client Authentication & UI Shell Suite (LLT Tests 24-29)'
       expect(deleteSessionUrl?.includes('/api/v1/devices/sessions/sess_backend_2')).toBe(true);
     });
 
-    global.fetch = originalFetch;
+    globalThis.fetch = originalFetch;
   });
 
   it('Test 26b: Navbar Sign In and Sign Up buttons open AuthModal with respective views', async () => {
