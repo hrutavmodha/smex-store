@@ -161,6 +161,7 @@ flowchart TD
 | 24 | Interactive password visibility toggle | Mount `LoginForm`; click show/hide password toggle button | Password input type toggles between `'password'` and `'text'`; icon switches between `Eye` and `EyeOff`; touch target $\ge 44\text{px}$ | Type toggles; icon alternates; min-h/min-w 44px confirmed | Passed |
 | 25 | Form validation feedback on invalid credentials | Submit registration form with invalid email and weak password | Renders inline validation errors with correction guidance; zero unhandled errors | Inline error messages displayed without uncaught rejections | Passed |
 | 26 | Navbar profile dropdown with unverified banner and logout | Mount `Navbar` with unverified session | Renders avatar preset, IGN, unverified email banner; clicking Logout triggers `POST /api/v1/auth/logout` | Avatar, IGN, unverified banner rendered; logout triggered | Passed |
+| 26b| Navbar Sign In and Sign Up triggers open AuthModal | Click "Sign In"; click "Sign Up" | Modal opens with initial view 'login' on Sign In and 'register' on Sign Up; close button closes modal | Verified modal open/close and view synchronization | Passed |
 | 27 | Device management active sessions rendering | Mount `SettingsDevicesPage` with 2 active session mock items | Renders device cards with names, IP addresses, "Current Device" badge, and "Revoke" button on remote device | 2 device cards rendered with current badge and remote action | Passed |
 | 27b| Resilient backend session payload normalization | Mount `SettingsDevicesPage` with backend response shape (`id`, `lastActiveAt`) | Gracefully resolves session ID and last active timestamps; dispatches valid `DELETE` URL | Backend `id` normalized to `sessionId`; valid revoke URL dispatched | Passed |
 | 28 | Remote session revocation and revoke-all-others triggers | Click "Revoke" on remote device; click "Revoke All Other Sessions" | Remote button dispatches `DELETE /api/v1/devices/sessions/:sessionId`; header button dispatches `DELETE /api/v1/devices/sessions/others` | Both DELETE requests dispatched with exact URLs | Passed |
@@ -191,7 +192,7 @@ Instrumentation provided by `c8` (V8 coverage engine) across all authentication 
 ### 3.2 Quality Gate Threshold Verification
 
 * **Minimum Line Coverage Requirement**: $\ge 80.0\%$ (Target: **$\ge 85.0\%$**; Actual: **80.65%** aggregate, with critical auth modules $\ge 88-100\%$).
-* **Defect Severity**: 0 failures, 0 regressions, 0 unhandled promise rejections across all 66 server tests and 13 client tests.
+* **Defect Severity**: 0 failures, 0 regressions, 0 unhandled promise rejections across all 66 server tests and 14 client tests.
 * **Exit Status**: Clean exit code 0 across the entire test suite.
 
 ---

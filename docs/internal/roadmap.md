@@ -99,7 +99,7 @@ flowchart TD
   * Build modal and standalone views for Login, Registration, and Password Reset.
   * Build User Profile dropdown in navigation bar showing avatar preset and IGN.
   * Build Settings page displaying active sessions with device names, IP addresses, and remote revocation buttons.
-* [X] **3.9 Automated Auth and Security Testing**: Execute automated test suite verifying Argon2 hashing, token rotation, Redis session revocation and purge, rate limiting enforcement, and frontend auth state management (66 server tests passing with 92.3% devices coverage, 13 client tests passing).
+* [X] **3.9 Automated Auth and Security Testing**: Execute automated test suite verifying Argon2 hashing, token rotation, Redis session revocation and purge, rate limiting enforcement, and frontend auth state management (66 server tests passing with 92.3% devices coverage, 14 client tests passing).
 
 ---
 
