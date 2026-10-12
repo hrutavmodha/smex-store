@@ -9,11 +9,15 @@
     "build": "pnpm --filter \"./client\" --filter \"./server\" build",
     "lint": "pnpm --recursive lint",
     "typecheck": "pnpm --recursive typecheck",
-    "test": "pnpm --filter \"./server\" test",
+    "test": "pnpm --recursive test",
     "services:up": "docker compose up -d",
     "services:down": "docker compose down",
     "clean": "pnpm --recursive exec rm -rf node_modules dist .next .turbo",
     "cloc": "./scripts/cloc.js",
     "commit": "./scripts/stage-commit-push.js"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "^5.0.3",
+    "vitest": "^5.0.3"
   }
 }

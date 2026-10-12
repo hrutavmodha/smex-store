@@ -1,5 +1,4 @@
-import { test, describe, beforeEach } from 'node:test';
-import assert from 'node:assert/strict';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import React from 'react';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -20,52 +19,50 @@ describe('Milestone 3: Client Authentication & UI Shell Suite (LLT Tests 24-29)'
   beforeEach(() => {
     cleanup();
     document.body.innerHTML = '';
+    vi.restoreAllMocks();
   });
 
-  test('Test 24: Interactive show/hide password visibility toggle (LLT 24)', async () => {
+  it('Test 24: Interactive show/hide password visibility toggle (LLT 24)', async () => {
     const { container } = render(<LoginForm />);
 
     const passwordInput = container.querySelector('#login-password') as HTMLInputElement;
     const toggleButton = container.querySelector('[data-testid="toggle-password-visibility"]') as HTMLButtonElement;
 
-    assert.ok(passwordInput, 'Password input must be present');
-    assert.ok(toggleButton, 'Toggle visibility button must be present');
+    expect(passwordInput).toBeTruthy();
+    expect(toggleButton).toBeTruthy();
 
     // Initial state: password input type is password
-    assert.strictEqual(passwordInput.type, 'password', 'Initial input type must be password');
+    expect(passwordInput.type).toBe('password');
 
     // Verify touch target requirements (>= 44px)
     const buttonClass = toggleButton.className;
-    assert.ok(
-      buttonClass.includes('min-h-[44px]') && buttonClass.includes('min-w-[44px]'),
-      'Password toggle button must meet >= 44px touch target specification'
-    );
+    expect(buttonClass.includes('min-h-[44px]') && buttonClass.includes('min-w-[44px]')).toBe(true);
 
     // Simulate click: toggles to text
     fireEvent.click(toggleButton);
-    assert.strictEqual(passwordInput.type, 'text', 'Input type must switch to text upon toggle click');
+    expect(passwordInput.type).toBe('text');
 
     // Simulate second click: toggles back to password
     fireEvent.click(toggleButton);
-    assert.strictEqual(passwordInput.type, 'password', 'Input type must switch back to password upon second click');
+    expect(passwordInput.type).toBe('password');
   });
 
-  test('Test 25: Auth form inline validation error states (LLT 25)', async () => {
+  it('Test 25: Auth form inline validation error states (LLT 25)', async () => {
     const { container } = render(<LoginForm />);
 
     const form = container.querySelector('form')!;
     const emailInput = container.querySelector('#login-email') as HTMLInputElement;
     const passwordInput = container.querySelector('#login-password') as HTMLInputElement;
 
-    assert.ok(form, 'Login form must be present');
+    expect(form).toBeTruthy();
 
     // Submit empty form to trigger initial validation
     fireEvent.submit(form);
 
     // Check inline validation error renders
     await waitFor(() => {
-      assert.ok(container.querySelector('#login-email-error'), 'Email error must be displayed');
-      assert.ok(container.querySelector('#login-password-error'), 'Password error must be displayed');
+      expect(container.querySelector('#login-email-error')).toBeTruthy();
+      expect(container.querySelector('#login-password-error')).toBeTruthy();
     });
 
     // Test weak password input (< 8 characters)
@@ -75,15 +72,12 @@ describe('Milestone 3: Client Authentication & UI Shell Suite (LLT Tests 24-29)'
 
     await waitFor(() => {
       const updatedPasswordError = container.querySelector('#login-password-error');
-      assert.ok(updatedPasswordError, 'Password complexity error must be displayed for weak password');
-      assert.ok(
-        updatedPasswordError.textContent?.includes('8 characters'),
-        'Error message must specify 8 characters requirement'
-      );
+      expect(updatedPasswordError).toBeTruthy();
+      expect(updatedPasswordError?.textContent?.includes('8 characters')).toBe(true);
     });
   });
 
-  test('Test 26: Navbar user profile dropdown & logout trigger (LLT 26)', async () => {
+  it('Test 26: Navbar user profile dropdown & logout trigger (LLT 26)', async () => {
     let logoutCalled = false;
     const mockUser: UserProfile = {
       id: 'usr_test_123',
@@ -107,45 +101,41 @@ describe('Milestone 3: Client Authentication & UI Shell Suite (LLT Tests 24-29)'
     const ignDisplay = container.querySelector('[data-testid="user-ign"]');
     const unverifiedDot = container.querySelector('[data-testid="unverified-email-dot"]');
 
-    assert.ok(avatarBadge, 'User avatar preset badge must be rendered');
-    assert.strictEqual(
-      avatarBadge?.getAttribute('data-preset'),
-      'preset_default_01',
-      'Avatar badge must have preset_default_01'
-    );
-    assert.ok(ignDisplay?.textContent?.includes('VortexStriker'), 'IGN must match user inGameId');
-    assert.ok(unverifiedDot, 'Unverified email warning indicator dot must be present');
+    expect(avatarBadge).toBeTruthy();
+    expect(avatarBadge?.getAttribute('data-preset')).toBe('preset_default_01');
+    expect(ignDisplay?.textContent?.includes('VortexStriker')).toBe(true);
+    expect(unverifiedDot).toBeTruthy();
 
     // Click profile button to open dropdown
     const profileBtn = container.querySelector('[data-testid="user-profile-button"]') as HTMLButtonElement;
-    assert.ok(profileBtn, 'Profile trigger button must exist');
+    expect(profileBtn).toBeTruthy();
 
     fireEvent.click(profileBtn);
 
     // Verify dropdown contents: unverified email banner, routes, and logout button
     const dropdown = container.querySelector('[data-testid="user-profile-dropdown"]');
-    assert.ok(dropdown, 'Profile dropdown menu must be open');
+    expect(dropdown).toBeTruthy();
 
     const unverifiedBanner = container.querySelector('[data-testid="unverified-email-banner"]');
-    assert.ok(unverifiedBanner, 'Unverified email warning banner must be visible in dropdown');
-    assert.ok(unverifiedBanner?.textContent?.includes('Email Not Verified'));
+    expect(unverifiedBanner).toBeTruthy();
+    expect(unverifiedBanner?.textContent?.includes('Email Not Verified')).toBe(true);
 
     // Check device management link
     const deviceLink = dropdown?.querySelector('a[href="/settings/devices"]');
-    assert.ok(deviceLink, 'Dropdown must contain link to /settings/devices');
+    expect(deviceLink).toBeTruthy();
 
     // Click logout
     const logoutBtn = container.querySelector('[data-testid="logout-button"]') as HTMLButtonElement;
-    assert.ok(logoutBtn, 'Logout button must be present in dropdown');
+    expect(logoutBtn).toBeTruthy();
 
     fireEvent.click(logoutBtn);
 
     await waitFor(() => {
-      assert.strictEqual(logoutCalled, true, 'onLogout callback must be triggered on logout click');
+      expect(logoutCalled).toBe(true);
     });
   });
 
-  test('Test 27: Device management active sessions rendering (LLT 27)', async () => {
+  it('Test 27: Device management active sessions rendering (LLT 27)', async () => {
     const mockSessions: DeviceSession[] = [
       {
         sessionId: 'sess_1',
@@ -184,31 +174,31 @@ describe('Milestone 3: Client Authentication & UI Shell Suite (LLT Tests 24-29)'
 
     await waitFor(() => {
       const cards = container.querySelectorAll('[data-testid="device-session-card"]');
-      assert.strictEqual(cards.length, 2, 'Must render 2 device session cards');
+      expect(cards.length).toBe(2);
     });
 
     const cards = container.querySelectorAll('[data-testid="device-session-card"]');
 
     // First card: current device
     const currentCard = cards[0];
-    assert.strictEqual(currentCard.getAttribute('data-current'), 'true');
+    expect(currentCard.getAttribute('data-current')).toBe('true');
     const currentBadge = currentCard.querySelector('[data-testid="current-device-badge"]');
-    assert.ok(currentBadge, 'Current session must display "Current Device" badge');
-    assert.ok(currentCard.textContent?.includes('Chrome on Windows 11'));
-    assert.ok(currentCard.textContent?.includes('203.0.113.10'));
+    expect(currentBadge).toBeTruthy();
+    expect(currentCard.textContent?.includes('Chrome on Windows 11')).toBe(true);
+    expect(currentCard.textContent?.includes('203.0.113.10')).toBe(true);
 
     // Second card: remote device
     const remoteCard = cards[1];
-    assert.strictEqual(remoteCard.getAttribute('data-current'), 'false');
+    expect(remoteCard.getAttribute('data-current')).toBe('false');
     const remoteBadge = remoteCard.querySelector('[data-testid="current-device-badge"]');
-    assert.strictEqual(remoteBadge, null, 'Remote session must NOT have "Current Device" badge');
-    assert.ok(remoteCard.textContent?.includes('Safari on iPhone 15'));
+    expect(remoteBadge).toBeNull();
+    expect(remoteCard.textContent?.includes('Safari on iPhone 15')).toBe(true);
 
     // Restore fetch
     global.fetch = originalFetch;
   });
 
-  test('Test 28: Remote session revocation & others trigger (LLT 28)', async () => {
+  it('Test 28: Remote session revocation & others trigger (LLT 28)', async () => {
     let singleRevokeUrl: string | null = null;
     let othersRevokeUrl: string | null = null;
 
@@ -265,81 +255,56 @@ describe('Milestone 3: Client Authentication & UI Shell Suite (LLT Tests 24-29)'
 
     // Wait for the sessions to load and the revoke button to be in document
     await waitFor(() => {
-      assert.ok(container.querySelector('[data-testid="revoke-session-button"]'), 'Revoke button must appear');
-      assert.ok(container.querySelector('[data-testid="revoke-others-button"]'), 'Revoke others button must appear');
+      expect(container.querySelector('[data-testid="revoke-session-button"]')).toBeTruthy();
+      expect(container.querySelector('[data-testid="revoke-others-button"]')).toBeTruthy();
     });
 
     const revokeSingleBtn = container.querySelector('[data-testid="revoke-session-button"]') as HTMLButtonElement;
     fireEvent.click(revokeSingleBtn);
 
     await waitFor(() => {
-      assert.ok(
-        singleRevokeUrl?.includes('/api/v1/devices/sessions/sess_remote_99'),
-        'Clicking Revoke must dispatch DELETE /api/v1/devices/sessions/:sessionId'
-      );
+      expect(singleRevokeUrl?.includes('/api/v1/devices/sessions/sess_remote_99')).toBe(true);
     });
 
     const revokeOthersBtn = container.querySelector('[data-testid="revoke-others-button"]') as HTMLButtonElement;
-    assert.ok(revokeOthersBtn, 'Revoke All Other Sessions button must exist');
+    expect(revokeOthersBtn).toBeTruthy();
     fireEvent.click(revokeOthersBtn);
 
     await waitFor(() => {
-      assert.ok(
-        othersRevokeUrl?.includes('/api/v1/devices/sessions/others'),
-        'Clicking Revoke Others must dispatch DELETE /api/v1/devices/sessions/others'
-      );
+      expect(othersRevokeUrl?.includes('/api/v1/devices/sessions/others')).toBe(true);
     });
 
     global.fetch = originalFetch;
   });
 
-  test('Test 29: AMOLED modal pure true-black #000000 audit (LLT 29)', async () => {
+  it('Test 29: AMOLED modal pure true-black #000000 audit (LLT 29)', async () => {
     const modalFilePath = path.resolve(__dirname, '../components/auth/AuthModal.tsx');
     const modalContent = fs.readFileSync(modalFilePath, 'utf-8');
 
     // 1. Prohibited: zero #0A0A0A in modal component
-    assert.strictEqual(
-      modalContent.includes('#0A0A0A'),
-      false,
-      'Prohibited color token #0A0A0A detected in AuthModal; must use pure #000000 for AMOLED'
-    );
+    expect(modalContent.includes('#0A0A0A')).toBe(false);
 
     // 2. Pure True-Black: AMOLED surface must explicitly use #000000
-    assert.ok(
-      modalContent.includes('#000000'),
-      'AuthModal must specify pure true-black #000000 for AMOLED mode'
-    );
+    expect(modalContent.includes('#000000')).toBe(true);
 
     // 3. Prohibited visual effects: zero backdrop-filter blur
-    assert.strictEqual(
-      modalContent.includes('backdrop-blur') || modalContent.includes('backdrop-filter: blur'),
-      false,
-      'Prohibited effect: backdrop-filter blur must be zero'
-    );
+    expect(modalContent.includes('backdrop-blur') || modalContent.includes('backdrop-filter: blur')).toBe(false);
 
     // 4. Prohibited animations: zero opacity fade animations
-    assert.strictEqual(
+    expect(
       modalContent.includes('animate-fade') ||
         modalContent.includes('fade-in') ||
-        modalContent.includes('opacity-0'),
-      false,
-      'Prohibited animation: opacity fade animations must not be used on AuthModal'
-    );
+        modalContent.includes('opacity-0')
+    ).toBe(false);
 
     // 5. Physical transition duration check: <= 120ms
-    assert.ok(
-      modalContent.includes('duration-[120ms]') || modalContent.includes('duration-[80ms]'),
-      'Modal transitions must adhere to physical duration limits (<= 120ms)'
-    );
+    expect(modalContent.includes('duration-[120ms]') || modalContent.includes('duration-[80ms]')).toBe(true);
 
     // 6. Border specification: #1F1F1F for AMOLED
-    assert.ok(
-      modalContent.includes('#1F1F1F'),
-      'AuthModal must specify subtle #1F1F1F border for AMOLED contrast'
-    );
+    expect(modalContent.includes('#1F1F1F')).toBe(true);
   });
 
-  test('Test 27b: DeviceManagementDashboard reconciles backend payload format with id and lastActiveAt', async () => {
+  it('Test 27b: DeviceManagementDashboard reconciles backend payload format with id and lastActiveAt', async () => {
     // Test that client gracefully handles raw backend responses with "id" and "lastActiveAt"
     const backendSessions = [
       {
@@ -383,25 +348,22 @@ describe('Milestone 3: Client Authentication & UI Shell Suite (LLT Tests 24-29)'
 
     await waitFor(() => {
       const cards = container.querySelectorAll('[data-testid="device-session-card"]');
-      assert.strictEqual(cards.length, 2, 'Must render both cards even when response only provides "id"');
+      expect(cards.length).toBe(2);
     });
 
     // Revoke remote card (sess_backend_2)
     const revokeBtn = container.querySelector('[data-testid="revoke-session-button"]') as HTMLButtonElement;
-    assert.ok(revokeBtn, 'Revoke button must be present for remote card');
+    expect(revokeBtn).toBeTruthy();
     fireEvent.click(revokeBtn);
 
     await waitFor(() => {
-      assert.ok(
-        deleteSessionUrl?.includes('/api/v1/devices/sessions/sess_backend_2'),
-        'Revoke URL must contain valid session ID from backend "id" field'
-      );
+      expect(deleteSessionUrl?.includes('/api/v1/devices/sessions/sess_backend_2')).toBe(true);
     });
 
     global.fetch = originalFetch;
   });
 
-  test('Test 26b: Navbar Sign In and Sign Up buttons open AuthModal with respective views', async () => {
+  it('Test 26b: Navbar Sign In and Sign Up buttons open AuthModal with respective views', async () => {
     const { container } = render(
       <AppShell>
         <div data-testid="page-child">Home</div>
@@ -410,34 +372,34 @@ describe('Milestone 3: Client Authentication & UI Shell Suite (LLT Tests 24-29)'
 
     // Initial state: AuthModal is closed
     let modalSurface = container.querySelector('[data-testid="auth-modal-surface"]');
-    assert.strictEqual(modalSurface, null, 'Auth modal must initially be closed');
+    expect(modalSurface).toBeNull();
 
     // Click "Sign In" button
     const signInBtn = container.querySelector('[data-testid="nav-sign-in-button"]') as HTMLButtonElement;
-    assert.ok(signInBtn, 'Navbar must have Sign In button');
+    expect(signInBtn).toBeTruthy();
     fireEvent.click(signInBtn);
 
     modalSurface = container.querySelector('[data-testid="auth-modal-surface"]');
-    assert.ok(modalSurface, 'Auth modal must open upon clicking Sign In');
+    expect(modalSurface).toBeTruthy();
     const modalTitle = container.querySelector('#auth-modal-title');
-    assert.strictEqual(modalTitle?.textContent, 'Sign In', 'Modal header must be "Sign In"');
+    expect(modalTitle?.textContent).toBe('Sign In');
 
     // Close the modal
     const closeBtn = container.querySelector('button[aria-label="Close authentication modal"]') as HTMLButtonElement;
-    assert.ok(closeBtn, 'Close button must be present in AuthModal');
+    expect(closeBtn).toBeTruthy();
     fireEvent.click(closeBtn);
 
     modalSurface = container.querySelector('[data-testid="auth-modal-surface"]');
-    assert.strictEqual(modalSurface, null, 'Auth modal must close upon clicking close button');
+    expect(modalSurface).toBeNull();
 
     // Click "Sign Up" button
     const signUpBtn = container.querySelector('[data-testid="nav-sign-up-button"]') as HTMLButtonElement;
-    assert.ok(signUpBtn, 'Navbar must have Sign Up button');
+    expect(signUpBtn).toBeTruthy();
     fireEvent.click(signUpBtn);
 
     modalSurface = container.querySelector('[data-testid="auth-modal-surface"]');
-    assert.ok(modalSurface, 'Auth modal must open upon clicking Sign Up');
+    expect(modalSurface).toBeTruthy();
     const registerTitle = container.querySelector('#auth-modal-title');
-    assert.strictEqual(registerTitle?.textContent, 'Create Account', 'Modal header must be "Create Account" for registration');
+    expect(registerTitle?.textContent).toBe('Create Account');
   });
 });

@@ -1,5 +1,4 @@
-import { test } from 'node:test';
-import assert from 'node:assert/strict';
+import { describe, it, expect } from 'vitest';
 import React from 'react';
 import { renderToString } from 'react-dom/server';
 import { useQueryClient } from '@tanstack/react-query';
@@ -14,245 +13,205 @@ import { Footer } from '../components/shell/Footer';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-test('Client Root Layout and AMOLED Shell Test Suite', async (suite) => {
-  await suite.test(
-    'Test 28: Root layout TanStack Query provider and context initialization',
-    async () => {
-      let clientObserved = false;
+describe('Client Root Layout and AMOLED Shell Test Suite', () => {
+  it('Test 28: Root layout TanStack Query provider and context initialization', async () => {
+    let clientObserved = false;
 
-      function TestChild() {
-        const client = useQueryClient();
-        if (client) {
-          clientObserved = true;
-        }
-        return <div data-testid="test-child">Client Context Active</div>;
+    function TestChild() {
+      const client = useQueryClient();
+      if (client) {
+        clientObserved = true;
       }
-
-      const html = renderToString(
-        <QueryProvider>
-          <TestChild />
-        </QueryProvider>
-      );
-
-      assert.strictEqual(clientObserved, true, 'TanStack QueryClient must be accessible in context');
-      assert.ok(html.includes('Client Context Active'), 'Child component must render successfully');
+      return <div data-testid="test-child">Client Context Active</div>;
     }
-  );
 
-  await suite.test(
-    'Test 29: Sticky navigation bar brand emblem and primary route links',
-    async () => {
-      const html = renderToString(<Navbar />);
+    const html = renderToString(
+      <QueryProvider>
+        <TestChild />
+      </QueryProvider>
+    );
 
-      // Brand emblem and link to /
-      assert.ok(html.includes('href="/"'), 'Navbar must contain root link');
-      assert.ok(html.includes('Smex Store'), 'Brand name must be present');
+    expect(clientObserved).toBe(true);
+    expect(html.includes('Client Context Active')).toBe(true);
+  });
 
-      // 6 primary navigation links
-      const expectedLinks = [
-        '/tournaments',
-        '/teams',
-        '/marketplace',
-        '/boosting',
-        '/leaderboard',
-        '/about',
-      ];
+  it('Test 29: Sticky navigation bar brand emblem and primary route links', async () => {
+    const html = renderToString(<Navbar />);
 
-      for (const expectedHref of expectedLinks) {
-        assert.ok(
-          html.includes(`href="${expectedHref}"`),
-          `Navbar must render link for ${expectedHref}`
-        );
-      }
+    // Brand emblem and link to /
+    expect(html.includes('href="/"')).toBe(true);
+    expect(html.includes('Smex Store')).toBe(true);
 
-      // 6 links match NAV_LINKS specification
-      assert.strictEqual(NAV_LINKS.length, 6);
+    // 6 primary navigation links
+    const expectedLinks = [
+      '/tournaments',
+      '/teams',
+      '/marketplace',
+      '/boosting',
+      '/leaderboard',
+      '/about',
+    ];
+
+    for (const expectedHref of expectedLinks) {
+      expect(html.includes(`href="${expectedHref}"`)).toBe(true);
     }
-  );
 
-  await suite.test(
-    'Test 30: AMOLED and Dark mode runtime theme switching',
-    async () => {
-      // Setup mock DOM environment in Node for testing theme attribute switching
-      let themeAttribute = 'dark';
-      let densityAttribute = 'comfortable';
+    // 6 links match NAV_LINKS specification
+    expect(NAV_LINKS.length).toBe(6);
+  });
 
-      const mockDocElement = {
-        setAttribute: (attr: string, val: string) => {
-          if (attr === 'data-theme') themeAttribute = val;
-          if (attr === 'data-density') densityAttribute = val;
-        },
-        getAttribute: (attr: string) => {
-          if (attr === 'data-theme') return themeAttribute;
-          if (attr === 'data-density') return densityAttribute;
-          return null;
-        },
-      };
+  it('Test 30: AMOLED and Dark mode runtime theme switching', async () => {
+    // Setup mock DOM environment in Node for testing theme attribute switching
+    let themeAttribute = 'dark';
+    let densityAttribute = 'comfortable';
 
-      // Verify theme switching transition cycle: dark -> amoled -> light -> dark
-      const cycleMap: Record<string, string> = {
-        dark: 'amoled',
-        amoled: 'light',
-        light: 'dark',
-      };
+    const mockDocElement = {
+      setAttribute: (attr: string, val: string) => {
+        if (attr === 'data-theme') themeAttribute = val;
+        if (attr === 'data-density') densityAttribute = val;
+      },
+      getAttribute: (attr: string) => {
+        if (attr === 'data-theme') return themeAttribute;
+        if (attr === 'data-density') return densityAttribute;
+        return null;
+      },
+    };
 
-      let current = 'dark';
-      mockDocElement.setAttribute('data-theme', current);
-      assert.strictEqual(mockDocElement.getAttribute('data-theme'), 'dark');
+    // Verify theme switching transition cycle: dark -> amoled -> light -> dark
+    const cycleMap: Record<string, string> = {
+      dark: 'amoled',
+      amoled: 'light',
+      light: 'dark',
+    };
 
-      current = cycleMap[current];
-      mockDocElement.setAttribute('data-theme', current);
-      assert.strictEqual(mockDocElement.getAttribute('data-theme'), 'amoled');
+    let current = 'dark';
+    mockDocElement.setAttribute('data-theme', current);
+    expect(mockDocElement.getAttribute('data-theme')).toBe('dark');
 
-      current = cycleMap[current];
-      mockDocElement.setAttribute('data-theme', current);
-      assert.strictEqual(mockDocElement.getAttribute('data-theme'), 'light');
+    current = cycleMap[current];
+    mockDocElement.setAttribute('data-theme', current);
+    expect(mockDocElement.getAttribute('data-theme')).toBe('amoled');
 
-      // Verify CSS transition duration limit token in globals.css is <= 120ms
-      const globalsCss = fs.readFileSync(
-        path.resolve(__dirname, '../app/globals.css'),
-        'utf-8'
-      );
-      assert.ok(
-        globalsCss.includes('--transition-speed: 120ms') ||
-          globalsCss.includes('duration-[120ms]') ||
-          globalsCss.includes('120ms'),
-        'Theme transition duration must be <= 120ms'
-      );
+    current = cycleMap[current];
+    mockDocElement.setAttribute('data-theme', current);
+    expect(mockDocElement.getAttribute('data-theme')).toBe('light');
+
+    // Verify CSS transition duration limit token in globals.css is <= 120ms
+    const globalsCss = fs.readFileSync(
+      path.resolve(__dirname, '../app/globals.css'),
+      'utf-8'
+    );
+    expect(
+      globalsCss.includes('--transition-speed: 120ms') ||
+        globalsCss.includes('duration-[120ms]') ||
+        globalsCss.includes('120ms')
+    ).toBe(true);
+  });
+
+  it('Test 31: Configurable owner social directory (WhatsApp and Instagram whitelist) and legal links', async () => {
+    // 1. With configured environment variables
+    const originalWhatsApp = process.env.NEXT_PUBLIC_SOCIAL_WHATSAPP_CHANNEL;
+    const originalInstagram = process.env.NEXT_PUBLIC_SOCIAL_INSTAGRAM;
+
+    const mockWhatsAppUrl = 'https://whatsapp.com/channel/0029VbDEVo70G0XbUx6MK90w';
+    const mockInstagramUrl = 'https://www.instagram.com/smex_official_store?srtk=MTB0aXRheHBvOGk5YQ==';
+
+    process.env.NEXT_PUBLIC_SOCIAL_WHATSAPP_CHANNEL = mockWhatsAppUrl;
+    process.env.NEXT_PUBLIC_SOCIAL_INSTAGRAM = mockInstagramUrl;
+
+    const htmlWithChannels = renderToString(<Footer />);
+
+    // Verify configured channels rendered
+    expect(htmlWithChannels.includes(`href="${mockWhatsAppUrl}"`)).toBe(true);
+    expect(htmlWithChannels.includes(`href="${mockInstagramUrl}"`)).toBe(true);
+
+    // Verify security attributes
+    expect(htmlWithChannels.includes('target="_blank"')).toBe(true);
+    expect(htmlWithChannels.includes('rel="noopener noreferrer"')).toBe(true);
+
+    // Verify platform whitelist: prohibited platforms must not be rendered
+    expect(
+      htmlWithChannels.includes('youtube.com') ||
+        htmlWithChannels.includes('twitch.tv') ||
+        htmlWithChannels.includes('discord.gg') ||
+        htmlWithChannels.includes('twitter.com') ||
+        htmlWithChannels.includes('x.com')
+    ).toBe(false);
+
+    // 2. Test omission logic when unconfigured
+    delete process.env.NEXT_PUBLIC_SOCIAL_WHATSAPP_CHANNEL;
+    delete process.env.NEXT_PUBLIC_SOCIAL_INSTAGRAM;
+
+    const htmlWithoutChannels = renderToString(<Footer />);
+    expect(htmlWithoutChannels.includes('whatsapp.com')).toBe(false);
+    expect(htmlWithoutChannels.includes('instagram.com')).toBe(false);
+
+    // Restore environment variables
+    if (originalWhatsApp !== undefined) {
+      process.env.NEXT_PUBLIC_SOCIAL_WHATSAPP_CHANNEL = originalWhatsApp;
     }
-  );
-
-  await suite.test(
-    'Test 31: Configurable owner social directory (WhatsApp and Instagram whitelist) and legal links',
-    async () => {
-      // 1. With configured environment variables
-      const originalWhatsApp = process.env.NEXT_PUBLIC_SOCIAL_WHATSAPP_CHANNEL;
-      const originalInstagram = process.env.NEXT_PUBLIC_SOCIAL_INSTAGRAM;
-
-      const mockWhatsAppUrl = 'https://whatsapp.com/channel/0029VbDEVo70G0XbUx6MK90w';
-      const mockInstagramUrl = 'https://www.instagram.com/smex_official_store?srtk=MTB0aXRheHBvOGk5YQ==';
-
-      process.env.NEXT_PUBLIC_SOCIAL_WHATSAPP_CHANNEL = mockWhatsAppUrl;
-      process.env.NEXT_PUBLIC_SOCIAL_INSTAGRAM = mockInstagramUrl;
-
-      const htmlWithChannels = renderToString(<Footer />);
-
-      // Verify configured channels rendered
-      assert.ok(
-        htmlWithChannels.includes(`href="${mockWhatsAppUrl}"`),
-        'Configured WhatsApp Channel link must be rendered'
-      );
-      assert.ok(
-        htmlWithChannels.includes(`href="${mockInstagramUrl}"`),
-        'Configured Instagram link must be rendered'
-      );
-
-      // Verify security attributes
-      assert.ok(htmlWithChannels.includes('target="_blank"'));
-      assert.ok(htmlWithChannels.includes('rel="noopener noreferrer"'));
-
-      // Verify platform whitelist: prohibited platforms must not be rendered
-      assert.strictEqual(
-        htmlWithChannels.includes('youtube.com') ||
-          htmlWithChannels.includes('twitch.tv') ||
-          htmlWithChannels.includes('discord.gg') ||
-          htmlWithChannels.includes('twitter.com') ||
-          htmlWithChannels.includes('x.com'),
-        false,
-        'Prohibited platforms must be strictly excluded from owner directory'
-      );
-
-      // 2. Test omission logic when unconfigured
-      delete process.env.NEXT_PUBLIC_SOCIAL_WHATSAPP_CHANNEL;
-      delete process.env.NEXT_PUBLIC_SOCIAL_INSTAGRAM;
-
-      const htmlWithoutChannels = renderToString(<Footer />);
-      assert.strictEqual(
-        htmlWithoutChannels.includes('whatsapp.com'),
-        false,
-        'Unconfigured channels must be omitted'
-      );
-      assert.strictEqual(
-        htmlWithoutChannels.includes('instagram.com'),
-        false,
-        'Unconfigured channels must be omitted'
-      );
-
-      // Restore environment variables
-      if (originalWhatsApp !== undefined) {
-        process.env.NEXT_PUBLIC_SOCIAL_WHATSAPP_CHANNEL = originalWhatsApp;
-      }
-      if (originalInstagram !== undefined) {
-        process.env.NEXT_PUBLIC_SOCIAL_INSTAGRAM = originalInstagram;
-      }
-
-      // Verify directory and legal links always render
-      assert.ok(htmlWithChannels.includes('/tournaments'));
-      assert.ok(htmlWithChannels.includes('/boosting'));
-      assert.ok(htmlWithChannels.includes('/teams'));
-      assert.ok(htmlWithChannels.includes('/marketplace'));
-      assert.ok(htmlWithChannels.includes('/legal/terms'));
-      assert.ok(htmlWithChannels.includes('/legal/privacy'));
-      assert.ok(htmlWithChannels.includes('/legal/seller-protection'));
-      assert.ok(htmlWithChannels.includes('/legal/community-guidelines'));
+    if (originalInstagram !== undefined) {
+      process.env.NEXT_PUBLIC_SOCIAL_INSTAGRAM = originalInstagram;
     }
-  );
 
-  await suite.test(
-    'Test 32: Prohibited visual effects audit and WCAG AA contrast check',
-    async () => {
-      const navbarSrc = fs.readFileSync(
-        path.resolve(__dirname, '../components/shell/Navbar.tsx'),
-        'utf-8'
-      );
-      const footerSrc = fs.readFileSync(
-        path.resolve(__dirname, '../components/shell/Footer.tsx'),
-        'utf-8'
-      );
-      const layoutSrc = fs.readFileSync(
-        path.resolve(__dirname, '../app/layout.tsx'),
-        'utf-8'
-      );
+    // Verify directory and legal links always render
+    expect(htmlWithChannels.includes('/tournaments')).toBe(true);
+    expect(htmlWithChannels.includes('/boosting')).toBe(true);
+    expect(htmlWithChannels.includes('/teams')).toBe(true);
+    expect(htmlWithChannels.includes('/marketplace')).toBe(true);
+    expect(htmlWithChannels.includes('/legal/terms')).toBe(true);
+    expect(htmlWithChannels.includes('/legal/privacy')).toBe(true);
+    expect(htmlWithChannels.includes('/legal/seller-protection')).toBe(true);
+    expect(htmlWithChannels.includes('/legal/community-guidelines')).toBe(true);
+  });
 
-      const allShellCode = navbarSrc + footerSrc + layoutSrc;
+  it('Test 32: Prohibited visual effects audit and WCAG AA contrast check', async () => {
+    const navbarSrc = fs.readFileSync(
+      path.resolve(__dirname, '../components/shell/Navbar.tsx'),
+      'utf-8'
+    );
+    const footerSrc = fs.readFileSync(
+      path.resolve(__dirname, '../components/shell/Footer.tsx'),
+      'utf-8'
+    );
+    const layoutSrc = fs.readFileSync(
+      path.resolve(__dirname, '../app/layout.tsx'),
+      'utf-8'
+    );
 
-      // 1. Prohibited: zero backdrop-filter: blur (glassmorphism)
-      assert.strictEqual(
-        allShellCode.includes('backdrop-blur') ||
-          allShellCode.includes('backdrop-filter: blur'),
-        false,
-        'Prohibited visual effect detected: backdrop-filter blur must be zero'
-      );
+    const allShellCode = navbarSrc + footerSrc + layoutSrc;
 
-      // 2. Prohibited: zero opacity fades on shell components
-      assert.strictEqual(
-        allShellCode.includes('animate-fade') ||
-          allShellCode.includes('fade-in') ||
-          allShellCode.includes('opacity-0'),
-        false,
-        'Prohibited visual effect detected: opacity fades must not be used on shell'
-      );
+    // 1. Prohibited: zero backdrop-filter: blur (glassmorphism)
+    expect(
+      allShellCode.includes('backdrop-blur') ||
+        allShellCode.includes('backdrop-filter: blur')
+    ).toBe(false);
 
-      // 3. Allowed: snappiness hardware limits <= 120ms
-      assert.ok(
-        allShellCode.includes('duration-[120ms]') ||
-          allShellCode.includes('duration-[80ms]'),
-        'Hardware animations must use <= 120ms duration'
-      );
+    // 2. Prohibited: zero opacity fades on shell components
+    expect(
+      allShellCode.includes('animate-fade') ||
+        allShellCode.includes('fade-in') ||
+        allShellCode.includes('opacity-0')
+    ).toBe(false);
 
-      // 4. Color contrast tokens in globals.css adhere to WCAG AA:
-      // Dark mode: #EDEDED on #0B0F12 ratio is > 16:1 (passes >= 4.5:1)
-      // AMOLED mode: #EDEDED on #000000 ratio is > 18:1 (passes >= 4.5:1)
-      // Light mode: #0B1A15 on #F4FAF8 ratio is > 15:1 (passes >= 4.5:1)
-      const globalsCss = fs.readFileSync(
-        path.resolve(__dirname, '../app/globals.css'),
-        'utf-8'
-      );
-      assert.ok(globalsCss.includes('#EDEDED'));
-      assert.ok(globalsCss.includes('#0B0F12'));
-      assert.ok(globalsCss.includes('#000000'));
-      assert.ok(globalsCss.includes('#0B1A15'));
-      assert.ok(globalsCss.includes('#F4FAF8'));
-    }
-  );
+    // 3. Allowed: snappiness hardware limits <= 120ms
+    expect(
+      allShellCode.includes('duration-[120ms]') ||
+        allShellCode.includes('duration-[80ms]')
+    ).toBe(true);
+
+    // 4. Color contrast tokens in globals.css adhere to WCAG AA:
+    // Dark mode: #EDEDED on #0B0F12 ratio is > 16:1 (passes >= 4.5:1)
+    // AMOLED mode: #EDEDED on #000000 ratio is > 18:1 (passes >= 4.5:1)
+    // Light mode: #0B1A15 on #F4FAF8 ratio is > 15:1 (passes >= 4.5:1)
+    const globalsCss = fs.readFileSync(
+      path.resolve(__dirname, '../app/globals.css'),
+      'utf-8'
+    );
+    expect(globalsCss.includes('#EDEDED')).toBe(true);
+    expect(globalsCss.includes('#0B0F12')).toBe(true);
+    expect(globalsCss.includes('#000000')).toBe(true);
+    expect(globalsCss.includes('#0B1A15')).toBe(true);
+    expect(globalsCss.includes('#F4FAF8')).toBe(true);
+  });
 });
