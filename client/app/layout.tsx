@@ -2,8 +2,7 @@ import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import { QueryProvider } from '../providers/QueryProvider';
-import { Navbar } from '../components/shell/Navbar';
-import { Footer } from '../components/shell/Footer';
+import { AppShell } from '../components/shell/AppShell';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -35,13 +34,9 @@ export default function RootLayout({
     >
       <body className="min-h-screen flex flex-col bg-bg-canvas text-text-primary antialiased">
         <QueryProvider>
-          <div className="flex min-h-screen flex-col">
-            <Navbar />
-            <main className="flex-1">
-              {children}
-            </main>
-            <Footer />
-          </div>
+          <AppShell>
+            {children}
+          </AppShell>
         </QueryProvider>
       </body>
     </html>

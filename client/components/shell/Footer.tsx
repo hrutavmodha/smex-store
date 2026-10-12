@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 function WhatsAppIcon({ className }: { className?: string }) {
   return (
@@ -76,9 +77,13 @@ export function Footer() {
           {/* Column 1: Brand & Mission */}
           <div className="space-y-4">
             <Link href="/" className="flex items-center gap-2.5 text-text-primary no-underline">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-primary text-black font-black text-base shadow-sm">
-                S
-              </div>
+              <Image
+                src="/logo.png"
+                alt="Smex Store Logo"
+                width={60}
+                height={32}
+                className="h-8 w-auto object-contain"
+              />
               <span className="font-extrabold tracking-wider text-base uppercase leading-none text-text-primary">
                 Smex Store
               </span>

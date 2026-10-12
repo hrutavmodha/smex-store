@@ -2,6 +2,7 @@
 
 import React, { useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import {
   Search,
@@ -42,7 +43,7 @@ export interface UserProfile {
 export interface NavbarProps {
   user?: UserProfile | null;
   onLogout?: () => void;
-  onOpenAuthModal?: () => void;
+  onOpenAuthModal?: (view?: 'login' | 'register') => void;
 }
 
 function subscribeStorage(callback: () => void) {
@@ -136,9 +137,14 @@ export function Navbar({ user, onLogout, onOpenAuthModal }: NavbarProps) {
             className="flex items-center gap-2.5 text-text-primary no-underline transition-transform duration-[120ms] active:scale-[0.98]"
             aria-label="Smex Store Home"
           >
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-primary text-black font-black text-lg shadow-sm">
-              S
-            </div>
+            <Image
+              src="/logo.png"
+              alt="Smex Store Logo"
+              width={68}
+              height={36}
+              className="h-9 w-auto object-contain"
+              priority
+            />
             <div className="flex flex-col">
               <span className="font-extrabold tracking-wider text-base uppercase leading-none text-text-primary">
                 Smex Store
@@ -310,14 +316,24 @@ export function Navbar({ user, onLogout, onOpenAuthModal }: NavbarProps) {
               )}
             </div>
           ) : (
-            <button
-              type="button"
-              onClick={onOpenAuthModal}
-              data-testid="nav-sign-in-button"
-              className="flex items-center justify-center px-4 py-2 text-sm font-semibold text-black bg-emerald-primary hover:bg-emerald-hover rounded-lg transition-transform duration-[80ms] active:scale-[0.98] shadow-sm min-h-[40px]"
-            >
-              Sign In
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => onOpenAuthModal?.('login')}
+                data-testid="nav-sign-in-button"
+                className="flex items-center justify-center px-3.5 py-2 text-sm font-semibold text-text-primary hover:text-emerald-primary transition-colors duration-[120ms] min-h-[40px]"
+              >
+                Sign In
+              </button>
+              <button
+                type="button"
+                onClick={() => onOpenAuthModal?.('register')}
+                data-testid="nav-sign-up-button"
+                className="flex items-center justify-center px-4 py-2 text-sm font-semibold text-black bg-emerald-primary hover:bg-emerald-hover rounded-lg transition-transform duration-[80ms] active:scale-[0.98] shadow-sm min-h-[40px]"
+              >
+                Sign Up
+              </button>
+            </div>
           )}
         </div>
 
@@ -412,16 +428,30 @@ export function Navbar({ user, onLogout, onOpenAuthModal }: NavbarProps) {
               Sign Out
             </button>
           ) : (
-            <button
-              type="button"
-              onClick={() => {
-                setIsMobileMenuOpen(false);
-                if (onOpenAuthModal) onOpenAuthModal();
-              }}
-              className="flex items-center justify-center w-full py-3 text-center text-sm font-semibold text-black bg-emerald-primary rounded-lg min-h-[44px]"
-            >
-              Sign In
-            </button>
+            <div className="flex flex-col gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  onOpenAuthModal?.('login');
+                }}
+                data-testid="mobile-sign-in-button"
+                className="flex items-center justify-center w-full py-2.5 text-center text-sm font-semibold text-text-primary bg-bg-surface-elevated rounded-lg min-h-[44px]"
+              >
+                Sign In
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  onOpenAuthModal?.('register');
+                }}
+                data-testid="mobile-sign-up-button"
+                className="flex items-center justify-center w-full py-2.5 text-center text-sm font-semibold text-black bg-emerald-primary rounded-lg min-h-[44px]"
+              >
+                Sign Up
+              </button>
+            </div>
           )}
         </div>
       </div>

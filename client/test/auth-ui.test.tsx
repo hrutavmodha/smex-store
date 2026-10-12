@@ -13,6 +13,7 @@ import { LoginForm } from '../components/auth/LoginForm';
 import { RegisterForm } from '../components/auth/RegisterForm';
 import { AuthModal } from '../components/auth/AuthModal';
 import { Navbar, type UserProfile } from '../components/shell/Navbar';
+import { AppShell } from '../components/shell/AppShell';
 import { DeviceManagementDashboard, type DeviceSession } from '../app/settings/devices/page';
 
 describe('Milestone 3: Client Authentication & UI Shell Suite (LLT Tests 24-29)', () => {
@@ -398,5 +399,45 @@ describe('Milestone 3: Client Authentication & UI Shell Suite (LLT Tests 24-29)'
     });
 
     global.fetch = originalFetch;
+  });
+
+  test('Test 26b: Navbar Sign In and Sign Up buttons open AuthModal with respective views', async () => {
+    const { container } = render(
+      <AppShell>
+        <div data-testid="page-child">Home</div>
+      </AppShell>
+    );
+
+    // Initial state: AuthModal is closed
+    let modalSurface = container.querySelector('[data-testid="auth-modal-surface"]');
+    assert.strictEqual(modalSurface, null, 'Auth modal must initially be closed');
+
+    // Click "Sign In" button
+    const signInBtn = container.querySelector('[data-testid="nav-sign-in-button"]') as HTMLButtonElement;
+    assert.ok(signInBtn, 'Navbar must have Sign In button');
+    fireEvent.click(signInBtn);
+
+    modalSurface = container.querySelector('[data-testid="auth-modal-surface"]');
+    assert.ok(modalSurface, 'Auth modal must open upon clicking Sign In');
+    const modalTitle = container.querySelector('#auth-modal-title');
+    assert.strictEqual(modalTitle?.textContent, 'Sign In', 'Modal header must be "Sign In"');
+
+    // Close the modal
+    const closeBtn = container.querySelector('button[aria-label="Close authentication modal"]') as HTMLButtonElement;
+    assert.ok(closeBtn, 'Close button must be present in AuthModal');
+    fireEvent.click(closeBtn);
+
+    modalSurface = container.querySelector('[data-testid="auth-modal-surface"]');
+    assert.strictEqual(modalSurface, null, 'Auth modal must close upon clicking close button');
+
+    // Click "Sign Up" button
+    const signUpBtn = container.querySelector('[data-testid="nav-sign-up-button"]') as HTMLButtonElement;
+    assert.ok(signUpBtn, 'Navbar must have Sign Up button');
+    fireEvent.click(signUpBtn);
+
+    modalSurface = container.querySelector('[data-testid="auth-modal-surface"]');
+    assert.ok(modalSurface, 'Auth modal must open upon clicking Sign Up');
+    const registerTitle = container.querySelector('#auth-modal-title');
+    assert.strictEqual(registerTitle?.textContent, 'Create Account', 'Modal header must be "Create Account" for registration');
   });
 });
