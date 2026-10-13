@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useSyncExternalStore } from 'react';
+import React, { useState, useEffect, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
@@ -75,6 +75,20 @@ export function Navbar({ user, onLogout, onOpenAuthModal }: NavbarProps) {
     },
     () => 'comfortable'
   );
+
+  // Hydrate stored theme and density preferences into <html> on mount
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      const savedTheme = window.localStorage?.getItem('smex_theme') as ThemeMode;
+      if (savedTheme && (savedTheme === 'dark' || savedTheme === 'amoled' || savedTheme === 'light')) {
+        document.documentElement.setAttribute('data-theme', savedTheme);
+      }
+      const savedDensity = window.localStorage?.getItem('smex_density') as DensityMode;
+      if (savedDensity && (savedDensity === 'compact' || savedDensity === 'comfortable' || savedDensity === 'spacious')) {
+        document.documentElement.setAttribute('data-density', savedDensity);
+      }
+    }
+  }, []);
 
   const handleCycleTheme = () => {
     const cycleMap: Record<ThemeMode, ThemeMode> = {

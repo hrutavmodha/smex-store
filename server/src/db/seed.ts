@@ -34,12 +34,12 @@ export async function seed(db: SmexDatabase): Promise<SeedResult> {
   const adminEmail = 'admin@smexstore.com';
   const existingAdmin = await db.select().from(users).where(eq(users.email, adminEmail));
 
+  // Standard precomputed Argon2id hash for development/seed password 'Admin@123456'
+  const passwordHash =
+    '$argon2id$v=19$m=65536,p=4,t=3$wOaU+cpxCu59q6dBChpuEw$nlSV74uZdt3L6DedvkUcZIYrkk3dVepmqgwMfIJ1PGk';
+
   let adminId: string;
   if (existingAdmin.length === 0) {
-    // Standard precomputed Argon2id hash for development/seed password 'Admin@123456'
-    const passwordHash =
-      '$argon2id$v=19$m=65536,t=3,p=4$dGVzdHNhbHQxMjM0NTY3OA$9S03Fm+rV7aQ3F7uK9z+9Q8w5e4r3t2y1u0i9o8p7a6';
-
     const [newAdmin] = await db
       .insert(users)
       .values({
@@ -63,6 +63,7 @@ export async function seed(db: SmexDatabase): Promise<SeedResult> {
     });
   } else {
     adminId = existingAdmin[0].id;
+    await db.update(users).set({ passwordHash }).where(eq(users.id, adminId));
   }
 
   // 2. Verified Preset Avatars Catalog

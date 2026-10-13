@@ -4,6 +4,7 @@ import { eq } from 'drizzle-orm';
 import { build } from '../helper.js';
 import { seed, PRESET_AVATARS } from '../../src/db/seed.js';
 import { users, profiles, boostingRates, tournaments, type BoostingRate } from '../../src/db/schema/index.js';
+import { verifyPassword } from '../../src/utils/crypto.js';
 
 describe('Database Seeding Pipeline Suite', () => {
   let app: any;
@@ -30,6 +31,9 @@ describe('Database Seeding Pipeline Suite', () => {
     assert.ok(adminUser, 'Admin user record must exist');
     assert.strictEqual(adminUser.role, 'admin');
     assert.strictEqual(adminUser.emailVerified, true);
+
+    const isPasswordValid = await verifyPassword(adminUser.passwordHash, 'Admin@123456');
+    assert.strictEqual(isPasswordValid, true, 'Admin seeded password hash must verify successfully with Admin@123456');
 
     const [adminProfile] = await db
       .select()

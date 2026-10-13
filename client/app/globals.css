@@ -31,8 +31,8 @@
 /* Pure AMOLED Overrides */
 [data-theme="amoled"] {
   --bg-canvas: #000000;
-  --bg-surface: #0A0A0A;
-  --bg-surface-elevated: #121212;
+  --bg-surface: #000000;
+  --bg-surface-elevated: #0B0B0B;
   --border-subtle: #1F1F1F;
   --border-prominent: #2E2E2E;
 }

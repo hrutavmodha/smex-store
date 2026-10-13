@@ -36,24 +36,42 @@ const health: FastifyPluginAsync = async (fastify, _opts): Promise<void> => {
     };
 
     if (pool) {
+      let timeoutId: NodeJS.Timeout | undefined;
+      const start = performance.now();
       try {
-        const start = performance.now();
-        await pool.query('SELECT 1');
+        const queryPromise = pool.query('SELECT 1');
+        const timeoutPromise = new Promise((_, reject) => {
+          timeoutId = setTimeout(() => reject(new Error('HEALTH_TIMEOUT')), 1000);
+        });
+
+        await Promise.race([queryPromise, timeoutPromise]);
         const elapsed = performance.now() - start;
 
         if (elapsed <= 1000) {
           dbStatus = 'connected';
           latencyMs = Math.round(elapsed * 100) / 100;
+        } else {
+          dbStatus = 'disconnected';
+          latencyMs = Math.round(elapsed * 100) / 100;
         }
-      } catch {
+      } catch (err: any) {
+        const elapsed = performance.now() - start;
         dbStatus = 'disconnected';
-        latencyMs = -1;
+        if (err?.message === 'HEALTH_TIMEOUT') {
+          latencyMs = Math.round(elapsed * 100) / 100;
+        } else {
+          latencyMs = -1;
+        }
+      } finally {
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
       }
     }
 
     const isHealthy = dbStatus === 'connected';
 
-    const response: DataLayerHealthResponse = {
+    const response: DataLayerHealthResponse & { type?: string; title?: string; detail?: string } = {
       status: isHealthy ? 'ok' : 'degraded',
       uptime: process.uptime(),
       timestamp: new Date().toISOString(),
@@ -69,6 +87,13 @@ const health: FastifyPluginAsync = async (fastify, _opts): Promise<void> => {
         latencyMs,
         pool: poolStats,
       },
+      ...(!isHealthy
+        ? {
+            type: 'https://api.smexstore.com/errors/service-unavailable',
+            title: 'Service Unavailable',
+            detail: 'Database probe failed or timed out',
+          }
+        : {}),
     };
 
     if (!isHealthy) {

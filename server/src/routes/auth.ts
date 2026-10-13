@@ -17,7 +17,12 @@ import {
 const registerBodySchema = z.object({
   email: z.string().email(),
   password: passwordSchema,
-  username: z.string().min(3).max(50),
+  username: z
+    .string()
+    .min(3, 'Username must be at least 3 characters')
+    .max(50, 'Username must not exceed 50 characters')
+    .regex(/^[a-zA-Z0-9_]+$/, 'Username must only contain alphanumeric characters and underscores')
+    .trim(),
 });
 
 const loginBodySchema = z.object({

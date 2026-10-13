@@ -393,4 +393,19 @@ describe('Milestone 3: Client Authentication & UI Shell Suite (LLT Tests 24-29)'
     const registerTitle = container.querySelector('#auth-modal-title');
     expect(registerTitle?.textContent).toBe('Create Account');
   });
+
+  it('Test 30b: Theme and density hydration from localStorage on mount (BUG-M2-003)', async () => {
+    localStorage.setItem('smex_theme', 'amoled');
+    localStorage.setItem('smex_density', 'compact');
+
+    render(<Navbar />);
+
+    await waitFor(() => {
+      expect(document.documentElement.getAttribute('data-theme')).toBe('amoled');
+      expect(document.documentElement.getAttribute('data-density')).toBe('compact');
+    });
+
+    localStorage.removeItem('smex_theme');
+    localStorage.removeItem('smex_density');
+  });
 });

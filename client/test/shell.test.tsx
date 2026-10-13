@@ -191,5 +191,9 @@ describe('Client Root Layout and AMOLED Shell Test Suite', () => {
     expect(globalsCssSource.includes('#000000')).toBe(true);
     expect(globalsCssSource.includes('#0B1A15')).toBe(true);
     expect(globalsCssSource.includes('#F4FAF8')).toBe(true);
+
+    // 5. AMOLED surface token constraints (BUG-M2-004): Prohibit #0A0A0A, enforce pure true black #000000
+    expect(globalsCssSource.includes('#0A0A0A')).toBe(false);
+    expect(globalsCssSource.includes('--bg-surface: #000000;')).toBe(true);
   });
 });

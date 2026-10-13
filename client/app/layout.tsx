@@ -31,7 +31,15 @@ export default function RootLayout({
       data-theme="dark"
       data-density="comfortable"
       className={`${geistSans.variable} ${geistMono.variable}`}
+      suppressHydrationWarning
     >
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('smex_theme');if(t)document.documentElement.setAttribute('data-theme',t);var d=localStorage.getItem('smex_density');if(d)document.documentElement.setAttribute('data-density',d);}catch(e){}})();`,
+          }}
+        />
+      </head>
       <body className="min-h-screen flex flex-col bg-bg-canvas text-text-primary antialiased">
         <QueryProvider>
           <AppShell>
