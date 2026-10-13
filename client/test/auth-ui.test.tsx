@@ -722,4 +722,118 @@ describe('Milestone 3: Client Authentication & UI Shell Suite (LLT Tests 24-29)'
       expect(missingTokenCard?.textContent?.includes('Invalid Reset Link')).toBe(true);
     });
   });
+
+  it('Test 25h: AuthModal does not prematurely dismiss on registration success and displays Account Created view (BUG-M3-005)', async () => {
+    let modalClosed = false;
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = async (url: any, options: any) => {
+      const urlStr = String(url);
+      if (urlStr.includes('/api/v1/auth/register') && options?.method === 'POST') {
+        const body = JSON.parse(options.body);
+        return {
+          ok: true,
+          json: async () => ({
+            id: 'usr_new_1',
+            email: body.email,
+            emailVerified: false,
+            profile: { username: body.username },
+          }),
+        } as any;
+      }
+      return originalFetch(url, options);
+    };
+
+    const { container } = render(
+      <AuthModal
+        isOpen={true}
+        initialView="register"
+        onClose={() => {
+          modalClosed = true;
+        }}
+      />
+    );
+
+    const emailInput = container.querySelector('#reg-email') as HTMLInputElement;
+    const usernameInput = container.querySelector('#reg-username') as HTMLInputElement;
+    const passwordInput = container.querySelector('#reg-password') as HTMLInputElement;
+    const confirmPasswordInput = container.querySelector('#reg-confirm-password') as HTMLInputElement;
+    const form = container.querySelector('form')!;
+
+    fireEvent.change(emailInput, { target: { value: 'retainmodal@smex.gg' } });
+    fireEvent.change(usernameInput, { target: { value: 'RetainModal' } });
+    fireEvent.change(passwordInput, { target: { value: 'Password123!' } });
+    fireEvent.change(confirmPasswordInput, { target: { value: 'Password123!' } });
+    fireEvent.submit(form);
+
+    // Modal should NOT be closed; confirmation screen must be visible
+    await waitFor(() => {
+      expect(container.textContent?.includes('Account Created')).toBe(true);
+      expect(container.textContent?.includes('We have dispatched a verification link')).toBe(true);
+      expect(modalClosed).toBe(false);
+    });
+
+    // Clicking "Continue to Sign In" switches the view to Sign In without closing
+    const continueBtn = container.querySelector('button.mt-2') as HTMLButtonElement;
+    expect(continueBtn).toBeTruthy();
+    fireEvent.click(continueBtn);
+
+    await waitFor(() => {
+      expect(container.querySelector('#auth-modal-title')?.textContent).toBe('Sign In');
+      expect(modalClosed).toBe(false);
+    });
+
+    globalThis.fetch = originalFetch;
+  });
+
+  it('Test 25i: AuthModal does not prematurely dismiss on forgot password submission and displays Reset Link Dispatched view (BUG-M3-005)', async () => {
+    let modalClosed = false;
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = async (url: any, options: any) => {
+      const urlStr = String(url);
+      if (urlStr.includes('/api/v1/auth/forgot-password') && options?.method === 'POST') {
+        return {
+          ok: true,
+          json: async () => ({
+            success: true,
+            message: 'If an account exists, a link was sent',
+          }),
+        } as any;
+      }
+      return originalFetch(url, options);
+    };
+
+    const { container } = render(
+      <AuthModal
+        isOpen={true}
+        initialView="forgot-password"
+        onClose={() => {
+          modalClosed = true;
+        }}
+      />
+    );
+
+    const emailInput = container.querySelector('#forgot-email') as HTMLInputElement;
+    const form = container.querySelector('form')!;
+
+    fireEvent.change(emailInput, { target: { value: 'forgotplayer@smex.gg' } });
+    fireEvent.submit(form);
+
+    // Modal should NOT be closed; confirmation screen must be visible
+    await waitFor(() => {
+      expect(container.textContent?.includes('Reset Link Dispatched')).toBe(true);
+      expect(modalClosed).toBe(false);
+    });
+
+    // Clicking "Back to Sign In" switches view to Sign In without closing
+    const backBtn = container.querySelector('button.mt-2') as HTMLButtonElement;
+    expect(backBtn).toBeTruthy();
+    fireEvent.click(backBtn);
+
+    await waitFor(() => {
+      expect(container.querySelector('#auth-modal-title')?.textContent).toBe('Sign In');
+      expect(modalClosed).toBe(false);
+    });
+
+    globalThis.fetch = originalFetch;
+  });
 });

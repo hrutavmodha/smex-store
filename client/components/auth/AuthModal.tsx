@@ -93,14 +93,12 @@ export function AuthModal({
 
           {view === 'register' && (
             <RegisterForm
-              onSuccess={handleSuccess}
               onSwitchToLogin={() => setView('login')}
             />
           )}
 
           {view === 'forgot-password' && (
             <ForgotPasswordForm
-              onSuccess={handleSuccess}
               onSwitchToLogin={() => setView('login')}
             />
           )}

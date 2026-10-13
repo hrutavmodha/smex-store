@@ -96,9 +96,6 @@ export function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFormProps) 
       }
 
       setIsSuccess(true);
-      if (onSuccess) {
-        onSuccess();
-      }
     } catch (err: unknown) {
       setErrorMessage(err instanceof Error ? err.message : 'Registration failed. Please try again.');
     } finally {
@@ -122,7 +119,10 @@ export function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFormProps) 
         {onSwitchToLogin && (
           <button
             type="button"
-            onClick={onSwitchToLogin}
+            onClick={() => {
+              if (onSuccess) onSuccess();
+              onSwitchToLogin();
+            }}
             className="mt-2 min-h-[44px] px-6 text-sm font-semibold text-black bg-emerald-primary hover:bg-emerald-hover rounded-lg transition-transform duration-[80ms] active:scale-[0.98]"
           >
             Continue to Sign In
