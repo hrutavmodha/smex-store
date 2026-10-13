@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { Eye, EyeOff, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 
 export interface ResetPasswordFormProps {
@@ -107,13 +108,13 @@ export function ResetPasswordForm({ token, onSuccess, onGoToLogin }: ResetPasswo
             Continue to Sign In
           </button>
         ) : (
-          <a
+          <Link
             href="/?auth=login"
             data-testid="continue-to-login-link"
             className="mt-2 min-h-[44px] px-6 flex items-center justify-center text-sm font-semibold text-black bg-emerald-primary hover:bg-emerald-hover rounded-lg transition-transform duration-[80ms] active:scale-[0.98]"
           >
             Continue to Sign In
-          </a>
+          </Link>
         )}
       </div>
     );

@@ -105,17 +105,17 @@ flowchart TD
 
 ### Milestone 4: Squads and Team Recruitment Engine
 
-* [ ] **4.1 Squad CRUD**: Endpoints for team creation, updating roster limits, and changing open/closed availability.
-* [ ] **4.2 Join Request Pipeline**:
+* [X] **4.1 Squad CRUD**: Endpoints for team creation, updating roster limits, and changing open/closed availability.
+* [X] **4.2 Join Request Pipeline**:
   * Player submits join request with in-game IGN and role.
   * Captain receives real-time notification to approve or reject.
   * Concurrency safety: atomic database transactions to prevent joining a full roster.
-* [ ] **4.3 Team Rosters and Open Slot Badges**: Calculate open slots dynamically as capacity minus active members.
-* [ ] **4.4 Client Teams and Recruitment UI**:
+* [X] **4.3 Team Rosters and Open Slot Badges**: Calculate open slots dynamically as capacity minus active members.
+* [X] **4.4 Client Teams and Recruitment UI**:
   * Build Teams and Groups directory page with search, game filter, and capacity badges.
   * Build team detail card modal with active roster member listing and role tags.
   * Build Join Request submission modal and Captain roster management controls.
-* [ ] **4.5 Automated Squad and Roster Testing**: Execute test suite verifying team CRUD operations, atomic join request acceptance/rejection, roster capacity race condition prevention under concurrent requests, and team UI component interactions.
+* [X] **4.5 Automated Squad and Roster Testing**: Execute test suite verifying team CRUD operations, atomic join request acceptance/rejection, roster capacity race condition prevention under concurrent requests, and team UI component interactions (21 server tests passing, 5 client tests passing; 26/26 tests passing).
 
 ---
 

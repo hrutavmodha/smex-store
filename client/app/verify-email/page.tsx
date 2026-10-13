@@ -9,12 +9,13 @@ function VerifyEmailContent() {
   const router = useRouter();
   const token = searchParams?.get('token') || null;
 
-  const [status, setStatus] = useState<'verifying' | 'success' | 'error' | 'no-token'>('verifying');
+  const [status, setStatus] = useState<'verifying' | 'success' | 'error' | 'no-token'>(
+    token ? 'verifying' : 'no-token'
+  );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (!token) {
-      setStatus('no-token');
       return;
     }
 
