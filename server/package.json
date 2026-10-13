@@ -9,7 +9,7 @@
     "test": "test"
   },
   "scripts": {
-    "test": "vitest run",
+    "test": "vitest run --fileParallelism=false",
     "test:watch": "vitest",
     "clean": "node -e \"require('fs').rmSync('dist', {recursive: true, force: true})\"",
     "start": "fastify start -p 3001 -l info dist/app.mjs",

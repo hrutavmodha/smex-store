@@ -1,9 +1,11 @@
 import { test, describe } from 'vitest';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
+import { EventEmitter } from 'node:events';
 import { eq } from 'drizzle-orm';
 import { build } from '../helper.js';
 import { sessions } from '../../src/db/schema/sessions.js';
+import { registerSocket } from '../../src/plugins/websocket.js';
 
 describe('Disambiguated Session Revocation and Fast-Path Tombstones (LLT 2.3)', () => {
   test('Tests 9 & 10: Single remote session eviction via DELETE and fast-path rejection', async (t) => {
@@ -615,5 +617,68 @@ describe('Disambiguated Session Revocation and Fast-Path Tombstones (LLT 2.3)', 
       .where(eq(sessions.id, expiredSessionId))
       .limit(1);
     assert.equal(dbExpiredSession.isActive, false, 'Expired session must be lazily updated to isActive = false in DB');
+  });
+
+  test('Test 15: Session revocation terminates live WebSocket connections (BUG-M3-009)', async (t) => {
+    const app = await build(t);
+    const ip = '10.10.1.99';
+
+    const testUser = {
+      email: `ws_revoke_${Date.now()}@smexstore.com`,
+      password: 'ValidPassword123!',
+      username: `wsr_${Date.now().toString().slice(-6)}`,
+    };
+
+    const regRes = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/register',
+      remoteAddress: ip,
+      payload: testUser,
+    });
+    assert.equal(regRes.statusCode, 201);
+    const userId = JSON.parse(regRes.body).id;
+
+    const loginRes = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/login',
+      remoteAddress: ip,
+      payload: { email: testUser.email, password: testUser.password },
+    });
+    assert.equal(loginRes.statusCode, 200);
+    const token = JSON.parse(loginRes.body).accessToken;
+    const cookieHeader = Array.isArray(loginRes.headers['set-cookie'])
+      ? loginRes.headers['set-cookie'][0]
+      : (loginRes.headers['set-cookie'] as string);
+    const sessionId = cookieHeader.match(/__Host-refresh-token=([^;]+)/)![1].split('.')[0];
+
+    // Register a live mock WebSocket connection for this user and session
+    let wsClosed = false;
+    let wsCloseCode = 0;
+    const mockSocket = new EventEmitter() as any;
+    mockSocket.readyState = 1;
+    mockSocket.close = (code: number) => {
+      wsClosed = true;
+      wsCloseCode = code;
+    };
+    mockSocket.terminate = () => {
+      wsClosed = true;
+    };
+    mockSocket.send = () => {};
+
+    registerSocket(mockSocket, app.wsGateway.clients, app.log, userId, sessionId);
+    assert.equal(app.wsGateway.getActiveClientCount(), 1);
+
+    // Call DELETE /api/v1/devices/sessions/:sessionId
+    const deleteRes = await app.inject({
+      method: 'DELETE',
+      url: `/api/v1/devices/sessions/${sessionId}`,
+      headers: { authorization: `Bearer ${token}` },
+    });
+    assert.equal(deleteRes.statusCode, 200);
+
+    // Verify WebSocket connection was forcefully terminated by server
+    assert.equal(wsClosed, true, 'WebSocket connection must be forcefully closed on session revocation');
+    assert.equal(wsCloseCode, 4401);
+    assert.equal(app.wsGateway.getActiveClientCount(), 0, 'Socket must be purged from clients map');
   });
 });

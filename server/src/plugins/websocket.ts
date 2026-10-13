@@ -6,6 +6,7 @@ import crypto from 'node:crypto';
 export interface WebSocketClientMeta {
   id: string;
   userId: string | null;
+  sessionId?: string | null;
   isAlive: boolean;
   connectedAt: number;
   lastPingAt: number;
@@ -17,6 +18,7 @@ export interface WsGatewayDecorator {
   clients: Map<WebSocket, WebSocketClientMeta>;
   broadcastToChannel: (channel: string, message: unknown) => void;
   getActiveClientCount: () => number;
+  terminateUserSockets: (userId: string, sessionId?: string) => void;
 }
 
 export const HEARTBEAT_INTERVAL_MS = 30000;
@@ -74,6 +76,18 @@ const websocketPlugin: FastifyPluginAsync = async (fastify) => {
       }
     },
     getActiveClientCount: () => clients.size,
+    terminateUserSockets: (userId: string, sessionId?: string) => {
+      for (const [socket, meta] of clients.entries()) {
+        if (meta.userId === userId && (!sessionId || meta.sessionId === sessionId)) {
+          try {
+            socket.close(4401, 'Session revoked');
+          } catch {
+            socket.terminate();
+          }
+          clients.delete(socket);
+        }
+      }
+    },
   };
 
   fastify.decorate('wsGateway', wsGateway);
@@ -83,11 +97,13 @@ export function registerSocket(
   socket: WebSocket,
   clients: Map<WebSocket, WebSocketClientMeta>,
   logger: FastifyPluginAsync extends (...args: any[]) => any ? any : any,
-  userId: string | null = null
+  userId: string | null = null,
+  sessionId: string | null = null
 ): WebSocketClientMeta {
   const meta: WebSocketClientMeta = {
     id: crypto.randomUUID(),
     userId,
+    sessionId,
     isAlive: true,
     connectedAt: Date.now(),
     lastPingAt: Date.now(),

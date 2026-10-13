@@ -214,7 +214,7 @@ export class SessionService {
       .set({ isActive: false })
       .where(and(eq(sessions.id, sessionId), eq(sessions.userId, userId)));
 
-    // 4. WebSocket notification
+    // 4. WebSocket notification & connection termination
     if (wsGateway) {
       wsGateway.broadcastToChannel(`user:${userId}`, {
         event: 'session:revoked',
@@ -222,6 +222,7 @@ export class SessionService {
         timestamp: Date.now(),
         payload: { sessionId },
       });
+      wsGateway.terminateUserSockets(userId, sessionId);
     }
 
     return true;
@@ -264,6 +265,7 @@ export class SessionService {
           timestamp: Date.now(),
           payload: { sessionId: s.id },
         });
+        wsGateway.terminateUserSockets(userId, s.id);
       }
     }
 
@@ -308,6 +310,7 @@ export class SessionService {
         timestamp: Date.now(),
         payload: { all: true },
       });
+      wsGateway.terminateUserSockets(userId);
     }
 
     return allActive.length;
