@@ -4,8 +4,10 @@ import path from 'node:path';
 import 'fastify';
 
 // Load variables from .env file (current working directory or monorepo root)
-dotenv.config();
-dotenv.config({ path: path.resolve(process.cwd(), '../.env') });
+dotenv.config({
+  quiet: true,
+  path: path.resolve(process.cwd(), '../.env')
+});
 
 export const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -28,6 +30,7 @@ export const envSchema = z.object({
     .min(32, 'JWT_REFRESH_SECRET must be at least 32 characters long')
     .default('development_jwt_refresh_secret_key_needs_32_chars_min!'),
   CORS_ORIGIN: z.string().default('http://localhost:3000'),
+  CLIENT_URL: z.string().default('http://localhost:3000'),
   S3_ENDPOINT: z.string().url().optional(),
   S3_REGION: z.string().default('auto'),
   S3_BUCKET: z.string().default('smex-storage'),

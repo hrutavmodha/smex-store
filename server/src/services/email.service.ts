@@ -24,6 +24,14 @@ export class TransactionalEmailService implements EmailService {
     }
   }
 
+  private getClientUrl(): string {
+    return (
+      process.env.CLIENT_URL ||
+      process.env.CORS_ORIGIN ||
+      'http://localhost:3000'
+    ).replace(/\/$/, '');
+  }
+
   async sendVerificationEmail(email: string, token: string): Promise<boolean> {
     sentEmailsLog.push({
       to: email,
@@ -34,11 +42,12 @@ export class TransactionalEmailService implements EmailService {
 
     if (this.resendClient) {
       try {
+        const clientUrl = this.getClientUrl();
         await this.resendClient.emails.send({
           from: 'Smex Store <auth@smexstore.com>',
           to: email,
           subject: 'Verify your Smex Store account',
-          html: `<p>Welcome to Smex Store! Click below to verify your email:</p><p><a href="https://smexstore.com/verify-email?token=${token}">Verify Account</a></p>`,
+          html: `<p>Welcome to Smex Store! Click below to verify your email:</p><p><a href="${clientUrl}/verify-email?token=${token}">Verify Account</a></p>`,
         });
       } catch (err) {
         console.error('Failed to send verification email via Resend:', err);
@@ -57,11 +66,12 @@ export class TransactionalEmailService implements EmailService {
 
     if (this.resendClient) {
       try {
+        const clientUrl = this.getClientUrl();
         await this.resendClient.emails.send({
           from: 'Smex Store <auth@smexstore.com>',
           to: email,
           subject: 'Reset your Smex Store password',
-          html: `<p>A password reset was requested for your account. This link expires in 15 minutes:</p><p><a href="https://smexstore.com/reset-password?token=${token}">Reset Password</a></p>`,
+          html: `<p>A password reset was requested for your account. This link expires in 15 minutes:</p><p><a href="${clientUrl}/reset-password?token=${token}">Reset Password</a></p>`,
         });
       } catch (err) {
         console.error('Failed to send password reset email via Resend:', err);

@@ -1,5 +1,6 @@
 import { defineConfig } from 'vitest/config';
 import { playwright } from '@vitest/browser-playwright';
+import path from 'node:path';
 
 export default defineConfig({
   define: {
@@ -43,6 +44,9 @@ export default defineConfig({
           },
           setupFiles: ['./test/setup.ts'],
           include: ['test/**/*.test.{ts,tsx}'],
+          alias: {
+            'next/navigation': path.resolve(__dirname, './client/test/mocks/navigation.ts'),
+          },
         },
       },
     ],

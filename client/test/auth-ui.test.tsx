@@ -3,10 +3,13 @@ import React from 'react';
 import { render, fireEvent, waitFor, cleanup } from '@testing-library/react';
 import { LoginForm } from '../components/auth/LoginForm';
 import { RegisterForm } from '../components/auth/RegisterForm';
+import { ResetPasswordForm } from '../components/auth/ResetPasswordForm';
 import { AuthModal } from '../components/auth/AuthModal';
 import { Navbar, type UserProfile } from '../components/shell/Navbar';
 import { AppShell } from '../components/shell/AppShell';
 import { DeviceManagementDashboard, type DeviceSession } from '../app/settings/devices/page';
+import VerifyEmailPage from '../app/verify-email/page';
+import ResetPasswordPage from '../app/reset-password/page';
 import authModalSource from '../components/auth/AuthModal.tsx?raw';
 
 describe('Milestone 3: Client Authentication & UI Shell Suite (LLT Tests 24-29)', () => {
@@ -613,5 +616,110 @@ describe('Milestone 3: Client Authentication & UI Shell Suite (LLT Tests 24-29)'
 
     localStorage.removeItem('smex_auth_token');
     globalThis.fetch = originalFetch;
+  });
+
+  it('Test 25d: ResetPasswordForm validates password match and submits token payload (BUG-M3-004)', async () => {
+    let capturedBody: any = null;
+    let successTriggered = false;
+
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = async (url: any, options: any) => {
+      const urlStr = String(url);
+      if (urlStr.includes('/api/v1/auth/reset-password') && options?.method === 'POST') {
+        capturedBody = JSON.parse(options.body);
+        return {
+          ok: true,
+          json: async () => ({
+            success: true,
+            message: 'Password updated successfully',
+          }),
+        } as any;
+      }
+      return originalFetch(url, options);
+    };
+
+    const { container } = render(
+      <ResetPasswordForm
+        token="reset_token_valid_123"
+        onSuccess={() => {
+          successTriggered = true;
+        }}
+      />
+    );
+
+    const form = container.querySelector('form')!;
+    const newPasswordInput = container.querySelector('#reset-new-password') as HTMLInputElement;
+    const confirmPasswordInput = container.querySelector('#reset-confirm-password') as HTMLInputElement;
+
+    // Test mismatched passwords
+    fireEvent.change(newPasswordInput, { target: { value: 'ValidPass123!' } });
+    fireEvent.change(confirmPasswordInput, { target: { value: 'MismatchedPass123!' } });
+    fireEvent.submit(form);
+
+    await waitFor(() => {
+      expect(container.querySelector('#reset-confirm-password-error')).toBeTruthy();
+      expect(container.querySelector('#reset-confirm-password-error')?.textContent?.includes('match')).toBe(true);
+    });
+
+    // Test matching valid passwords
+    fireEvent.change(confirmPasswordInput, { target: { value: 'ValidPass123!' } });
+    fireEvent.submit(form);
+
+    await waitFor(() => {
+      expect(capturedBody).toEqual({
+        token: 'reset_token_valid_123',
+        newPassword: 'ValidPass123!',
+      });
+      expect(successTriggered).toBe(true);
+      expect(container.querySelector('[data-testid="reset-success-screen"]')).toBeTruthy();
+    });
+
+    globalThis.fetch = originalFetch;
+  });
+
+  it('Test 25e: ResetPasswordForm interactive show/hide password visibility toggles (BUG-M3-004)', async () => {
+    const { container } = render(<ResetPasswordForm token="test_token" />);
+
+    const newPasswordInput = container.querySelector('#reset-new-password') as HTMLInputElement;
+    const confirmPasswordInput = container.querySelector('#reset-confirm-password') as HTMLInputElement;
+    const toggleNewBtn = container.querySelector('[data-testid="toggle-password-visibility"]') as HTMLButtonElement;
+    const toggleConfirmBtn = container.querySelector('[data-testid="toggle-confirm-password-visibility"]') as HTMLButtonElement;
+
+    expect(newPasswordInput.type).toBe('password');
+    expect(confirmPasswordInput.type).toBe('password');
+
+    // Toggle new password
+    fireEvent.click(toggleNewBtn);
+    expect(newPasswordInput.type).toBe('text');
+    fireEvent.click(toggleNewBtn);
+    expect(newPasswordInput.type).toBe('password');
+
+    // Toggle confirm password
+    fireEvent.click(toggleConfirmBtn);
+    expect(confirmPasswordInput.type).toBe('text');
+    fireEvent.click(toggleConfirmBtn);
+    expect(confirmPasswordInput.type).toBe('password');
+  });
+
+  it('Test 25f: VerifyEmailPage renders and handles missing token gracefully (BUG-M3-004)', async () => {
+    const { container } = render(<VerifyEmailPage />);
+
+    // In isolated test without ?token query param, renders missing token warning
+    await waitFor(() => {
+      const missingTokenCard = container.querySelector('[data-testid="missing-token-card"]');
+      expect(missingTokenCard).toBeTruthy();
+      expect(missingTokenCard?.textContent?.includes('Missing Verification Token')).toBe(true);
+    });
+  });
+
+  it('Test 25g: ResetPasswordPage renders security card and handles missing token gracefully (BUG-M3-004)', async () => {
+    const { container } = render(<ResetPasswordPage />);
+
+    // In isolated test without ?token query param, renders missing reset token warning
+    await waitFor(() => {
+      const missingTokenCard = container.querySelector('[data-testid="missing-token-card"]');
+      expect(missingTokenCard).toBeTruthy();
+      expect(missingTokenCard?.textContent?.includes('Invalid Reset Link')).toBe(true);
+    });
   });
 });

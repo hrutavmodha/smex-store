@@ -1,3 +1,5 @@
+import { vi } from 'vitest';
+
 // Provide browser-compatible process.env and global shim in real browsers
 if (typeof globalThis.global === 'undefined') {
   (globalThis as any).global = globalThis;
@@ -38,3 +40,5 @@ if (typeof window !== 'undefined' && !window.localStorage) {
   });
   (globalThis as any).localStorage = localStorageMock;
 }
+
+// End of setup.ts
