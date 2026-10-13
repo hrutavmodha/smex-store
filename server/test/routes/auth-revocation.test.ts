@@ -370,4 +370,100 @@ describe('Disambiguated Session Revocation and Fast-Path Tombstones (LLT 2.3)', 
     assert.equal(afterBody.sessions.length, 1, 'Only Device 1 should remain active');
     assert.equal(afterBody.sessions[0].sessionId, sessionId1);
   });
+
+  test('Test 13c: Prevent IDOR unauthorized remote session revocation across users (BUG-M3-001)', async (t) => {
+    const app = await build(t);
+    const ip = '10.10.1.6';
+
+    const userA = {
+      email: `idor_a_${Date.now()}@smexstore.com`,
+      password: 'ValidPassword123!',
+      username: `idor_a_${Date.now().toString().slice(-6)}`,
+    };
+
+    const userB = {
+      email: `idor_b_${Date.now()}@smexstore.com`,
+      password: 'ValidPassword123!',
+      username: `idor_b_${Date.now().toString().slice(-6)}`,
+    };
+
+    // Register User A
+    await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/register',
+      remoteAddress: ip,
+      payload: userA,
+    });
+
+    // Login User A
+    const loginA = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/login',
+      remoteAddress: ip,
+      payload: { email: userA.email, password: userA.password },
+    });
+    assert.equal(loginA.statusCode, 200);
+    const tokenA = JSON.parse(loginA.body).accessToken;
+
+    // Register User B
+    const regB = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/register',
+      remoteAddress: ip,
+      payload: userB,
+    });
+    assert.equal(regB.statusCode, 201);
+    const userBRecord = JSON.parse(regB.body);
+
+    // Login User B
+    const loginB = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/login',
+      remoteAddress: ip,
+      payload: { email: userB.email, password: userB.password },
+    });
+    assert.equal(loginB.statusCode, 200);
+    const tokenB = JSON.parse(loginB.body).accessToken;
+    const cookieHeaderB = Array.isArray(loginB.headers['set-cookie'])
+      ? loginB.headers['set-cookie'][0]
+      : (loginB.headers['set-cookie'] as string);
+    const sessionIdB = cookieHeaderB.match(/__Host-refresh-token=([^;]+)/)![1].split('.')[0];
+
+    // User A attempts to evict User B's session via IDOR: DELETE /api/v1/devices/sessions/:sessionIdB
+    const idorRes = await app.inject({
+      method: 'DELETE',
+      url: `/api/v1/devices/sessions/${sessionIdB}`,
+      headers: { authorization: `Bearer ${tokenA}` },
+    });
+
+    assert.equal(idorRes.statusCode, 404, 'Must reject unauthorized cross-user session revocation with 404');
+    const idorBody = JSON.parse(idorRes.body);
+    assert.equal(idorBody.code, 'SESSION_NOT_FOUND');
+
+    // Verify User B's session is still completely intact in Redis
+    const sessionBExists = await app.redis.exists(`session:${userBRecord.id}:${sessionIdB}`);
+    assert.equal(sessionBExists, 1, 'User B session must NOT be deleted from Redis');
+
+    const lookupBExists = await app.redis.exists(`session_lookup:${sessionIdB}`);
+    assert.equal(lookupBExists, 1, 'User B session lookup must NOT be deleted from Redis');
+
+    const tombstoneB = await app.redis.exists(`revoked_token:${sessionIdB}`);
+    assert.equal(tombstoneB, 0, 'No tombstone should be created for User B session');
+
+    // Verify User B can still access /api/v1/auth/me
+    const meB = await app.inject({
+      method: 'GET',
+      url: '/api/v1/auth/me',
+      headers: { authorization: `Bearer ${tokenB}` },
+    });
+    assert.equal(meB.statusCode, 200, 'User B session must remain fully active and valid');
+
+    // Verify User B DB session isActive remains true
+    const [dbSessionB] = await app.db
+      .select()
+      .from(sessions)
+      .where(eq(sessions.id, sessionIdB))
+      .limit(1);
+    assert.equal(dbSessionB.isActive, true, 'User B database session isActive must remain true');
+  });
 });

@@ -408,4 +408,54 @@ describe('Milestone 3: Client Authentication & UI Shell Suite (LLT Tests 24-29)'
     localStorage.removeItem('smex_theme');
     localStorage.removeItem('smex_density');
   });
+
+  it('Test 25b: RegisterForm validates username and sends username payload (BUG-M3-002)', async () => {
+    let capturedBody: any = null;
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = async (url: any, options: any) => {
+      const urlStr = String(url);
+      if (urlStr.includes('/api/v1/auth/register') && options?.method === 'POST') {
+        capturedBody = JSON.parse(options.body);
+        return {
+          ok: true,
+          json: async () => ({
+            id: 'usr_new',
+            email: capturedBody.email,
+            emailVerified: false,
+            profile: { username: capturedBody.username },
+          }),
+        } as any;
+      }
+      return originalFetch(url, options);
+    };
+
+    const { container } = render(<RegisterForm />);
+
+    const form = container.querySelector('form')!;
+    const emailInput = container.querySelector('#reg-email') as HTMLInputElement;
+    const usernameInput = container.querySelector('#reg-username') as HTMLInputElement;
+    const passwordInput = container.querySelector('#reg-password') as HTMLInputElement;
+    const confirmPasswordInput = container.querySelector('#reg-confirm-password') as HTMLInputElement;
+
+    expect(usernameInput).toBeTruthy();
+
+    // Fill valid registration fields with username
+    fireEvent.change(emailInput, { target: { value: 'newplayer@smexstore.com' } });
+    fireEvent.change(usernameInput, { target: { value: 'ApexPredator' } });
+    fireEvent.change(passwordInput, { target: { value: 'Password123!' } });
+    fireEvent.change(confirmPasswordInput, { target: { value: 'Password123!' } });
+
+    fireEvent.submit(form);
+
+    await waitFor(() => {
+      expect(capturedBody).toEqual({
+        email: 'newplayer@smexstore.com',
+        username: 'ApexPredator',
+        password: 'Password123!',
+      });
+      expect(container.textContent?.includes('Account Created')).toBe(true);
+    });
+
+    globalThis.fetch = originalFetch;
+  });
 });

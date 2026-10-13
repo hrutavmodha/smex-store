@@ -23,6 +23,7 @@ const registerBodySchema = z.object({
     .max(50, 'Username must not exceed 50 characters')
     .regex(/^[a-zA-Z0-9_]+$/, 'Username must only contain alphanumeric characters and underscores')
     .trim(),
+  inGameId: z.string().min(3).max(50).optional(),
 });
 
 const loginBodySchema = z.object({
@@ -56,7 +57,7 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
         });
       }
 
-      const { email, password, username } = parsed.data;
+      const { email, password, username, inGameId } = parsed.data;
       const normalizedEmail = email.toLowerCase().trim();
 
       // Check if email or username already taken
@@ -109,6 +110,7 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
         await tx.insert(profiles).values({
           userId: insertedUser.id,
           username,
+          inGameId: inGameId || null,
           avatarPreset: 'preset_default_01',
         });
 
@@ -128,6 +130,7 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
         emailVerified: newUser.emailVerified,
         profile: {
           username,
+          inGameId: inGameId || null,
           avatarPreset: 'preset_default_01',
         },
       });

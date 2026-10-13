@@ -10,7 +10,7 @@ export interface RegisterFormProps {
 
 export function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFormProps) {
   const [email, setEmail] = useState('');
-  const [inGameId, setInGameId] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -18,7 +18,7 @@ export function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFormProps) 
   const [isSuccess, setIsSuccess] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<{
     email?: string;
-    inGameId?: string;
+    username?: string;
     password?: string;
     confirmPassword?: string;
   }>({});
@@ -27,7 +27,7 @@ export function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFormProps) 
   const validate = () => {
     const errors: {
       email?: string;
-      inGameId?: string;
+      username?: string;
       password?: string;
       confirmPassword?: string;
     } = {};
@@ -38,10 +38,12 @@ export function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFormProps) 
       errors.email = 'Please enter a valid email address';
     }
 
-    if (!inGameId.trim()) {
-      errors.inGameId = 'In-game ID (IGN) is required';
-    } else if (inGameId.trim().length < 3 || inGameId.trim().length > 32) {
-      errors.inGameId = 'In-game ID must be between 3 and 32 characters';
+    if (!username.trim()) {
+      errors.username = 'Username is required';
+    } else if (username.trim().length < 3 || username.trim().length > 32) {
+      errors.username = 'Username must be between 3 and 32 characters';
+    } else if (!/^[a-zA-Z0-9_]+$/.test(username.trim())) {
+      errors.username = 'Username must only contain alphanumeric characters and underscores';
     }
 
     if (!password) {
@@ -84,7 +86,7 @@ export function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFormProps) 
         body: JSON.stringify({
           email: email.trim(),
           password,
-          inGameId: inGameId.trim(),
+          username: username.trim(),
         }),
       });
 
@@ -170,30 +172,30 @@ export function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFormProps) 
         )}
       </div>
 
-      {/* In-Game Name / ID */}
+      {/* Username Input */}
       <div className="flex flex-col gap-1">
-        <label htmlFor="reg-ign" className="text-xs font-semibold uppercase tracking-wider text-text-secondary">
-          In-Game Name (IGN)
+        <label htmlFor="reg-username" className="text-xs font-semibold uppercase tracking-wider text-text-secondary">
+          Username
         </label>
         <input
-          id="reg-ign"
+          id="reg-username"
           type="text"
-          value={inGameId}
+          value={username}
           onChange={(e) => {
-            setInGameId(e.target.value);
-            if (fieldErrors.inGameId) setFieldErrors((prev) => ({ ...prev, inGameId: undefined }));
+            setUsername(e.target.value);
+            if (fieldErrors.username) setFieldErrors((prev) => ({ ...prev, username: undefined }));
           }}
-          placeholder="e.g. ShadowHunter#1234"
+          placeholder="e.g. ApexPredator"
           autoComplete="username"
           className={`h-11 w-full px-3 text-sm text-text-primary bg-bg-canvas border rounded-lg outline-none transition-colors duration-[120ms] ${
-            fieldErrors.inGameId ? 'border-red-500 focus:border-red-400' : 'border-border-subtle focus:border-emerald-primary'
+            fieldErrors.username ? 'border-red-500 focus:border-red-400' : 'border-border-subtle focus:border-emerald-primary'
           }`}
-          aria-invalid={!!fieldErrors.inGameId}
-          aria-describedby={fieldErrors.inGameId ? 'reg-ign-error' : undefined}
+          aria-invalid={!!fieldErrors.username}
+          aria-describedby={fieldErrors.username ? 'reg-username-error' : undefined}
         />
-        {fieldErrors.inGameId && (
-          <span id="reg-ign-error" className="text-xs text-red-400 font-medium">
-            {fieldErrors.inGameId}
+        {fieldErrors.username && (
+          <span id="reg-username-error" className="text-xs text-red-400 font-medium">
+            {fieldErrors.username}
           </span>
         )}
       </div>

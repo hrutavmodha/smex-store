@@ -63,13 +63,23 @@ const devicesRoutes: FastifyPluginAsync = async (fastify) => {
         });
       }
 
-      await SessionService.revokeSession(
+      const revoked = await SessionService.revokeSession(
         request.user.sub,
         sessionId,
         fastify.db,
         fastify.redis,
         fastify.wsGateway
       );
+
+      if (!revoked) {
+        return reply.code(404).send({
+          type: 'https://api.smexstore.com/errors/not-found',
+          title: 'Not Found',
+          status: 404,
+          detail: 'Session not found or does not belong to the authenticated user',
+          code: 'SESSION_NOT_FOUND',
+        });
+      }
 
       return reply.code(200).send({
         success: true,

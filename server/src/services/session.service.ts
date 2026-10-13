@@ -190,6 +190,17 @@ export class SessionService {
     redis: Redis,
     wsGateway?: WsGatewayDecorator
   ): Promise<boolean> {
+    // 0. Verify session exists and belongs to the authenticated user
+    const [sessionRecord] = await db
+      .select({ id: sessions.id })
+      .from(sessions)
+      .where(and(eq(sessions.id, sessionId), eq(sessions.userId, userId), eq(sessions.isActive, true)))
+      .limit(1);
+
+    if (!sessionRecord) {
+      return false;
+    }
+
     // 1. Delete Redis keys
     await redis.del(`session:${userId}:${sessionId}`);
     await redis.del(`session_lookup:${sessionId}`);
