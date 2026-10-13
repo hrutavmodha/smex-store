@@ -13,6 +13,7 @@ import {
   Clock,
   MapPin,
 } from 'lucide-react';
+import { fetchWithAuth } from '../../../lib/api';
 
 export interface DeviceSession {
   id?: string;
@@ -39,7 +40,7 @@ export function DeviceManagementDashboard() {
     let ignore = false;
     const load = async () => {
       try {
-        const response = await fetch('/api/v1/devices/sessions');
+        const response = await fetchWithAuth('/api/v1/devices/sessions');
         if (!response.ok) {
           throw new Error('Failed to load active device sessions');
         }
@@ -80,7 +81,7 @@ export function DeviceManagementDashboard() {
     setErrorMessage(null);
     setSuccessMessage(null);
     try {
-      const response = await fetch(`/api/v1/devices/sessions/${sessionId}`, {
+      const response = await fetchWithAuth(`/api/v1/devices/sessions/${sessionId}`, {
         method: 'DELETE',
       });
       if (!response.ok) {
@@ -100,7 +101,7 @@ export function DeviceManagementDashboard() {
     setErrorMessage(null);
     setSuccessMessage(null);
     try {
-      const response = await fetch('/api/v1/devices/sessions/others', {
+      const response = await fetchWithAuth('/api/v1/devices/sessions/others', {
         method: 'DELETE',
       });
       if (!response.ok) {

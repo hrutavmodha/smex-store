@@ -2,9 +2,11 @@
 
 import React, { useState } from 'react';
 import { Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react';
+import { setStoredToken } from '../../lib/api';
+import type { UserProfile } from '../shell/Navbar';
 
 export interface LoginFormProps {
-  onSuccess?: () => void;
+  onSuccess?: (user?: UserProfile) => void;
   onSwitchToRegister?: () => void;
   onSwitchToForgotPassword?: () => void;
 }
@@ -53,6 +55,7 @@ export function LoginForm({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email.trim(), password }),
+        credentials: 'include',
       });
 
       if (!response.ok) {
@@ -60,8 +63,13 @@ export function LoginForm({
         throw new Error(errorData.detail || errorData.message || 'Invalid email or password');
       }
 
+      const data = await response.json().catch(() => ({}));
+      if (data.accessToken) {
+        setStoredToken(data.accessToken);
+      }
+
       if (onSuccess) {
-        onSuccess();
+        onSuccess(data.user);
       }
     } catch (err: unknown) {
       setErrorMessage(err instanceof Error ? err.message : 'Authentication failed. Please try again.');

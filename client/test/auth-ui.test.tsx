@@ -458,4 +458,160 @@ describe('Milestone 3: Client Authentication & UI Shell Suite (LLT Tests 24-29)'
 
     globalThis.fetch = originalFetch;
   });
+
+  it('Test 25c: LoginForm persists access token to localStorage and triggers onSuccess (BUG-M3-003)', async () => {
+    let capturedBody: any = null;
+    let capturedOptions: any = null;
+    let successUser: any = null;
+
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = async (url: any, options: any) => {
+      const urlStr = String(url);
+      if (urlStr.includes('/api/v1/auth/login') && options?.method === 'POST') {
+        capturedBody = JSON.parse(options.body);
+        capturedOptions = options;
+        return {
+          ok: true,
+          json: async () => ({
+            accessToken: 'test_access_jwt_789',
+            tokenType: 'Bearer',
+            expiresIn: 900,
+            user: {
+              id: 'usr_login_1',
+              email: capturedBody.email,
+              role: 'user',
+              emailVerified: true,
+            },
+          }),
+        } as any;
+      }
+      return originalFetch(url, options);
+    };
+
+    const { container } = render(
+      <LoginForm
+        onSuccess={(user) => {
+          successUser = user;
+        }}
+      />
+    );
+
+    const form = container.querySelector('form')!;
+    const emailInput = container.querySelector('#login-email') as HTMLInputElement;
+    const passwordInput = container.querySelector('#login-password') as HTMLInputElement;
+
+    fireEvent.change(emailInput, { target: { value: 'player@smexstore.com' } });
+    fireEvent.change(passwordInput, { target: { value: 'Password123!' } });
+    fireEvent.submit(form);
+
+    await waitFor(() => {
+      expect(capturedOptions?.credentials).toBe('include');
+      expect(localStorage.getItem('smex_auth_token')).toBe('test_access_jwt_789');
+      expect(successUser).toEqual({
+        id: 'usr_login_1',
+        email: 'player@smexstore.com',
+        role: 'user',
+        emailVerified: true,
+      });
+    });
+
+    localStorage.removeItem('smex_auth_token');
+    globalThis.fetch = originalFetch;
+  });
+
+  it('Test 26c: AppShell bootstraps session via /api/v1/auth/me when token exists and updates state (BUG-M3-003)', async () => {
+    localStorage.setItem('smex_auth_token', 'bootstrap_token_456');
+
+    let meAuthHeader: string | null = null;
+    let meCredentials: any = null;
+
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = async (url: any, options: any) => {
+      const urlStr = String(url);
+      if (urlStr.includes('/api/v1/auth/me')) {
+        const headers = new Headers(options?.headers);
+        meAuthHeader = headers.get('authorization');
+        meCredentials = options?.credentials;
+        return {
+          ok: true,
+          json: async () => ({
+            id: 'usr_bootstrapped',
+            email: 'captain@smexstore.com',
+            role: 'user',
+            emailVerified: true,
+            sessionId: 'sess_active_1',
+            profile: {
+              username: 'CaptainSmex',
+              avatarPreset: 'preset_default_01',
+              themePref: 'dark',
+              densityPref: 'comfortable',
+            },
+          }),
+        } as any;
+      }
+      return originalFetch(url, options);
+    };
+
+    const { container } = render(
+      <AppShell>
+        <div data-testid="page-child">Protected App Shell Content</div>
+      </AppShell>
+    );
+
+    await waitFor(() => {
+      expect(meAuthHeader).toBe('Bearer bootstrap_token_456');
+      expect(meCredentials).toBe('include');
+      const profileButton = container.querySelector('[data-testid="user-profile-button"]');
+      expect(profileButton).toBeTruthy();
+      expect(container.querySelector('[data-testid="user-ign"]')?.textContent).toBe('CaptainSmex');
+    });
+
+    localStorage.removeItem('smex_auth_token');
+    globalThis.fetch = originalFetch;
+  });
+
+  it('Test 27c: DeviceManagementDashboard attaches Authorization header and credentials (BUG-M3-003)', async () => {
+    localStorage.setItem('smex_auth_token', 'devices_dashboard_token');
+
+    let sessionsAuthHeader: string | null = null;
+    let sessionsCredentials: any = null;
+
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = async (url: any, options: any) => {
+      const urlStr = String(url);
+      if (urlStr.includes('/api/v1/devices/sessions')) {
+        const headers = new Headers(options?.headers);
+        sessionsAuthHeader = headers.get('authorization');
+        sessionsCredentials = options?.credentials;
+        return {
+          ok: true,
+          json: async () => ({
+            sessions: [
+              {
+                id: 'sess_authenticated_1',
+                deviceName: 'Authenticated Device',
+                deviceType: 'desktop',
+                ipAddress: '127.0.0.1',
+                isCurrent: true,
+                createdAt: '2026-10-13T00:00:00.000Z',
+              },
+            ],
+          }),
+        } as any;
+      }
+      return originalFetch(url, options);
+    };
+
+    const { container } = render(<DeviceManagementDashboard />);
+
+    await waitFor(() => {
+      expect(sessionsAuthHeader).toBe('Bearer devices_dashboard_token');
+      expect(sessionsCredentials).toBe('include');
+      const cards = container.querySelectorAll('[data-testid="device-session-card"]');
+      expect(cards.length).toBe(1);
+    });
+
+    localStorage.removeItem('smex_auth_token');
+    globalThis.fetch = originalFetch;
+  });
 });

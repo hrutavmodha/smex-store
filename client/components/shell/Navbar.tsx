@@ -18,6 +18,7 @@ import {
   ShieldAlert,
   Laptop,
 } from 'lucide-react';
+import { fetchWithAuth } from '../../lib/api';
 
 export const NAV_LINKS = [
   { href: '/tournaments', label: 'Tournaments' },
@@ -34,6 +35,7 @@ export type DensityMode = 'compact' | 'comfortable' | 'spacious';
 export interface UserProfile {
   id: string;
   email: string;
+  username?: string;
   inGameId?: string;
   avatarPreset?: string;
   emailVerified: boolean;
@@ -128,7 +130,7 @@ export function Navbar({ user, onLogout, onOpenAuthModal }: NavbarProps) {
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/v1/auth/logout', { method: 'POST' });
+      await fetchWithAuth('/api/v1/auth/logout', { method: 'POST' });
     } catch {
       // Ignore network errors on logout dispatch
     }
@@ -139,7 +141,7 @@ export function Navbar({ user, onLogout, onOpenAuthModal }: NavbarProps) {
   };
 
   const avatarPreset = user?.avatarPreset || 'preset_default_01';
-  const ign = user?.inGameId || user?.email?.split('@')[0] || 'Player';
+  const ign = user?.username || user?.inGameId || user?.email?.split('@')[0] || 'Player';
 
   return (
     <header className="sticky top-0 z-50 h-16 w-full border-b border-border-subtle bg-bg-surface transition-colors duration-[120ms]">

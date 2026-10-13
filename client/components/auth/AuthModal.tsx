@@ -5,6 +5,7 @@ import { X } from 'lucide-react';
 import { LoginForm } from './LoginForm';
 import { RegisterForm } from './RegisterForm';
 import { ForgotPasswordForm } from './ForgotPasswordForm';
+import type { UserProfile } from '../shell/Navbar';
 
 export type AuthView = 'login' | 'register' | 'forgot-password';
 
@@ -12,7 +13,7 @@ export interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   initialView?: AuthView;
-  onSuccess?: () => void;
+  onSuccess?: (user?: UserProfile) => void;
 }
 
 export function AuthModal({
@@ -25,9 +26,9 @@ export function AuthModal({
 
   if (!isOpen) return null;
 
-  const handleSuccess = () => {
+  const handleSuccess = (user?: UserProfile) => {
     if (onSuccess) {
-      onSuccess();
+      onSuccess(user);
     }
     onClose();
   };

@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Navbar, type UserProfile } from './Navbar';
 import { Footer } from './Footer';
 import { AuthModal, type AuthView } from '../auth/AuthModal';
+import { getStoredToken, setStoredToken, fetchWithAuth } from '../../lib/api';
 
 export interface AppShellProps {
   children: React.ReactNode;
@@ -14,6 +15,40 @@ export function AppShell({ children }: AppShellProps) {
   const [authView, setAuthView] = useState<AuthView>('login');
   const [user, setUser] = useState<UserProfile | null>(null);
 
+  useEffect(() => {
+    let isMounted = true;
+    const bootstrapSession = async () => {
+      const token = getStoredToken();
+      if (!token) return;
+
+      try {
+        const response = await fetchWithAuth('/api/v1/auth/me');
+        if (!isMounted) return;
+        if (response.ok) {
+          const data = await response.json();
+          setUser({
+            id: data.id,
+            email: data.email,
+            inGameId: data.profile?.username || data.profile?.inGameId || data.email?.split('@')[0],
+            avatarPreset: data.profile?.avatarPreset || 'preset_default_01',
+            emailVerified: Boolean(data.emailVerified),
+            role: data.role,
+          });
+        } else if (response.status === 401) {
+          setStoredToken(null);
+          setUser(null);
+        }
+      } catch {
+        // Silently handle network errors
+      }
+    };
+
+    void bootstrapSession();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const handleOpenAuth = (view: 'login' | 'register' = 'login') => {
     setAuthView(view);
     setIsAuthModalOpen(true);
@@ -21,8 +56,38 @@ export function AppShell({ children }: AppShellProps) {
 
   const handleLogout = () => {
     setUser(null);
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('smex_auth_token');
+    setStoredToken(null);
+  };
+
+  const handleAuthSuccess = (loggedInUser?: UserProfile) => {
+    if (loggedInUser) {
+      setUser({
+        id: loggedInUser.id,
+        email: loggedInUser.email,
+        inGameId: loggedInUser.inGameId || loggedInUser.email?.split('@')[0],
+        avatarPreset: loggedInUser.avatarPreset || 'preset_default_01',
+        emailVerified: Boolean(loggedInUser.emailVerified),
+        role: loggedInUser.role,
+      });
+    }
+
+    const token = getStoredToken();
+    if (token) {
+      void fetchWithAuth('/api/v1/auth/me')
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data) {
+            setUser({
+              id: data.id,
+              email: data.email,
+              inGameId: data.profile?.username || data.profile?.inGameId || data.email?.split('@')[0],
+              avatarPreset: data.profile?.avatarPreset || 'preset_default_01',
+              emailVerified: Boolean(data.emailVerified),
+              role: data.role,
+            });
+          }
+        })
+        .catch(() => {});
     }
   };
 
@@ -42,6 +107,7 @@ export function AppShell({ children }: AppShellProps) {
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
         initialView={authView}
+        onSuccess={handleAuthSuccess}
       />
     </div>
   );
