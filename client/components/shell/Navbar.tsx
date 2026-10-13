@@ -244,10 +244,10 @@ export function Navbar({ user, onLogout, onOpenAuthModal }: NavbarProps) {
                   data-preset={user.avatarPreset}
                   className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-primary/20 text-emerald-primary text-[10px] font-bold border border-emerald-primary/40"
                 >
-                  {user.ign.charAt(0).toUpperCase()}
+                  {(user.ign || user.email || '?').charAt(0).toUpperCase()}
                 </span>
                 <span data-testid="user-ign" className="font-medium text-text-primary max-w-[120px] truncate">
-                  {user.ign}
+                  {user.ign || user.email}
                 </span>
 
                 {/* Email unverified warning indicator */}
@@ -402,7 +402,7 @@ export function Navbar({ user, onLogout, onOpenAuthModal }: NavbarProps) {
         {/* User banner in drawer if logged in */}
         {user && (
           <div className="mt-4 p-3 rounded-lg bg-bg-surface-elevated border border-border-subtle flex flex-col gap-1">
-            <span className="font-bold text-sm text-text-primary">{user.ign}</span>
+            <span className="font-bold text-sm text-text-primary">{user.ign || user.email}</span>
             <span className="text-xs text-text-muted">{user.email}</span>
             <span data-testid="mobile-user-uid" className="font-mono text-[10px] text-text-muted">
               UID: {user.uid}

@@ -6,7 +6,7 @@
 - **Target Files**:
   - `server/src/routes/auth.ts` (lines 224–251)
   - `server/src/plugins/auth.ts` (lines 42–78)
-- **Status**: Identified
+- **Status**: Resolved
 
 ---
 

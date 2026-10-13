@@ -1,4 +1,4 @@
-import { test, describe } from 'node:test';
+import { test, describe } from 'vitest';
 import assert from 'node:assert/strict';
 import '../helper.js';
 import { hashPassword, verifyPassword } from '../../src/utils/crypto.js';

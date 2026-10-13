@@ -1,4 +1,4 @@
-import { test } from 'node:test';
+import { test } from 'vitest';
 import assert from 'node:assert';
 import { EventEmitter } from 'node:events';
 import { build } from '../helper.js';

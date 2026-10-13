@@ -1,4 +1,4 @@
-import { test, describe, beforeAll, afterAll } from 'node:test';
+import { test, describe, beforeAll, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { eq, sql } from 'drizzle-orm';
 import { build } from '../helper.js';

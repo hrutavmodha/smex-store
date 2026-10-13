@@ -1,4 +1,4 @@
-import { test } from 'node:test';
+import { test } from 'vitest';
 import assert from 'node:assert';
 import { loadEnv, envSchema } from '../../src/config/env.js';
 

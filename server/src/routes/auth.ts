@@ -1,8 +1,10 @@
 import crypto from 'node:crypto';
 import { type FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { users, profiles } from '../db/schema/users.js';
+import { sessions } from '../db/schema/sessions.js';
+import { type AccessTokenPayload } from '../plugins/auth.js';
 import { hashPassword, verifyPassword, passwordSchema } from '../utils/crypto.js';
 import { parseDeviceMetadata } from '../utils/fingerprint.js';
 import { SessionService } from '../services/session.service.js';
@@ -126,6 +128,7 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
 
       return reply.code(201).send({
         id: newUser.id,
+        uid: inGameId || null,
         email: newUser.email,
         emailVerified: newUser.emailVerified,
         profile: {
@@ -215,48 +218,101 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
         maxAge: 2592000,
       });
 
+      const [profileRecord] = await fastify.db
+        .select()
+        .from(profiles)
+        .where(eq(profiles.userId, userRecord.id))
+        .limit(1);
+
       return reply.code(200).send({
         accessToken,
         tokenType: 'Bearer',
         expiresIn: 900,
         user: {
           id: userRecord.id,
+          uid: profileRecord?.inGameId || null,
           email: userRecord.email,
           role: userRecord.role,
           emailVerified: userRecord.emailVerified,
+          profile: profileRecord || null,
         },
       });
     }
   );
 
   // 3. POST /api/v1/auth/logout
-  fastify.post(
-    '/api/v1/auth/logout',
-    {
-      preHandler: [fastify.authenticate],
-    },
-    async (request, reply) => {
+  fastify.post('/api/v1/auth/logout', async (request, reply) => {
+    const sessionsToRevoke: Array<{ userId: string; sessionId: string }> = [];
+
+    // 1. Extract from Authorization header (accept expired JWT for logout)
+    const authHeader = request.headers.authorization;
+    if (authHeader?.startsWith('Bearer ')) {
+      const token = authHeader.slice(7);
+      try {
+        const payload = fastify.jwt.verify<AccessTokenPayload>(token, {
+          ignoreExpiration: true,
+        });
+        if (payload?.sub && payload?.sessionId) {
+          sessionsToRevoke.push({ userId: payload.sub, sessionId: payload.sessionId });
+        }
+      } catch {
+        // Token signature invalid or malformed
+      }
+    }
+
+    // 2. Extract from __Host-refresh-token cookie
+    const rawCookie =
+      request.cookies['__Host-refresh-token'] ||
+      (request.headers.cookie &&
+        request.headers.cookie
+          .split(';')
+          .find((c) => c.trim().startsWith('__Host-refresh-token='))
+          ?.split('=')[1]);
+
+    if (rawCookie) {
+      const [cookieSessionId] = rawCookie.split('.');
+      if (cookieSessionId && !sessionsToRevoke.some((s) => s.sessionId === cookieSessionId)) {
+        let cookieUserId = await fastify.redis.get(`session_lookup:${cookieSessionId}`);
+        if (!cookieUserId) {
+          const [sessionRecord] = await fastify.db
+            .select({ userId: sessions.userId })
+            .from(sessions)
+            .where(and(eq(sessions.id, cookieSessionId), eq(sessions.isActive, true)))
+            .limit(1);
+          if (sessionRecord) {
+            cookieUserId = sessionRecord.userId;
+          }
+        }
+        if (cookieUserId) {
+          sessionsToRevoke.push({ userId: cookieUserId, sessionId: cookieSessionId });
+        }
+      }
+    }
+
+    // 3. Revoke all identified sessions
+    for (const session of sessionsToRevoke) {
       await SessionService.revokeSession(
-        request.user.sub,
-        request.user.sessionId,
+        session.userId,
+        session.sessionId,
         fastify.db,
         fastify.redis,
         fastify.wsGateway
       );
-
-      reply.clearCookie('__Host-refresh-token', {
-        path: '/',
-        httpOnly: true,
-        secure: true,
-        sameSite: 'strict',
-      });
-
-      return reply.code(200).send({
-        success: true,
-        message: 'Logged out successfully',
-      });
     }
-  );
+
+    // 4. Always clear refresh token cookie
+    reply.clearCookie('__Host-refresh-token', {
+      path: '/',
+      httpOnly: true,
+      secure: true,
+      sameSite: 'strict',
+    });
+
+    return reply.code(200).send({
+      success: true,
+      message: 'Logged out successfully',
+    });
+  });
 
   // 4. POST /api/v1/auth/refresh
   fastify.post('/api/v1/auth/refresh', async (request, reply) => {
@@ -346,6 +402,7 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
 
       return reply.code(200).send({
         id: userRecord.id,
+        uid: profileRecord?.inGameId || null,
         email: userRecord.email,
         role: userRecord.role,
         emailVerified: userRecord.emailVerified,

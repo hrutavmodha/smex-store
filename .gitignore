@@ -36,3 +36,6 @@ Thumbs.db
 .vitest/
 coverage/
 html/
+
+# AI Prompts
+prompts/

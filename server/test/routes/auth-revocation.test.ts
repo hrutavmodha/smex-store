@@ -1,4 +1,4 @@
-import { test, describe } from 'node:test';
+import { test, describe } from 'vitest';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import { eq } from 'drizzle-orm';
@@ -262,6 +262,85 @@ describe('Disambiguated Session Revocation and Fast-Path Tombstones (LLT 2.3)', 
       headers: { authorization: `Bearer ${token}` },
     });
     assert.equal(meRes.statusCode, 401);
+  });
+
+  test('Test 13-expired: Caller logout succeeds when access token is expired (BUG-M3-007)', async (t) => {
+    const app = await build(t);
+    const ip = '10.10.1.41';
+
+    const email = `logout_exp_${Date.now()}@smexstore.com`;
+    const regRes = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/register',
+      remoteAddress: ip,
+      payload: { email, password: 'ValidPassword123!', username: `lexp_${Date.now().toString().slice(-6)}` },
+    });
+    assert.equal(regRes.statusCode, 201);
+
+    const loginRes = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/login',
+      remoteAddress: ip,
+      headers: { 'user-agent': 'Chrome on Windows' },
+      payload: { email, password: 'ValidPassword123!' },
+    });
+    assert.equal(loginRes.statusCode, 200);
+
+    const cookieHeader = Array.isArray(loginRes.headers['set-cookie'])
+      ? loginRes.headers['set-cookie'][0]
+      : (loginRes.headers['set-cookie'] as string);
+    const cookieVal = cookieHeader.match(/__Host-refresh-token=([^;]+)/)![1];
+    const sid = cookieVal.split('.')[0];
+    const userId = JSON.parse(loginRes.body).user.id;
+
+    // Craft an expired access token for this session
+    const expiredToken = app.jwt.sign(
+      { sub: userId, role: 'user', sessionId: sid },
+      { expiresIn: '-10s' }
+    );
+
+    // Ensure /me rejects with 401 on expired token
+    const meExpired = await app.inject({
+      method: 'GET',
+      url: '/api/v1/auth/me',
+      headers: { authorization: `Bearer ${expiredToken}` },
+    });
+    assert.equal(meExpired.statusCode, 401);
+
+    // Call logout with expired token and refresh cookie
+    const logoutRes = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/logout',
+      headers: {
+        authorization: `Bearer ${expiredToken}`,
+        cookie: `__Host-refresh-token=${cookieVal}`,
+      },
+    });
+    assert.equal(logoutRes.statusCode, 200);
+    assert.deepEqual(JSON.parse(logoutRes.body), {
+      success: true,
+      message: 'Logged out successfully',
+    });
+
+    // Check Set-Cookie clears __Host-refresh-token
+    const logoutCookies = logoutRes.headers['set-cookie'];
+    const logoutCookieStr = Array.isArray(logoutCookies) ? logoutCookies.join(';') : (logoutCookies || '');
+    assert.match(logoutCookieStr, /__Host-refresh-token=;/);
+
+    // Fast-path tombstone must be set in Redis
+    const tombstone = await app.redis.exists(`revoked_token:${sid}`);
+    assert.equal(tombstone, 1);
+
+    // Session deleted from Redis
+    const sessionExists = await app.redis.exists(`session:${userId}:${sid}`);
+    assert.equal(sessionExists, 0);
+
+    // Session marked inactive in Postgres
+    const [dbSession] = await app.db
+      .select({ isActive: sessions.isActive })
+      .from(sessions)
+      .where(eq(sessions.id, sid));
+    assert.equal(dbSession?.isActive, false);
   });
 
   test('Test 13b: Query active device sessions via GET /api/v1/devices/sessions with current session flag and device types', async (t) => {

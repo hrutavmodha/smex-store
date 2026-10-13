@@ -1,6 +1,5 @@
 import Fastify, { type FastifyInstance } from 'fastify';
 import fp from 'fastify-plugin';
-import * as test from 'node:test';
 import appPlugin, { options as defaultOptions } from '../src/app.js';
 import { cleanupTestData } from '../src/db/cleanup.js';
 

@@ -27,7 +27,7 @@ export function AppShell({ children }: AppShellProps) {
         if (response.ok) {
           const data = await response.json();
           setUser({
-            uid: data.id,
+            uid: data.uid,
             email: data.email,
             ign: data.profile.username,
             avatarPreset: data.profile.avatarPreset,
@@ -71,7 +71,7 @@ export function AppShell({ children }: AppShellProps) {
         .then((data) => {
           if (data) {
             setUser({
-              uid: data.id,
+              uid: data.uid,
               email: data.email,
               ign: data.profile.username,
               avatarPreset: data.profile.avatarPreset,

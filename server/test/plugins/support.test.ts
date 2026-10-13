@@ -1,4 +1,4 @@
-import { test } from 'node:test'
+import { test } from 'vitest'
 import * as assert from 'node:assert'
 import Fastify from 'fastify'
 import Support from '../../src/plugins/support.js'
