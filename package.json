@@ -16,7 +16,8 @@
     "services:down": "docker compose down",
     "clean": "pnpm --recursive exec rm -rf node_modules dist .next .turbo",
     "cloc": "./scripts/cloc.js",
-    "commit": "./scripts/stage-commit-push.js"
+    "commit": "./scripts/stage-commit-push.js",
+    "db": "./scripts/run-db.js"
   },
   "devDependencies": {
     "@vitest/browser": "^5.0.3",
