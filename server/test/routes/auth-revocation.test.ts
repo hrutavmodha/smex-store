@@ -1,5 +1,6 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
 import { eq } from 'drizzle-orm';
 import { build } from '../helper.js';
 import { sessions } from '../../src/db/schema/sessions.js';
@@ -465,5 +466,75 @@ describe('Disambiguated Session Revocation and Fast-Path Tombstones (LLT 2.3)', 
       .where(eq(sessions.id, sessionIdB))
       .limit(1);
     assert.equal(dbSessionB.isActive, true, 'User B database session isActive must remain true');
+  });
+
+  test('Test 14: Expired sessions are excluded from active devices list and lazily marked inactive (BUG-M3-006)', async (t) => {
+    const app = await build(t);
+    const ip = '10.10.1.99';
+
+    const testUser = {
+      email: `test_expired_${Date.now()}@smexstore.com`,
+      password: 'ValidPassword123!',
+      username: `exp_${Date.now().toString().slice(-6)}`,
+    };
+
+    // Register user
+    const regRes = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/register',
+      remoteAddress: ip,
+      payload: testUser,
+    });
+    assert.equal(regRes.statusCode, 201);
+    const user = JSON.parse(regRes.body);
+
+    // Login (active session)
+    const loginRes = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/login',
+      remoteAddress: ip,
+      headers: { 'user-agent': 'Chrome on Windows' },
+      payload: { email: testUser.email, password: testUser.password },
+    });
+    assert.equal(loginRes.statusCode, 200);
+    const activeToken = JSON.parse(loginRes.body).accessToken;
+
+    // Insert an expired session manually for this user in DB
+    const expiredSessionId = crypto.randomUUID();
+    const expiredAt = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000); // 5 days ago
+    await app.db.insert(sessions).values({
+      id: expiredSessionId,
+      userId: user.id,
+      refreshTokenHash: 'hash_expired_session',
+      deviceType: 'desktop',
+      deviceName: 'Chrome on Windows',
+      ipAddress: '192.168.1.1',
+      userAgent: 'Mozilla/5.0 Expired Device',
+      isActive: true,
+      expiresAt: expiredAt,
+      createdAt: new Date(Date.now() - 35 * 24 * 60 * 60 * 1000),
+      lastActiveAt: expiredAt,
+    });
+
+    // Query active device sessions: GET /api/v1/devices/sessions
+    const devicesRes = await app.inject({
+      method: 'GET',
+      url: '/api/v1/devices/sessions',
+      headers: { authorization: `Bearer ${activeToken}` },
+    });
+    assert.equal(devicesRes.statusCode, 200);
+    const devicesBody = JSON.parse(devicesRes.body);
+
+    // Verify expired session is NOT returned in active sessions list
+    const foundExpired = devicesBody.sessions.find((s: any) => s.sessionId === expiredSessionId || s.id === expiredSessionId);
+    assert.equal(foundExpired, undefined, 'Expired session must not be returned in active sessions list');
+
+    // Verify expired session was lazily marked as isActive = false in DB
+    const [dbExpiredSession] = await app.db
+      .select()
+      .from(sessions)
+      .where(eq(sessions.id, expiredSessionId))
+      .limit(1);
+    assert.equal(dbExpiredSession.isActive, false, 'Expired session must be lazily updated to isActive = false in DB');
   });
 });

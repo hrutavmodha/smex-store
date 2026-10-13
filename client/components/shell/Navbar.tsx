@@ -33,10 +33,9 @@ export type ThemeMode = 'dark' | 'amoled' | 'light';
 export type DensityMode = 'compact' | 'comfortable' | 'spacious';
 
 export interface UserProfile {
-  id: string;
+  uid: string;
   email: string;
-  username?: string;
-  inGameId?: string;
+  ign: string;
   avatarPreset?: string;
   emailVerified: boolean;
   role?: string;
@@ -140,9 +139,6 @@ export function Navbar({ user, onLogout, onOpenAuthModal }: NavbarProps) {
     setIsProfileDropdownOpen(false);
   };
 
-  const avatarPreset = user?.avatarPreset || 'preset_default_01';
-  const ign = user?.username || user?.inGameId || user?.email?.split('@')[0] || 'Player';
-
   return (
     <header className="sticky top-0 z-50 h-16 w-full border-b border-border-subtle bg-bg-surface transition-colors duration-[120ms]">
       <div className="mx-auto flex h-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
@@ -245,13 +241,13 @@ export function Navbar({ user, onLogout, onOpenAuthModal }: NavbarProps) {
                 {/* Avatar Preset Badge */}
                 <span
                   data-testid="user-avatar-badge"
-                  data-preset={avatarPreset}
+                  data-preset={user.avatarPreset}
                   className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-primary/20 text-emerald-primary text-[10px] font-bold border border-emerald-primary/40"
                 >
-                  {ign.charAt(0).toUpperCase()}
+                  {user.ign.charAt(0).toUpperCase()}
                 </span>
                 <span data-testid="user-ign" className="font-medium text-text-primary max-w-[120px] truncate">
-                  {ign}
+                  {user.ign}
                 </span>
 
                 {/* Email unverified warning indicator */}
@@ -286,8 +282,13 @@ export function Navbar({ user, onLogout, onOpenAuthModal }: NavbarProps) {
                     </div>
                   )}
 
-                  <div className="px-2 py-1.5 text-[11px] text-text-muted border-b border-border-subtle">
-                    Signed in as <span className="font-semibold text-text-primary">{user.email}</span>
+                  <div className="px-2 py-1.5 text-[11px] text-text-muted border-b border-border-subtle flex flex-col gap-0.5">
+                    <div>
+                      Signed in as <span className="font-semibold text-text-primary">{user.email}</span>
+                    </div>
+                    <div data-testid="user-uid" className="font-mono text-[10px] text-text-muted">
+                      UID: <span className="text-text-secondary">{user.uid}</span>
+                    </div>
                   </div>
 
                   <Link
@@ -401,8 +402,11 @@ export function Navbar({ user, onLogout, onOpenAuthModal }: NavbarProps) {
         {/* User banner in drawer if logged in */}
         {user && (
           <div className="mt-4 p-3 rounded-lg bg-bg-surface-elevated border border-border-subtle flex flex-col gap-1">
-            <span className="font-bold text-sm text-text-primary">{ign}</span>
+            <span className="font-bold text-sm text-text-primary">{user.ign}</span>
             <span className="text-xs text-text-muted">{user.email}</span>
+            <span data-testid="mobile-user-uid" className="font-mono text-[10px] text-text-muted">
+              UID: {user.uid}
+            </span>
             {!user.emailVerified && (
               <span className="text-[10px] text-amber-400 font-semibold mt-1">⚠️ Email unverified</span>
             )}

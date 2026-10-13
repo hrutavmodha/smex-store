@@ -6,6 +6,6 @@ export default defineConfig({
   clean: true,
   minify: true,
   sourcemap: true,
-  outExtension: () => ({ js: '.js' }),
+  outExtension: () => ({ js: '.mjs' }),
   platform: 'node',
 })

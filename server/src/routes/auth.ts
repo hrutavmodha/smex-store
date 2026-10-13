@@ -350,12 +350,7 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
         role: userRecord.role,
         emailVerified: userRecord.emailVerified,
         sessionId: request.user.sessionId,
-        profile: profileRecord || {
-          username: userRecord.email.split('@')[0],
-          avatarPreset: 'preset_default_01',
-          themePref: 'dark',
-          densityPref: 'comfortable',
-        },
+        profile: profileRecord,
       });
     }
   );

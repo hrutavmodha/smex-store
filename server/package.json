@@ -1,6 +1,6 @@
 {
-  "type": "module",
   "name": "@smex/server",
+  "type": "module",
   "private": true,
   "version": "1.0.0",
   "description": "This project was bootstrapped with Fastify-CLI.",
@@ -17,10 +17,11 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint src",
     "watch": "tsdown -w",
-    "dev": "fastify start -w -l info src/app.ts",
+    "dev": "concurrently -k 'tsdown -w' 'fastify start --ignore-watch=.ts$ -w -l info dist/app.mjs'",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:seed": "node --loader ts-node/esm src/db/seed.ts",
+    "db:clean": "node --loader ts-node/esm src/db/cleanup.ts",
     "db:studio": "drizzle-kit studio"
   },
   "keywords": [],

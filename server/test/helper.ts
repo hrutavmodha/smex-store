@@ -2,6 +2,7 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import fp from 'fastify-plugin';
 import * as test from 'node:test';
 import appPlugin, { options as defaultOptions } from '../src/app.js';
+import { cleanupTestData } from '../src/db/cleanup.js';
 
 export type TestContext = {
   after?: (fn: () => any) => void;
@@ -42,4 +43,4 @@ async function build(t?: TestContext): Promise<FastifyInstance> {
   return app;
 }
 
-export { config, build };
+export { config, build, cleanupTestData };

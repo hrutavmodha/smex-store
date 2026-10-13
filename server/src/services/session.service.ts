@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 import type { Redis } from 'ioredis';
 import type { SmexDatabase } from '../db/index.js';
-import { eq, and, ne } from 'drizzle-orm';
+import { eq, and, ne, gt, lte } from 'drizzle-orm';
 import { sessions } from '../db/schema/sessions.js';
 import { users } from '../db/schema/users.js';
 import { type DeviceMetadata, resolveDeviceType, type DeviceType } from '../utils/fingerprint.js';
@@ -321,10 +321,30 @@ export class SessionService {
     currentSessionId: string,
     db: SmexDatabase
   ): Promise<ActiveSessionView[]> {
+    const now = new Date();
+
+    // Lazily mark expired sessions as inactive
+    await db
+      .update(sessions)
+      .set({ isActive: false })
+      .where(
+        and(
+          eq(sessions.userId, userId),
+          eq(sessions.isActive, true),
+          lte(sessions.expiresAt, now)
+        )
+      );
+
     const list = await db
       .select()
       .from(sessions)
-      .where(and(eq(sessions.userId, userId), eq(sessions.isActive, true)));
+      .where(
+        and(
+          eq(sessions.userId, userId),
+          eq(sessions.isActive, true),
+          gt(sessions.expiresAt, now)
+        )
+      );
 
     return list.map((item) => ({
       id: item.id,

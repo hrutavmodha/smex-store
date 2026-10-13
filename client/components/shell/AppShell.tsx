@@ -27,11 +27,11 @@ export function AppShell({ children }: AppShellProps) {
         if (response.ok) {
           const data = await response.json();
           setUser({
-            id: data.id,
+            uid: data.id,
             email: data.email,
-            inGameId: data.profile?.username || data.profile?.inGameId || data.email?.split('@')[0],
-            avatarPreset: data.profile?.avatarPreset || 'preset_default_01',
-            emailVerified: Boolean(data.emailVerified),
+            ign: data.profile.username,
+            avatarPreset: data.profile.avatarPreset,
+            emailVerified: data.emailVerified,
             role: data.role,
           });
         } else if (response.status === 401) {
@@ -61,14 +61,7 @@ export function AppShell({ children }: AppShellProps) {
 
   const handleAuthSuccess = (loggedInUser?: UserProfile) => {
     if (loggedInUser) {
-      setUser({
-        id: loggedInUser.id,
-        email: loggedInUser.email,
-        inGameId: loggedInUser.inGameId || loggedInUser.email?.split('@')[0],
-        avatarPreset: loggedInUser.avatarPreset || 'preset_default_01',
-        emailVerified: Boolean(loggedInUser.emailVerified),
-        role: loggedInUser.role,
-      });
+      setUser(loggedInUser);
     }
 
     const token = getStoredToken();
@@ -78,11 +71,11 @@ export function AppShell({ children }: AppShellProps) {
         .then((data) => {
           if (data) {
             setUser({
-              id: data.id,
+              uid: data.id,
               email: data.email,
-              inGameId: data.profile?.username || data.profile?.inGameId || data.email?.split('@')[0],
-              avatarPreset: data.profile?.avatarPreset || 'preset_default_01',
-              emailVerified: Boolean(data.emailVerified),
+              ign: data.profile.username,
+              avatarPreset: data.profile.avatarPreset,
+              emailVerified: data.emailVerified,
               role: data.role,
             });
           }

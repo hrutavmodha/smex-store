@@ -39,11 +39,11 @@ export function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFormProps) 
     }
 
     if (!username.trim()) {
-      errors.username = 'Username is required';
+      errors.username = 'In-Game Name (IGN) is required';
     } else if (username.trim().length < 3 || username.trim().length > 32) {
-      errors.username = 'Username must be between 3 and 32 characters';
+      errors.username = 'In-Game Name must be between 3 and 32 characters';
     } else if (!/^[a-zA-Z0-9_]+$/.test(username.trim())) {
-      errors.username = 'Username must only contain alphanumeric characters and underscores';
+      errors.username = 'In-Game Name must only contain alphanumeric characters and underscores';
     }
 
     if (!password) {
@@ -172,10 +172,10 @@ export function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFormProps) 
         )}
       </div>
 
-      {/* Username Input */}
+      {/* In-Game Name (IGN) Input */}
       <div className="flex flex-col gap-1">
         <label htmlFor="reg-username" className="text-xs font-semibold uppercase tracking-wider text-text-secondary">
-          Username
+          In-Game Name (IGN)
         </label>
         <input
           id="reg-username"

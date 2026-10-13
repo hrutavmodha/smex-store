@@ -77,9 +77,9 @@ describe('Milestone 3: Client Authentication & UI Shell Suite (LLT Tests 24-29)'
   it('Test 26: Navbar user profile dropdown & logout trigger (LLT 26)', async () => {
     let logoutCalled = false;
     const mockUser: UserProfile = {
-      id: 'usr_test_123',
+      uid: 'usr_test_123',
       email: 'gamer@smex.gg',
-      inGameId: 'VortexStriker',
+      ign: 'VortexStriker',
       avatarPreset: 'preset_default_01',
       emailVerified: false,
     };
@@ -112,6 +112,10 @@ describe('Milestone 3: Client Authentication & UI Shell Suite (LLT Tests 24-29)'
     // Verify dropdown contents: unverified email banner, routes, and logout button
     const dropdown = container.querySelector('[data-testid="user-profile-dropdown"]');
     expect(dropdown).toBeTruthy();
+
+    const uidDisplay = container.querySelector('[data-testid="user-uid"]');
+    expect(uidDisplay).toBeTruthy();
+    expect(uidDisplay?.textContent?.includes('usr_test_123')).toBe(true);
 
     const unverifiedBanner = container.querySelector('[data-testid="unverified-email-banner"]');
     expect(unverifiedBanner).toBeTruthy();
