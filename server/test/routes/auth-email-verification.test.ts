@@ -69,7 +69,20 @@ describe('Email Verification Lifecycle (LLT 2.6)', () => {
   });
 
   test('Test 20: Email verification guard gating high-trust actions', async (t) => {
-    const app = await build(t);
+    const app = await build(t, (instance) => {
+      instance.post(
+        '/api/v1/test/guarded-action',
+        {
+          preHandler: [instance.authenticate, instance.emailVerifiedGuard],
+        },
+        async (_request, reply) => {
+          return reply.code(201).send({
+            success: true,
+            message: 'Action completed',
+          });
+        }
+      );
+    });
     const ip = '10.20.1.2';
 
     const testUser = {
@@ -95,10 +108,10 @@ describe('Email Verification Lifecycle (LLT 2.6)', () => {
     });
     const token = JSON.parse(loginRes.body).accessToken;
 
-    // Attempt protected action (POST /api/v1/marketplace/listings) while unverified: must be rejected with 403 Forbidden
+    // Attempt protected action while unverified: must be rejected with 403 Forbidden
     const deniedRes = await app.inject({
       method: 'POST',
-      url: '/api/v1/marketplace/listings',
+      url: '/api/v1/test/guarded-action',
       headers: { authorization: `Bearer ${token}` },
     });
 
@@ -116,7 +129,7 @@ describe('Email Verification Lifecycle (LLT 2.6)', () => {
     // Attempt protected action again: must succeed with 201 Created
     const allowedRes = await app.inject({
       method: 'POST',
-      url: '/api/v1/marketplace/listings',
+      url: '/api/v1/test/guarded-action',
       headers: { authorization: `Bearer ${token}` },
     });
     assert.equal(allowedRes.statusCode, 201);

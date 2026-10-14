@@ -218,4 +218,69 @@ describe('Squad CRUD & Capacity Limits Suite (LLT 2.1)', () => {
     const postRequests = await app.db.select().from(teamJoinRequests).where(eq(teamJoinRequests.teamId, teamId));
     assert.equal(postRequests.length, 0);
   });
+
+  test('Test 4b: Captain cannot reduce member capacity below active member count (BUG-M4-004)', async (t) => {
+    const app = await build(t);
+    const { token: captainToken } = await createVerifiedUser(app, 'capt4b');
+    const { user: member2 } = await createVerifiedUser(app, 'mem4b_2');
+    const { user: member3 } = await createVerifiedUser(app, 'mem4b_3');
+
+    // Create squad with memberCap = 5 (1 member: captain)
+    const createRes = await app.inject({
+      method: 'POST',
+      url: '/api/v1/teams',
+      headers: { authorization: `Bearer ${captainToken}` },
+      payload: { name: `CapReduction_${Date.now()}`, tag: 'CAPR', memberCap: 5 },
+    });
+    assert.equal(createRes.statusCode, 201);
+    const teamId = JSON.parse(createRes.body).team.id;
+
+    // Add 2 members (total 3 active members: captain + 2 members)
+    await app.db.insert(teamMembers).values([
+      { teamId, userId: member2.id, memberRole: 'member' },
+      { teamId, userId: member3.id, memberRole: 'member' },
+    ]);
+
+    // 1. Captain attempts to reduce memberCap to 2 (below 3 active members) -> 400 Bad Request
+    const belowCapRes = await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/teams/${teamId}`,
+      headers: { authorization: `Bearer ${captainToken}` },
+      payload: { memberCap: 2 },
+    });
+    assert.equal(belowCapRes.statusCode, 400);
+    const belowCapBody = JSON.parse(belowCapRes.body);
+    assert.equal(belowCapBody.code, 'CAPACITY_BELOW_MEMBER_COUNT');
+    assert.ok(belowCapBody.detail.includes('3 active members'));
+
+    // 2. Captain attempts to set memberCap to 3 (equal to active members count) -> 200 OK
+    const equalCapRes = await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/teams/${teamId}`,
+      headers: { authorization: `Bearer ${captainToken}` },
+      payload: { memberCap: 3 },
+    });
+    assert.equal(equalCapRes.statusCode, 200);
+    assert.equal(JSON.parse(equalCapRes.body).team.memberCap, 3);
+
+    // 3. Captain increases memberCap to 4 -> 200 OK
+    const increaseCapRes = await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/teams/${teamId}`,
+      headers: { authorization: `Bearer ${captainToken}` },
+      payload: { memberCap: 4 },
+    });
+    assert.equal(increaseCapRes.statusCode, 200);
+    assert.equal(JSON.parse(increaseCapRes.body).team.memberCap, 4);
+
+    // 4. Invalid memberCap < 1 still returns 422
+    const invalidCapRes = await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/teams/${teamId}`,
+      headers: { authorization: `Bearer ${captainToken}` },
+      payload: { memberCap: 0 },
+    });
+    assert.equal(invalidCapRes.statusCode, 422);
+    assert.equal(JSON.parse(invalidCapRes.body).code, 'INVALID_MEMBER_CAP');
+  });
 });

@@ -221,4 +221,102 @@ describe('Join Request Submission Suite (LLT 2.3)', () => {
     });
     assert.equal(reapplyRes.statusCode, 201);
   });
+
+  test('Test 14: Applicant join request query mechanism and status reflection (BUG-M4-003)', async (t) => {
+    const app = await build(t);
+    const { user: captain } = await createVerifiedUser(app, 'join_c14');
+    const { user: applicant, token: applicantToken } = await createVerifiedUser(app, 'join_a14');
+    const { token: otherToken } = await createVerifiedUser(app, 'join_o14');
+
+    const { team } = await TeamService.createTeam(
+      captain.id,
+      { name: `QuerySquad_${Date.now()}`, tag: 'QRY', memberCap: 5 },
+      app.db
+    );
+
+    // 1. Before submitting request: GET /teams/:id reports hasPendingRequest: false
+    const preTeamRes = await app.inject({
+      method: 'GET',
+      url: `/api/v1/teams/${team.id}`,
+      headers: { authorization: `Bearer ${applicantToken}` },
+    });
+    assert.equal(preTeamRes.statusCode, 200);
+    const preTeamData = JSON.parse(preTeamRes.body);
+    assert.equal(preTeamData.team.hasPendingRequest, false);
+
+    // 2. Before submitting request: GET /teams/:id/my-request reports hasPendingRequest: false
+    const preMyReqRes = await app.inject({
+      method: 'GET',
+      url: `/api/v1/teams/${team.id}/my-request`,
+      headers: { authorization: `Bearer ${applicantToken}` },
+    });
+    assert.equal(preMyReqRes.statusCode, 200);
+    const preMyReqData = JSON.parse(preMyReqRes.body);
+    assert.equal(preMyReqData.hasPendingRequest, false);
+    assert.equal(preMyReqData.request, null);
+
+    // 3. Applicant submits join request
+    const joinRes = await app.inject({
+      method: 'POST',
+      url: `/api/v1/teams/${team.id}/join-requests`,
+      headers: { authorization: `Bearer ${applicantToken}` },
+      payload: { playerIgn: 'QueryTester', playerRole: 'Tank' },
+    });
+    assert.equal(joinRes.statusCode, 201);
+    const { joinRequest } = JSON.parse(joinRes.body);
+
+    // 4. After submitting: GET /teams/:id with applicant token returns hasPendingRequest: true
+    const postTeamRes = await app.inject({
+      method: 'GET',
+      url: `/api/v1/teams/${team.id}`,
+      headers: { authorization: `Bearer ${applicantToken}` },
+    });
+    assert.equal(postTeamRes.statusCode, 200);
+    const postTeamData = JSON.parse(postTeamRes.body);
+    assert.equal(postTeamData.team.hasPendingRequest, true);
+    assert.equal(postTeamData.team.myJoinRequest.id, joinRequest.id);
+
+    // 5. Guest without auth header sees hasPendingRequest: false
+    const guestTeamRes = await app.inject({
+      method: 'GET',
+      url: `/api/v1/teams/${team.id}`,
+    });
+    assert.equal(guestTeamRes.statusCode, 200);
+    assert.equal(JSON.parse(guestTeamRes.body).team.hasPendingRequest, false);
+
+    // 6. Dedicated endpoint GET /teams/:id/my-request returns applicant's request
+    const postMyReqRes = await app.inject({
+      method: 'GET',
+      url: `/api/v1/teams/${team.id}/my-request`,
+      headers: { authorization: `Bearer ${applicantToken}` },
+    });
+    assert.equal(postMyReqRes.statusCode, 200);
+    const postMyReqData = JSON.parse(postMyReqRes.body);
+    assert.equal(postMyReqData.hasPendingRequest, true);
+    assert.equal(postMyReqData.request.id, joinRequest.id);
+
+    // 7. Another user querying my-request gets hasPendingRequest: false
+    const otherMyReqRes = await app.inject({
+      method: 'GET',
+      url: `/api/v1/teams/${team.id}/my-request`,
+      headers: { authorization: `Bearer ${otherToken}` },
+    });
+    assert.equal(otherMyReqRes.statusCode, 200);
+    assert.equal(JSON.parse(otherMyReqRes.body).hasPendingRequest, false);
+
+    // 8. When applicant cancels request, status flips back to false
+    await app.inject({
+      method: 'DELETE',
+      url: `/api/v1/teams/${team.id}/join-requests/${joinRequest.id}`,
+      headers: { authorization: `Bearer ${applicantToken}` },
+    });
+
+    const cancelledMyReqRes = await app.inject({
+      method: 'GET',
+      url: `/api/v1/teams/${team.id}/my-request`,
+      headers: { authorization: `Bearer ${applicantToken}` },
+    });
+    assert.equal(cancelledMyReqRes.statusCode, 200);
+    assert.equal(JSON.parse(cancelledMyReqRes.body).hasPendingRequest, false);
+  });
 });

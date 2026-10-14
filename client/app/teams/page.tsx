@@ -17,6 +17,7 @@ export default function TeamsPage() {
   const [selectedTeam, setSelectedTeam] = useState<TeamCardData | null>(null);
   const [selectedMembers, setSelectedMembers] = useState<RosterMember[]>([]);
   const [pendingRequests, setPendingRequests] = useState<JoinRequestItem[]>([]);
+  const [hasPendingRequest, setHasPendingRequest] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Create Squad Modal state
@@ -35,7 +36,11 @@ export default function TeamsPage() {
         const res = await fetchWithAuth('/api/v1/auth/me');
         if (res.ok) {
           const data = await res.json();
-          setCurrentUser(data);
+          setCurrentUser({
+            id: data.id,
+            email: data.email,
+            ign: data.profile?.username || data.username || data.ign,
+          });
         }
       } catch {
         // Guest user
@@ -77,12 +82,16 @@ export default function TeamsPage() {
     setIsModalOpen(true);
     setSelectedMembers([]);
     setPendingRequests([]);
+    setHasPendingRequest(false);
 
     try {
       const res = await fetchWithAuth(`/api/v1/teams/${team.id}`);
       if (res.ok) {
         const data = await res.json();
         setSelectedMembers(data.team.members || []);
+        if (typeof data.team.hasPendingRequest === 'boolean') {
+          setHasPendingRequest(data.team.hasPendingRequest);
+        }
       }
 
       // If user is captain, fetch pending join requests
@@ -91,6 +100,13 @@ export default function TeamsPage() {
         if (reqRes.ok) {
           const reqData = await reqRes.json();
           setPendingRequests(reqData.requests || []);
+        }
+      } else if (currentUser?.id) {
+        // Query applicant's own request status if not already determined
+        const myReqRes = await fetchWithAuth(`/api/v1/teams/${team.id}/my-request`);
+        if (myReqRes.ok) {
+          const myReqData = await myReqRes.json();
+          setHasPendingRequest(!!myReqData.hasPendingRequest);
         }
       }
     } catch {
@@ -148,6 +164,8 @@ export default function TeamsPage() {
       const err = await res.json();
       throw new Error(err.detail || 'Failed to submit join request');
     }
+
+    setHasPendingRequest(true);
   };
 
   // Captain resolves join request
@@ -332,11 +350,13 @@ export default function TeamsPage() {
       {/* Roster Detail Modal */}
       {selectedTeam && (
         <TeamDetailModal
+          key={selectedTeam.id}
           team={selectedTeam}
           members={selectedMembers}
           pendingRequests={pendingRequests}
           currentUserId={currentUser?.id}
           isCaptain={currentUser?.id === selectedTeam.captainId}
+          hasPendingRequest={hasPendingRequest}
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
           onSubmitJoinRequest={handleSubmitJoin}

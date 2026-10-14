@@ -5,7 +5,7 @@
 - **Severity**: High (Relational Integrity & Race Condition)
 - **Target Files**:
   - `server/src/services/team.service.ts` (lines 459–530)
-- **Status**: Identified
+- **Status**: Resolved
 
 ---
 

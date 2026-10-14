@@ -2,6 +2,7 @@ import { type FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { TeamService } from '../services/team.service.js';
 import { TeamJoinService } from '../services/team-join.service.js';
+import { type AccessTokenPayload } from '../plugins/auth.js';
 
 const createTeamSchema = z.object({
   name: z.string().trim().min(2, 'Name must be at least 2 characters').max(50, 'Name cannot exceed 50 characters'),
@@ -58,6 +59,11 @@ function handleError(reply: any, err: any) {
   if (code === '23514' || code === 'INVALID_MEMBER_CAP') {
     return reply.code(422).send(
       formatRfc7807(422, 'INVALID_MEMBER_CAP', 'Unprocessable Entity', 'Member capacity must be between 1 and 10')
+    );
+  }
+  if (code === 'CAPACITY_BELOW_MEMBER_COUNT') {
+    return reply.code(400).send(
+      formatRfc7807(400, 'CAPACITY_BELOW_MEMBER_COUNT', 'Bad Request', err.message || 'Cannot reduce member capacity below active member count')
     );
   }
 
@@ -154,7 +160,20 @@ const teamsRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.get('/api/v1/teams/:id', async (request, reply) => {
     const { id } = request.params as { id: string };
 
-    const team = await TeamService.getTeamById(id, fastify.db);
+    let callerId: string | undefined;
+    try {
+      const payload = await request.jwtVerify<AccessTokenPayload>();
+      if (payload?.sub && payload?.sessionId) {
+        const isRevoked = await fastify.redis.exists(`revoked_token:${payload.sessionId}`);
+        if (!isRevoked) {
+          callerId = payload.sub;
+        }
+      }
+    } catch {
+      // Unauthenticated / guest caller - proceed without callerId
+    }
+
+    const team = await TeamService.getTeamById(id, fastify.db, callerId);
     if (!team) {
       return reply.code(404).send(
         formatRfc7807(404, 'TEAM_NOT_FOUND', 'Not Found', 'Squad not found')
@@ -273,6 +292,27 @@ const teamsRoutes: FastifyPluginAsync = async (fastify) => {
       try {
         const requests = await TeamJoinService.listJoinRequests(id, request.user.sub, fastify.db);
         return reply.code(200).send({ requests });
+      } catch (err: any) {
+        return handleError(reply, err);
+      }
+    }
+  );
+
+  // 7b. GET /api/v1/teams/:id/my-request - View caller's own join request (Applicant)
+  fastify.get(
+    '/api/v1/teams/:id/my-request',
+    {
+      preHandler: [fastify.authenticate],
+    },
+    async (request, reply) => {
+      const { id } = request.params as { id: string };
+
+      try {
+        const myRequest = await TeamJoinService.getMyJoinRequest(id, request.user.sub, fastify.db);
+        return reply.code(200).send({
+          hasPendingRequest: !!myRequest,
+          request: myRequest || null,
+        });
       } catch (err: any) {
         return handleError(reply, err);
       }

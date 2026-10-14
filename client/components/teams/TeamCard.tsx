@@ -18,6 +18,7 @@ export interface TeamCardData {
   captainUsername?: string | null;
   captainIgn?: string | null;
   captainAvatarPreset?: string | null;
+  hasPendingRequest?: boolean;
 }
 
 export interface TeamCardProps {

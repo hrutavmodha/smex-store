@@ -14,13 +14,19 @@ function config() {
   };
 }
 
-async function build(t?: TestContext): Promise<FastifyInstance> {
+async function build(
+  t?: TestContext,
+  configure?: (app: FastifyInstance) => Promise<void> | void
+): Promise<FastifyInstance> {
   const app = Fastify({
     logger: false,
   });
 
   // Wrap appPlugin with fastify-plugin to ensure all decorators are exposed at the root instance
   await app.register(fp(appPlugin as any, { name: 'app-test-wrapper' }), defaultOptions);
+  if (configure) {
+    await configure(app);
+  }
   await app.ready();
 
   // Clear any residual rate-limit keys from prior runs to ensure test determinism

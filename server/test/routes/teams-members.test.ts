@@ -129,6 +129,62 @@ describe('Roster Member & Captaincy Management Suite (LLT 2.5)', () => {
     assert.equal(dbMember, undefined);
   });
 
+  test('Test 17b: Member removal does not involuntarily reopen squad closed by captain (BUG-M4-005)', async (t) => {
+    const app = await build(t);
+    const { user: captain, token: captToken } = await createVerifiedUser(app, 'mem_c17b');
+    const { user: member1, token: memberToken1 } = await createVerifiedUser(app, 'mem_m17b1');
+    const { user: member2 } = await createVerifiedUser(app, 'mem_m17b2');
+
+    // 1. Captain creates squad with memberCap = 5 (Captain is member 1)
+    const { team } = await TeamService.createTeam(
+      captain.id,
+      { name: `StayClosed_${Date.now()}`, tag: 'STAY', memberCap: 5 },
+      app.db
+    );
+
+    // 2. Add 2 members (Total 3 active members: captain + 2 members, 2 slots open)
+    await app.db.insert(teamMembers).values([
+      { teamId: team.id, userId: member1.id, memberRole: 'member' },
+      { teamId: team.id, userId: member2.id, memberRole: 'member' },
+    ]);
+
+    // 3. Captain explicitly closes the squad
+    const closeRes = await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/teams/${team.id}`,
+      headers: { authorization: `Bearer ${captToken}` },
+      payload: { status: 'closed' },
+    });
+    assert.equal(closeRes.statusCode, 200);
+
+    const [closedTeam] = await app.db.select().from(teams).where(eq(teams.id, team.id));
+    assert.equal(closedTeam.status, 'closed');
+
+    // 4. One member voluntarily leaves the squad
+    const leaveRes = await app.inject({
+      method: 'DELETE',
+      url: `/api/v1/teams/${team.id}/members/${member1.id}`,
+      headers: { authorization: `Bearer ${memberToken1}` },
+    });
+    assert.equal(leaveRes.statusCode, 200);
+
+    // 5. Verify squad status is STILL 'closed', NOT involuntarily reopened to 'open'
+    const [teamAfterLeave] = await app.db.select().from(teams).where(eq(teams.id, team.id));
+    assert.equal(teamAfterLeave.status, 'closed');
+
+    // 6. Captain kicks second member
+    const kickRes = await app.inject({
+      method: 'DELETE',
+      url: `/api/v1/teams/${team.id}/members/${member2.id}`,
+      headers: { authorization: `Bearer ${captToken}` },
+    });
+    assert.equal(kickRes.statusCode, 200);
+
+    // 7. Verify squad status remains 'closed' after kick
+    const [teamAfterKick] = await app.db.select().from(teams).where(eq(teams.id, team.id));
+    assert.equal(teamAfterKick.status, 'closed');
+  });
+
   test('Test 18: Captaincy transfer reassigns team ownership', async (t) => {
     const app = await build(t);
     const { user: oldCaptain, token: captToken } = await createVerifiedUser(app, 'mem_c18');

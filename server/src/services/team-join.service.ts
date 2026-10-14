@@ -413,4 +413,40 @@ export class TeamJoinService {
       message: 'Join request cancelled',
     };
   }
+
+  /**
+   * Retrieves the active pending join request submitted by caller for target squad
+   */
+  static async getMyJoinRequest(
+    teamId: string,
+    callerId: string,
+    db: SmexDatabase
+  ): Promise<TeamJoinRequest | null> {
+    const [team] = await db
+      .select({ id: teams.id })
+      .from(teams)
+      .where(eq(teams.id, teamId))
+      .limit(1);
+
+    if (!team) {
+      const err: any = new Error('Team not found');
+      err.statusCode = 404;
+      err.code = 'TEAM_NOT_FOUND';
+      throw err;
+    }
+
+    const [joinReq] = await db
+      .select()
+      .from(teamJoinRequests)
+      .where(
+        and(
+          eq(teamJoinRequests.teamId, teamId),
+          eq(teamJoinRequests.userId, callerId),
+          eq(teamJoinRequests.status, 'pending')
+        )
+      )
+      .limit(1);
+
+    return joinReq || null;
+  }
 }

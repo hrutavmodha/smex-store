@@ -591,20 +591,6 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
       });
     }
   );
-
-  // High-trust action guarded by emailVerifiedGuard (Milestone 3 LLT Test 20 / Requirements 18 Item 7)
-  fastify.post(
-    '/api/v1/marketplace/listings',
-    {
-      preHandler: [fastify.authenticate, fastify.emailVerifiedGuard],
-    },
-    async (_request, reply) => {
-      return reply.code(201).send({
-        success: true,
-        message: 'Listing created',
-      });
-    }
-  );
 };
 
 export default authRoutes;

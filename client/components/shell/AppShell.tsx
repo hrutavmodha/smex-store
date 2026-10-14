@@ -27,11 +27,11 @@ export function AppShell({ children }: AppShellProps) {
         if (response.ok) {
           const data = await response.json();
           setUser({
-            uid: data.uid,
+            uid: data.id || data.uid,
             email: data.email,
-            ign: data.profile.username,
-            avatarPreset: data.profile.avatarPreset,
-            emailVerified: data.emailVerified,
+            ign: data.profile?.username || data.username || '',
+            avatarPreset: data.profile?.avatarPreset || 'preset_default_01',
+            emailVerified: Boolean(data.emailVerified),
             role: data.role,
           });
         } else if (response.status === 401) {

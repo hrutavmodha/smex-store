@@ -1,6 +1,13 @@
 import { eq, and, sql, desc, or, ilike } from 'drizzle-orm';
 import type { SmexDatabase } from '../db/index.js';
-import { teams, teamMembers, type Team, type TeamMember } from '../db/schema/teams.js';
+import {
+  teams,
+  teamMembers,
+  teamJoinRequests,
+  type Team,
+  type TeamMember,
+  type TeamJoinRequest,
+} from '../db/schema/teams.js';
 import { profiles } from '../db/schema/users.js';
 
 export interface CreateTeamInput {
@@ -45,6 +52,8 @@ export interface TeamMemberDetails extends TeamMember {
 
 export interface TeamDetails extends TeamSummary {
   members: TeamMemberDetails[];
+  hasPendingRequest?: boolean;
+  myJoinRequest?: TeamJoinRequest | null;
 }
 
 export class TeamService {
@@ -225,7 +234,8 @@ export class TeamService {
    */
   static async getTeamById(
     teamId: string,
-    db: SmexDatabase
+    db: SmexDatabase,
+    callerId?: string
   ): Promise<TeamDetails | null> {
     const [teamRow] = await db
       .select({
@@ -280,12 +290,35 @@ export class TeamService {
       availability = 'closed';
     }
 
+    let hasPendingRequest = false;
+    let myJoinRequest: TeamJoinRequest | null = null;
+    if (callerId) {
+      const [pendingReq] = await db
+        .select()
+        .from(teamJoinRequests)
+        .where(
+          and(
+            eq(teamJoinRequests.teamId, teamId),
+            eq(teamJoinRequests.userId, callerId),
+            eq(teamJoinRequests.status, 'pending')
+          )
+        )
+        .limit(1);
+
+      if (pendingReq) {
+        hasPendingRequest = true;
+        myJoinRequest = pendingReq;
+      }
+    }
+
     return {
       ...teamRow,
       activeMembersCount,
       openSlots,
       availability,
       members: memberRows,
+      hasPendingRequest,
+      myJoinRequest,
     };
   }
 
@@ -318,11 +351,28 @@ export class TeamService {
       throw err;
     }
 
-    if (input.memberCap !== undefined && (input.memberCap < 1 || input.memberCap > 10)) {
-      const err: any = new Error('Member capacity must be between 1 and 10');
-      err.statusCode = 422;
-      err.code = 'INVALID_MEMBER_CAP';
-      throw err;
+    if (input.memberCap !== undefined) {
+      if (input.memberCap < 1 || input.memberCap > 10) {
+        const err: any = new Error('Member capacity must be between 1 and 10');
+        err.statusCode = 422;
+        err.code = 'INVALID_MEMBER_CAP';
+        throw err;
+      }
+
+      const [activeCountResult] = await db
+        .select({ count: sql<number>`COUNT(*)::int` })
+        .from(teamMembers)
+        .where(eq(teamMembers.teamId, teamId));
+
+      const currentMembers = activeCountResult?.count ?? 0;
+      if (input.memberCap < currentMembers) {
+        const err: any = new Error(
+          `Cannot set member capacity to ${input.memberCap} because the team currently has ${currentMembers} active members`
+        );
+        err.statusCode = 400;
+        err.code = 'CAPACITY_BELOW_MEMBER_COUNT';
+        throw err;
+      }
     }
 
     const [updated] = await db
@@ -375,7 +425,7 @@ export class TeamService {
 
   /**
    * Removes member from squad (kick by captain OR voluntary leave by member).
-   * Automatically re-opens team if previously closed due to full roster.
+   * Preserves captain's configured squad recruitment status.
    */
   static async removeMember(
     teamId: string,
@@ -383,68 +433,54 @@ export class TeamService {
     callerId: string,
     db: SmexDatabase
   ): Promise<{ success: boolean; message: string }> {
-    const [team] = await db
-      .select()
-      .from(teams)
-      .where(eq(teams.id, teamId))
-      .limit(1);
-
-    if (!team) {
-      const err: any = new Error('Team not found');
-      err.statusCode = 404;
-      err.code = 'TEAM_NOT_FOUND';
-      throw err;
-    }
-
-    const isCaptain = team.captainId === callerId;
-    const isSelf = targetUserId === callerId;
-
-    if (!isCaptain && !isSelf) {
-      const err: any = new Error('You do not have permission to remove this member');
-      err.statusCode = 403;
-      err.code = 'CAPTAIN_PERMISSION_REQUIRED';
-      throw err;
-    }
-
-    // Captain cannot voluntarily leave without transferring captaincy or disbanding
-    if (isSelf && team.captainId === callerId) {
-      const err: any = new Error('Captain cannot leave squad without transferring captaincy');
-      err.statusCode = 400;
-      err.code = 'CAPTAIN_CANNOT_LEAVE';
-      throw err;
-    }
-
-    const [memberRecord] = await db
-      .select()
-      .from(teamMembers)
-      .where(and(eq(teamMembers.teamId, teamId), eq(teamMembers.userId, targetUserId)))
-      .limit(1);
-
-    if (!memberRecord) {
-      const err: any = new Error('Member not found in squad roster');
-      err.statusCode = 404;
-      err.code = 'MEMBER_NOT_FOUND';
-      throw err;
-    }
-
     return await db.transaction(async (tx) => {
+      const [team] = await tx
+        .select()
+        .from(teams)
+        .where(eq(teams.id, teamId))
+        .for('update');
+
+      if (!team) {
+        const err: any = new Error('Team not found');
+        err.statusCode = 404;
+        err.code = 'TEAM_NOT_FOUND';
+        throw err;
+      }
+
+      const isCaptain = team.captainId === callerId;
+      const isSelf = targetUserId === callerId;
+
+      if (!isCaptain && !isSelf) {
+        const err: any = new Error('You do not have permission to remove this member');
+        err.statusCode = 403;
+        err.code = 'CAPTAIN_PERMISSION_REQUIRED';
+        throw err;
+      }
+
+      // Captain cannot voluntarily leave without transferring captaincy or disbanding
+      if (isSelf && team.captainId === callerId) {
+        const err: any = new Error('Captain cannot leave squad without transferring captaincy');
+        err.statusCode = 400;
+        err.code = 'CAPTAIN_CANNOT_LEAVE';
+        throw err;
+      }
+
+      const [memberRecord] = await tx
+        .select()
+        .from(teamMembers)
+        .where(and(eq(teamMembers.teamId, teamId), eq(teamMembers.userId, targetUserId)))
+        .for('update');
+
+      if (!memberRecord) {
+        const err: any = new Error('Member not found in squad roster');
+        err.statusCode = 404;
+        err.code = 'MEMBER_NOT_FOUND';
+        throw err;
+      }
+
       await tx
         .delete(teamMembers)
         .where(and(eq(teamMembers.teamId, teamId), eq(teamMembers.userId, targetUserId)));
-
-      // Auto-reopen check: If team was closed and remaining members < memberCap, transition status to 'open'
-      const [countResult] = await tx
-        .select({ count: sql<number>`COUNT(*)::int` })
-        .from(teamMembers)
-        .where(eq(teamMembers.teamId, teamId));
-
-      const remainingCount = countResult?.count ?? 0;
-      if (team.status === 'closed' && remainingCount < team.memberCap) {
-        await tx
-          .update(teams)
-          .set({ status: 'open', updatedAt: new Date() })
-          .where(eq(teams.id, teamId));
-      }
 
       return {
         success: true,
@@ -462,26 +498,6 @@ export class TeamService {
     newCaptainId: string,
     db: SmexDatabase
   ): Promise<{ success: boolean; newCaptainId: string }> {
-    const [team] = await db
-      .select()
-      .from(teams)
-      .where(eq(teams.id, teamId))
-      .limit(1);
-
-    if (!team) {
-      const err: any = new Error('Team not found');
-      err.statusCode = 404;
-      err.code = 'TEAM_NOT_FOUND';
-      throw err;
-    }
-
-    if (team.captainId !== callerId) {
-      const err: any = new Error('Only the current captain can transfer captaincy');
-      err.statusCode = 403;
-      err.code = 'CAPTAIN_PERMISSION_REQUIRED';
-      throw err;
-    }
-
     if (newCaptainId === callerId) {
       const err: any = new Error('Target is already the captain');
       err.statusCode = 400;
@@ -489,21 +505,41 @@ export class TeamService {
       throw err;
     }
 
-    // Verify new captain is an active member of this squad
-    const [targetMember] = await db
-      .select()
-      .from(teamMembers)
-      .where(and(eq(teamMembers.teamId, teamId), eq(teamMembers.userId, newCaptainId)))
-      .limit(1);
-
-    if (!targetMember) {
-      const err: any = new Error('Target player must be an active member of the squad');
-      err.statusCode = 400;
-      err.code = 'TARGET_NOT_A_MEMBER';
-      throw err;
-    }
-
     return await db.transaction(async (tx) => {
+      const [team] = await tx
+        .select()
+        .from(teams)
+        .where(eq(teams.id, teamId))
+        .for('update');
+
+      if (!team) {
+        const err: any = new Error('Team not found');
+        err.statusCode = 404;
+        err.code = 'TEAM_NOT_FOUND';
+        throw err;
+      }
+
+      if (team.captainId !== callerId) {
+        const err: any = new Error('Only the current captain can transfer captaincy');
+        err.statusCode = 403;
+        err.code = 'CAPTAIN_PERMISSION_REQUIRED';
+        throw err;
+      }
+
+      // Verify new captain is an active member of this squad
+      const [targetMember] = await tx
+        .select()
+        .from(teamMembers)
+        .where(and(eq(teamMembers.teamId, teamId), eq(teamMembers.userId, newCaptainId)))
+        .for('update');
+
+      if (!targetMember) {
+        const err: any = new Error('Target player must be an active member of the squad');
+        err.statusCode = 400;
+        err.code = 'TARGET_NOT_A_MEMBER';
+        throw err;
+      }
+
       // 1. Update teams table captainId
       await tx
         .update(teams)

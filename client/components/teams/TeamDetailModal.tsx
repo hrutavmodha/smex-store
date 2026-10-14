@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Crown, Users, UserX, Check, Ban, AlertTriangle } from 'lucide-react';
 import type { TeamCardData } from './TeamCard';
 
@@ -66,6 +66,15 @@ export function TeamDetailModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [requestSubmitted, setRequestSubmitted] = useState(hasPendingRequest);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    setRequestSubmitted(hasPendingRequest);
+    setShowJoinForm(false);
+    setErrorMsg(null);
+    setPlayerIgn('');
+    setMessage('');
+    setPlayerRole('Assassin');
+  }, [team.id, hasPendingRequest, isOpen]);
 
   if (!isOpen) return null;
 

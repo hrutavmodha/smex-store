@@ -5,16 +5,6 @@ export interface EmailService {
   sendPasswordResetEmail: (email: string, token: string) => Promise<boolean>;
 }
 
-export interface SentEmailRecord {
-  to: string;
-  type: 'verification' | 'password_reset';
-  token: string;
-  sentAt: number;
-}
-
-// In-memory record store for test verification & audits
-export const sentEmailsLog: SentEmailRecord[] = [];
-
 export class TransactionalEmailService implements EmailService {
   private resendClient: Resend | null = null;
 
@@ -33,13 +23,6 @@ export class TransactionalEmailService implements EmailService {
   }
 
   async sendVerificationEmail(email: string, token: string): Promise<boolean> {
-    sentEmailsLog.push({
-      to: email,
-      type: 'verification',
-      token,
-      sentAt: Date.now(),
-    });
-
     if (this.resendClient) {
       try {
         const clientUrl = this.getClientUrl();
@@ -57,13 +40,6 @@ export class TransactionalEmailService implements EmailService {
   }
 
   async sendPasswordResetEmail(email: string, token: string): Promise<boolean> {
-    sentEmailsLog.push({
-      to: email,
-      type: 'password_reset',
-      token,
-      sentAt: Date.now(),
-    });
-
     if (this.resendClient) {
       try {
         const clientUrl = this.getClientUrl();

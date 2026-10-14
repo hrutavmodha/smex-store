@@ -285,4 +285,210 @@ describe('Milestone 4: Client Recruitment Directory & Modal UI Suite (LLT Tests 
     expect(teamModalSource.includes('bg-bg-surface')).toBe(true);
     expect(teamsPageSource.includes('bg-bg-canvas')).toBe(true);
   });
+
+  it('Test 27: Modal state synchronization and cross-squad stale state reset (BUG-M4-002)', async () => {
+    // 1. Direct component level test
+    const handleSubmitJoin = vi.fn().mockResolvedValue(undefined);
+    const { getByTestId, queryByTestId, rerender } = render(
+      <TeamDetailModal
+        team={mockTeams[0]}
+        members={mockMembers}
+        currentUserId="user-visitor-99"
+        isOpen={true}
+        onClose={vi.fn()}
+        onSubmitJoinRequest={handleSubmitJoin}
+      />
+    );
+
+    // Submit join request for squad 1
+    fireEvent.click(getByTestId('request-to-join-button'));
+    fireEvent.change(getByTestId('join-ign-input'), { target: { value: 'Applicant1' } });
+    fireEvent.change(getByTestId('join-role-input'), { target: { value: 'Mage' } });
+    fireEvent.click(getByTestId('join-submit-button'));
+
+    await waitFor(() => {
+      expect(getByTestId('request-pending-badge')).toBeTruthy();
+    });
+
+    // Switch team prop to a second open squad with hasPendingRequest = false
+    const teamB: TeamCardData = {
+      ...mockTeams[0],
+      id: 'team-diff-2',
+      name: 'Beta Squadron',
+      tag: 'BETA',
+    };
+
+    rerender(
+      <TeamDetailModal
+        team={teamB}
+        members={mockMembers}
+        currentUserId="user-visitor-99"
+        isOpen={true}
+        hasPendingRequest={false}
+        onClose={vi.fn()}
+        onSubmitJoinRequest={handleSubmitJoin}
+      />
+    );
+
+    // Stale request pending state must be cleared and action button restored
+    await waitFor(() => {
+      expect(queryByTestId('request-pending-badge')).toBeNull();
+      expect(getByTestId('request-to-join-button')).toBeTruthy();
+    });
+
+    // 2. Full TeamsPage integration test
+    cleanup();
+    const squads: TeamCardData[] = [
+      mockTeams[0],
+      {
+        ...mockTeams[0],
+        id: 'team-open-2',
+        name: 'Solaris Esports',
+        tag: 'SLR',
+        captainId: 'user-cap-99',
+      },
+    ];
+
+    global.fetch = vi.fn().mockImplementation((url: string, options?: RequestInit) => {
+      if (url.includes('/api/v1/teams') && options?.method === 'POST') {
+        return Promise.resolve({
+          ok: true,
+          status: 201,
+          json: () => Promise.resolve({ request: { id: 'req-new', status: 'pending' } }),
+        });
+      }
+      if (url.includes('/api/v1/teams/team-1')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve({ team: { ...mockTeams[0], members: mockMembers } }),
+        });
+      }
+      if (url.includes('/api/v1/teams/team-open-2')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve({ team: { ...squads[1], members: mockMembers } }),
+        });
+      }
+      if (url.includes('/api/v1/teams')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve({ teams: squads, total: 2 }),
+        });
+      }
+      if (url.includes('/api/v1/auth/me')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve({ id: 'user-visitor-99', email: 'visitor@smexstore.com' }),
+        });
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
+    });
+
+    const page = render(<TeamsPage />);
+
+    await waitFor(() => {
+      expect(page.getByTestId('teams-grid')).toBeTruthy();
+    });
+
+    const viewButtons = page.getAllByTestId('view-roster-button');
+    expect(viewButtons.length).toBe(2);
+
+    // Open first squad modal
+    fireEvent.click(viewButtons[0]);
+    await waitFor(() => {
+      expect(page.getByTestId('team-detail-modal')).toBeTruthy();
+      expect(page.getByTestId('request-to-join-button')).toBeTruthy();
+    });
+
+    // Submit join request on squad 1
+    fireEvent.click(page.getByTestId('request-to-join-button'));
+    fireEvent.change(page.getByTestId('join-ign-input'), { target: { value: 'GhostPlayer' } });
+    fireEvent.change(page.getByTestId('join-role-input'), { target: { value: 'Assassin' } });
+    fireEvent.click(page.getByTestId('join-submit-button'));
+
+    await waitFor(() => {
+      expect(page.getByTestId('request-pending-badge')).toBeTruthy();
+    });
+
+    // Close modal for squad 1
+    const closeBtn = page.getByRole('button', { name: /close modal/i });
+    fireEvent.click(closeBtn);
+
+    // Open second squad modal
+    fireEvent.click(viewButtons[1]);
+    await waitFor(() => {
+      expect(page.getByTestId('team-detail-modal')).toBeTruthy();
+    });
+
+    // Stale state must NOT leak to squad 2: should display "Request to Join Squad" button
+    expect(page.queryByTestId('request-pending-badge')).toBeNull();
+    expect(page.getByTestId('request-to-join-button')).toBeTruthy();
+    expect(page.getByTestId('request-to-join-button').textContent).toContain('Request to Join Squad');
+  });
+
+  it('Test 28: Existing applicant opening squad modal shows Request Pending badge immediately (BUG-M4-003)', async () => {
+    cleanup();
+
+    global.fetch = vi.fn().mockImplementation((url: string) => {
+      if (url.includes('/api/v1/teams/team-1/my-request')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve({ hasPendingRequest: true, request: mockRequests[0] }),
+        });
+      }
+      if (url.includes('/api/v1/teams/team-1')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve({
+            team: {
+              ...mockTeams[0],
+              hasPendingRequest: true,
+              members: mockMembers,
+            },
+          }),
+        });
+      }
+      if (url.includes('/api/v1/teams')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve({ teams: [mockTeams[0]], total: 1 }),
+        });
+      }
+      if (url.includes('/api/v1/auth/me')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve({ id: 'user-applicant-1', email: 'applicant@smexstore.com' }),
+        });
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
+    });
+
+    const page = render(<TeamsPage />);
+
+    await waitFor(() => {
+      expect(page.getByTestId('teams-grid')).toBeTruthy();
+    });
+
+    // Click View Roster for team-1 where user has a pending request
+    const viewButton = page.getByTestId('view-roster-button');
+    fireEvent.click(viewButton);
+
+    // Modal opens and immediately displays the pending badge
+    await waitFor(() => {
+      expect(page.getByTestId('team-detail-modal')).toBeTruthy();
+      expect(page.getByTestId('request-pending-badge')).toBeTruthy();
+    });
+
+    expect(page.queryByTestId('request-to-join-button')).toBeNull();
+    expect(page.queryByTestId('join-request-form')).toBeNull();
+    expect(page.getByTestId('request-pending-badge').textContent).toContain('Join Request Pending (Awaiting Captain Approval)');
+  });
 });
