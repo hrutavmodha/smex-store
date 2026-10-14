@@ -109,14 +109,14 @@ describe('Concurrency-Safe Vacancy Locking & Race Condition Prevention (LLT 2.4)
     const req1 = await TeamJoinService.submitJoinRequest(
       team.id,
       app1.id,
-      { playerIgn: 'PlayerOne', playerRole: 'Assassin' },
+      { playerIgn: 'PlayerOne', playerRole: 'Hyper' },
       app.db
     );
 
     const req2 = await TeamJoinService.submitJoinRequest(
       team.id,
       app2.id,
-      { playerIgn: 'PlayerTwo', playerRole: 'Mage' },
+      { playerIgn: 'PlayerTwo', playerRole: 'Mid' },
       app.db
     );
 

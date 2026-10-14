@@ -104,6 +104,9 @@ export class TeamService {
       throw err;
     }
 
+    const memberCap = input.memberCap ?? 5;
+    const initialStatus = memberCap === 1 ? 'closed' : 'open';
+
     return await db.transaction(async (tx) => {
       const [newTeam] = await tx
         .insert(teams)
@@ -112,8 +115,8 @@ export class TeamService {
           tag: input.tag,
           captainId: userId,
           gameSlug,
-          memberCap: input.memberCap ?? 5,
-          status: 'open',
+          memberCap,
+          status: initialStatus,
           description: input.description,
         })
         .returning();

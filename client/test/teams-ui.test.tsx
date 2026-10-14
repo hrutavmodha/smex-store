@@ -595,8 +595,8 @@ describe('Milestone 4: Client Recruitment Directory & Modal UI Suite (LLT Tests 
       memberCap: 5,
       activeMembersCount: 2,
       openSlots: 3,
-      status: 'open' as const,
-      availability: 'open' as const,
+      status: 'open' as 'open' | 'closed',
+      availability: 'open' as 'open' | 'closed' | 'full',
       members: [...mockMembers],
     };
 

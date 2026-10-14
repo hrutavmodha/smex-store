@@ -358,4 +358,37 @@ describe('Join Request Submission Suite (LLT 2.3)', () => {
       assert.equal(validBody.joinRequest.playerRole, role);
     }
   });
+
+  test('Test 16: Squad created with memberCap: 1 is initialized closed and rejects join requests (BUG-M4-011)', async (t) => {
+    const app = await build(t);
+    const { user: captain, token: captToken } = await createVerifiedUser(app, 'cap1_c');
+    const { user: applicant, token: applicantToken } = await createVerifiedUser(app, 'cap1_a');
+
+    // 1. Create squad with memberCap: 1
+    const createRes = await app.inject({
+      method: 'POST',
+      url: '/api/v1/teams',
+      headers: { authorization: `Bearer ${captToken}` },
+      payload: {
+        name: `SoloSquad_${Date.now()}`,
+        tag: 'SOLO',
+        memberCap: 1,
+      },
+    });
+    assert.equal(createRes.statusCode, 201);
+    const createdTeam = JSON.parse(createRes.body).team;
+    assert.equal(createdTeam.memberCap, 1);
+    assert.equal(createdTeam.status, 'closed', 'Squad with memberCap: 1 must be initialized with status closed');
+
+    // 2. Applicant attempts to submit join request to squad with memberCap: 1
+    const joinRes = await app.inject({
+      method: 'POST',
+      url: `/api/v1/teams/${createdTeam.id}/join-requests`,
+      headers: { authorization: `Bearer ${applicantToken}` },
+      payload: { playerIgn: 'SoloJoiner', playerRole: 'Mid' },
+    });
+    assert.equal(joinRes.statusCode, 400);
+    const joinBody = JSON.parse(joinRes.body);
+    assert.equal(joinBody.code, 'TEAM_CLOSED');
+  });
 });

@@ -48,8 +48,15 @@ export class TeamJoinService {
       throw err;
     }
 
-    if (team.status === 'closed') {
-      const err: any = new Error('Cannot submit join request to a closed squad');
+    // Verify that the squad is open and has available roster slots
+    const [countResult] = await db
+      .select({ count: sql<number>`COUNT(*)::int` })
+      .from(teamMembers)
+      .where(eq(teamMembers.teamId, teamId));
+
+    const activeMembersCount = countResult?.count ?? 0;
+    if (team.status === 'closed' || activeMembersCount >= team.memberCap) {
+      const err: any = new Error('Cannot submit join request to a full or closed squad');
       err.statusCode = 400;
       err.code = 'TEAM_CLOSED';
       throw err;
@@ -132,19 +139,23 @@ export class TeamJoinService {
     }
 
     // Dispatch real-time WebSocket / Redis notification to captain
-    await NotificationService.notifyCaptainJoinRequest(
-      team.captainId,
-      {
-        teamId,
-        teamName: team.name,
-        requestId: createdRequest.id,
-        applicantId,
-        playerIgn: input.playerIgn,
-        playerRole: input.playerRole,
-      },
-      redis,
-      wsGateway
-    );
+    try {
+      await NotificationService.notifyCaptainJoinRequest(
+        team.captainId,
+        {
+          teamId,
+          teamName: team.name,
+          requestId: createdRequest.id,
+          applicantId,
+          playerIgn: input.playerIgn,
+          playerRole: input.playerRole,
+        },
+        redis,
+        wsGateway
+      );
+    } catch {
+      // Non-blocking notification dispatch: transport failures must not fail the created request
+    }
 
     return createdRequest;
   }
@@ -231,7 +242,7 @@ export class TeamJoinService {
       throw err;
     }
 
-    return await db.transaction(async (tx) => {
+    const txResult = await db.transaction(async (tx) => {
       // 1. Pessimistic row-level lock on teams table
       const [lockedTeam] = await tx
         .select()
@@ -288,14 +299,12 @@ export class TeamJoinService {
           .set({ status: 'rejected', updatedAt: new Date() })
           .where(eq(teamJoinRequests.id, requestId));
 
-        await NotificationService.notifyApplicantStatus(
-          joinReq.userId,
-          { teamId, teamName: lockedTeam.name, status: 'rejected' },
-          redis,
-          wsGateway
-        );
-
-        return { success: true, status: 'rejected' };
+        return {
+          success: true,
+          status: 'rejected' as const,
+          applicantId: joinReq.userId,
+          teamName: lockedTeam.name,
+        };
       }
 
       // Action is 'accept'
@@ -355,16 +364,27 @@ export class TeamJoinService {
           .where(and(eq(teamJoinRequests.teamId, teamId), eq(teamJoinRequests.status, 'pending')));
       }
 
-      // 9. Dispatch real-time WebSocket / Redis notification to applicant
+      return {
+        success: true,
+        status: 'accepted' as const,
+        applicantId: joinReq.userId,
+        teamName: lockedTeam.name,
+      };
+    });
+
+    // 9. Dispatch real-time WebSocket / Redis notification to applicant after transaction has committed
+    try {
       await NotificationService.notifyApplicantStatus(
-        joinReq.userId,
-        { teamId, teamName: lockedTeam.name, status: 'accepted' },
+        txResult.applicantId,
+        { teamId, teamName: txResult.teamName, status: txResult.status },
         redis,
         wsGateway
       );
+    } catch {
+      // Non-blocking notification dispatch: transport failures must not fail the committed transaction
+    }
 
-      return { success: true, status: 'accepted' };
-    });
+    return { success: txResult.success, status: txResult.status };
   }
 
   /**

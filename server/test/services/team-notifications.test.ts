@@ -1,9 +1,11 @@
 import { test, describe } from 'vitest';
 import assert from 'node:assert/strict';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { build } from '../helper.js';
 import { users } from '../../src/db/schema/users.js';
+import { teamMembers, teamJoinRequests } from '../../src/db/schema/teams.js';
 import { TeamService } from '../../src/services/team.service.js';
+import { NotificationService } from '../../src/services/notification.service.js';
 import type { FastifyInstance } from 'fastify';
 
 async function createVerifiedUser(app: FastifyInstance, prefix = 'notifu') {
@@ -142,5 +144,65 @@ describe('Real-Time Event Dispatch Suite (LLT 2.6)', () => {
     assert.equal(notif.data.status, 'accepted');
 
     await subscriber.quit();
+  });
+
+  test('Test 22: Side-effect notification dispatch is decoupled from db transaction and transport errors do not roll back mutation (BUG-M4-010)', async (t) => {
+    const app = await build(t);
+    const { user: captain, token: captToken } = await createVerifiedUser(app, 'notif_c22');
+    const { user: applicant, token: applicantToken } = await createVerifiedUser(app, 'notif_a22');
+
+    const { team } = await TeamService.createTeam(
+      captain.id,
+      { name: `NotifSquad3_${Date.now()}`, tag: 'NTF3', memberCap: 5 },
+      app.db
+    );
+
+    // Submit join request
+    const joinRes = await app.inject({
+      method: 'POST',
+      url: `/api/v1/teams/${team.id}/join-requests`,
+      headers: { authorization: `Bearer ${applicantToken}` },
+      payload: { playerIgn: 'TankMaster', playerRole: 'Roam' },
+    });
+    assert.equal(joinRes.statusCode, 201);
+    const reqId = JSON.parse(joinRes.body).joinRequest.id;
+
+    // Simulate transient Redis network failure during notification dispatch
+    const originalNotify = NotificationService.notifyApplicantStatus;
+    NotificationService.notifyApplicantStatus = async () => {
+      throw new Error('ECONNREFUSED: Redis broker connection lost during Pub/Sub dispatch');
+    };
+
+    try {
+      // Captain resolves join request (accept)
+      const acceptRes = await app.inject({
+        method: 'PATCH',
+        url: `/api/v1/teams/${team.id}/join-requests/${reqId}`,
+        headers: { authorization: `Bearer ${captToken}` },
+        payload: { action: 'accept' },
+      });
+
+      // API must succeed (HTTP 200) despite notification transport failure
+      assert.equal(acceptRes.statusCode, 200);
+      const body = JSON.parse(acceptRes.body);
+      assert.equal(body.success, true);
+      assert.equal(body.status, 'accepted');
+
+      // Database transaction must have successfully committed
+      const [acceptedMember] = await app.db
+        .select()
+        .from(teamMembers)
+        .where(and(eq(teamMembers.teamId, team.id), eq(teamMembers.userId, applicant.id)));
+      assert.ok(acceptedMember, 'Applicant must be in team_members in DB');
+      assert.equal(acceptedMember.memberRole, 'member');
+
+      const [updatedReq] = await app.db
+        .select()
+        .from(teamJoinRequests)
+        .where(eq(teamJoinRequests.id, reqId));
+      assert.equal(updatedReq.status, 'accepted');
+    } finally {
+      NotificationService.notifyApplicantStatus = originalNotify;
+    }
   });
 });
