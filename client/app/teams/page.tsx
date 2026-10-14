@@ -80,22 +80,32 @@ export default function TeamsPage() {
   const handleOpenTeam = async (team: TeamCardData) => {
     setSelectedTeam(team);
     setIsModalOpen(true);
-    setSelectedMembers([]);
-    setPendingRequests([]);
-    setHasPendingRequest(false);
+    if (!isModalOpen || selectedTeam?.id !== team.id) {
+      setSelectedMembers([]);
+      setPendingRequests([]);
+      setHasPendingRequest(false);
+    }
 
     try {
+      let teamData = team;
       const res = await fetchWithAuth(`/api/v1/teams/${team.id}`);
       if (res.ok) {
         const data = await res.json();
         setSelectedMembers(data.team.members || []);
+        if (data.team) {
+          teamData = { ...team, ...data.team };
+          setSelectedTeam((prev) => ({
+            ...(prev || team),
+            ...data.team,
+          }));
+        }
         if (typeof data.team.hasPendingRequest === 'boolean') {
           setHasPendingRequest(data.team.hasPendingRequest);
         }
       }
 
       // If user is captain, fetch pending join requests
-      if (currentUser?.id === team.captainId) {
+      if (currentUser?.id === teamData.captainId) {
         const reqRes = await fetchWithAuth(`/api/v1/teams/${team.id}/join-requests`);
         if (reqRes.ok) {
           const reqData = await reqRes.json();
@@ -211,8 +221,25 @@ export default function TeamsPage() {
     });
 
     if (res.ok) {
-      const updated = { ...selectedTeam, status: nextStatus };
-      setSelectedTeam(updated as TeamCardData);
+      const activeCount = selectedMembers.length;
+      const openSlots = Math.max(0, selectedTeam.memberCap - activeCount);
+      let nextAvailability: 'open' | 'closed' | 'full' = 'closed';
+      if (nextStatus === 'open' && openSlots > 0) {
+        nextAvailability = 'open';
+      } else if (openSlots === 0) {
+        nextAvailability = 'full';
+      } else {
+        nextAvailability = 'closed';
+      }
+      const updated: TeamCardData = {
+        ...selectedTeam,
+        status: nextStatus,
+        availability: nextAvailability,
+        openSlots,
+        activeMembersCount: activeCount,
+      };
+      setSelectedTeam(updated);
+      await handleOpenTeam(updated);
       await loadTeams();
     }
   };

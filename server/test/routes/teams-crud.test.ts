@@ -189,7 +189,7 @@ describe('Squad CRUD & Capacity Limits Suite (LLT 2.1)', () => {
       method: 'POST',
       url: `/api/v1/teams/${teamId}/join-requests`,
       headers: { authorization: `Bearer ${applicantToken}` },
-      payload: { playerIgn: 'Requester1', playerRole: 'Mage' },
+      payload: { playerIgn: 'Requester1', playerRole: 'Mid' },
     });
     assert.equal(joinRes.statusCode, 201);
 

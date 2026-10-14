@@ -586,4 +586,139 @@ describe('Milestone 4: Client Recruitment Directory & Modal UI Suite (LLT Tests 
     expect(options).toEqual(['Roam', 'Hyper', 'Exp', 'Gold', 'Mid']);
     expect(roleSelect.value).toBe('Roam');
   });
+
+  it('Test 31: Modal header availability badge and vacancy counts update dynamically after roster mutations and status toggle (BUG-M4-009)', async () => {
+    cleanup();
+
+    let teamState = {
+      ...mockTeams[0],
+      memberCap: 5,
+      activeMembersCount: 2,
+      openSlots: 3,
+      status: 'open' as const,
+      availability: 'open' as const,
+      members: [...mockMembers],
+    };
+
+    let pendingReqs = [...mockRequests];
+
+    global.fetch = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+      if (url.includes('/api/v1/auth/me')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve({ id: 'user-cap-1', email: 'captain@omega.com' }),
+        });
+      }
+      if (url.includes('/api/v1/teams/team-1/join-requests/req-1') && init?.method === 'PATCH') {
+        const newMember: RosterMember = {
+          id: 'mem-3',
+          userId: 'user-applicant-1',
+          memberRole: 'member',
+          joinedAt: new Date().toISOString(),
+          username: 'ValkAce',
+          inGameId: 'ValkyrieAce',
+          avatarPreset: 'preset_default_03',
+          playstyle: 'Marksman',
+        };
+        teamState = {
+          ...teamState,
+          members: [...teamState.members, newMember],
+          activeMembersCount: 3,
+          openSlots: 2,
+        };
+        pendingReqs = [];
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve({ success: true, status: 'accepted' }),
+        });
+      }
+      if (url.includes('/api/v1/teams/team-1/join-requests')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve({ requests: pendingReqs }),
+        });
+      }
+      if (url.includes('/api/v1/teams/team-1') && init?.method === 'PATCH') {
+        const body = JSON.parse(init.body as string);
+        teamState = {
+          ...teamState,
+          status: body.status,
+          availability: body.status === 'open' ? 'open' : 'closed',
+        };
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve({ team: teamState }),
+        });
+      }
+      if (url.includes('/api/v1/teams/team-1')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve({ team: teamState }),
+        });
+      }
+      if (url.includes('/api/v1/teams')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve({ teams: [teamState], total: 1 }),
+        });
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
+    });
+
+    const page = render(<TeamsPage />);
+
+    await waitFor(() => {
+      expect(page.getByTestId('teams-grid')).toBeTruthy();
+    });
+
+    // 1. Open squad modal
+    const viewButton = page.getByTestId('view-roster-button');
+    fireEvent.click(viewButton);
+
+    const modal = await page.findByTestId('team-detail-modal');
+    expect(modal).toBeTruthy();
+
+    // Verify initial open state in modal header once details resolve
+    await waitFor(() => {
+      expect(modal.textContent).toContain('Open to Join');
+      expect(modal.textContent).toContain('2 / 5 Members');
+      expect(modal.textContent).toContain('3 Slots Available');
+    });
+
+    // 2. Toggle Status: Captain closes roster
+    const toggleBtn = page.getByTestId('close-roster-toggle');
+    expect(toggleBtn.textContent).toContain('Close Roster');
+    fireEvent.click(toggleBtn);
+
+    // Modal header availability badge must immediately update to "Closed"
+    await waitFor(() => {
+      expect(modal.textContent).toContain('Closed');
+      expect(modal.textContent).not.toContain('Open to Join');
+      expect(toggleBtn.textContent).toContain('Open Roster');
+    });
+
+    // Toggle Status back to Open
+    fireEvent.click(toggleBtn);
+    await waitFor(() => {
+      expect(modal.textContent).toContain('Open to Join');
+      expect(toggleBtn.textContent).toContain('Close Roster');
+    });
+
+    // 3. Approve Join Request: Roster expands and capacity synchronizes
+    const approveBtn = page.getByTestId('approve-request-button');
+    expect(approveBtn).toBeTruthy();
+    fireEvent.click(approveBtn);
+
+    await waitFor(() => {
+      expect(modal.textContent).toContain('3 / 5 Members');
+      expect(modal.textContent).toContain('2 Slots Available');
+      expect(modal.textContent).toContain('Open to Join');
+    });
+  });
 });
