@@ -82,6 +82,7 @@ export const tournamentMatches = pgTable(
     teamBScore: integer('team_b_score').notNull().default(0),
     winnerId: uuid('winner_id').references(() => teams.id, { onDelete: 'set null' }),
     status: matchStatusEnum('status').notNull().default('scheduled'),
+    bracketType: varchar('bracket_type', { length: 20 }).notNull().default('upper'),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [

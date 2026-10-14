@@ -121,16 +121,16 @@ flowchart TD
 
 ### Milestone 5: Tournament Engine and Live Lobbies
 
-* [ ] **5.1 Tournament Management**: Lifecycle state machine handling upcoming, registration_open, ongoing, and completed states.
-* [ ] **5.2 Bracket Generation**: Single-elimination, double-elimination, and round-robin bracket seed generators with automated bye assignments.
-* [ ] **5.3 Real-Time WebSocket Lobby Gateway**:
-  * `/ws/tournaments/:id/lobby`: Broadcasts live team registrations and bracket advancements without page reload.
+* [X] **5.1 Tournament Management**: Lifecycle state machine handling upcoming, registration_open, ongoing, and completed states.
+* [X] **5.2 Bracket Generation**: Single-elimination, double-elimination, and round-robin bracket seed generators with automated bye assignments.
+* [X] **5.3 Real-Time WebSocket Lobby Gateway**:
+  * `/ws/tournaments/:id/lobby` & `/ws`: Broadcasts live team registrations and bracket advancements without page reload backed by Redis pub/sub (`tournament:{id}`).
   * Channel heartbeat and connection recovery handling.
-* [ ] **5.4 Client Tournaments and Bracket UI**:
+* [X] **5.4 Client Tournaments and Bracket UI**:
   * Build Tournaments page with Past, Ongoing, and Upcoming segmented views.
   * Build interactive bracket visualization component rendering rounds, match nodes, and winners.
   * Build live WebSocket tournament match lobby room with real-time score updater.
-* [ ] **5.5 Automated Tournament and Bracket Testing**: Execute test suite verifying lifecycle state transitions, bracket generator algorithms, WebSocket lobby event dispatch, and bracket visualizer rendering.
+* [X] **5.5 Automated Tournament and Bracket Testing**: Execute test suite verifying lifecycle state transitions, bracket generator algorithms, WebSocket lobby event dispatch, and bracket visualizer rendering (21 server tests passing, 6 client tests passing across Chromium, Firefox, WebKit; 127 total server tests passing, 120 total client tests passing).
 
 ---
 

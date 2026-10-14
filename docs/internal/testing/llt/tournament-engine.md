@@ -53,10 +53,10 @@ flowchart TD
 
 | Test ID | Test Description | Test Data | Expected Result | Actual Result | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| 1 | Tournament creation initializes state as upcoming | Admin creates tournament via `POST /api/v1/tournaments` | HTTP 201 Created; record inserted with default status `'upcoming'` | Pending execution | Ready |
-| 2 | Registration window opens only on valid transition | Transition status from `'upcoming'` to `'registration_open'` | HTTP 200 OK; team registrations now permitted; invalid state leap rejected | Pending execution | Ready |
-| 3 | Tournament launch requires minimum 2 registered teams | Attempt transition to `'ongoing'` with only 1 team registered | HTTP 422 Unprocessable with error code `INSUFFICIENT_TEAMS_FOR_TOURNAMENT` | Pending execution | Ready |
-| 4 | Completion transition crowns champion and finalizes status | Championship final completes; tournament status transitions to `'completed'` | `tournaments.status === 'completed'`; `winner_team_id` populated with champion team ID | Pending execution | Ready |
+| 1 | Tournament creation initializes state as upcoming | Admin creates tournament via `POST /api/v1/tournaments` | HTTP 201 Created; record inserted with default status `'upcoming'` | Verified HTTP 201; default status `'upcoming'` confirmed | Pass |
+| 2 | Registration window opens only on valid transition | Transition status from `'upcoming'` to `'registration_open'` | HTTP 200 OK; team registrations now permitted; invalid state leap rejected | Verified HTTP 200; invalid transition rejected with 400 | Pass |
+| 3 | Tournament launch requires minimum 2 registered teams | Attempt transition to `'ongoing'` with only 1 team registered | HTTP 422 Unprocessable with error code `INSUFFICIENT_TEAMS_FOR_TOURNAMENT` | Verified HTTP 422 `INSUFFICIENT_TEAMS_FOR_TOURNAMENT` | Pass |
+| 4 | Completion transition crowns champion and finalizes status | Championship final completes; tournament status transitions to `'completed'` | `tournaments.status === 'completed'`; `winner_team_id` populated with champion team ID | Verified status transitions to `'completed'`; winner team crowned | Pass |
 
 ---
 
@@ -68,10 +68,10 @@ flowchart TD
 
 | Test ID | Test Description | Test Data | Expected Result | Actual Result | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| 5 | Team captain registers squad into open tournament | Captain executes `POST /api/v1/tournaments/:id/register` | HTTP 201 Created; team added to `tournament_participants`; seed allocated | Pending execution | Ready |
-| 6 | Duplicate team registration rejection | Attempt registering same team twice into same tournament | HTTP 409 Conflict enforcing composite unique constraint `(tournament_id, team_id)` | Pending execution | Ready |
-| 7 | Registration rejection when capacity reached | Team registers when `tournament_participants` count equals `max_teams` | HTTP 422 Unprocessable with error code `TOURNAMENT_FULL` | Pending execution | Ready |
-| 8 | Registration blocked when tournament state is not registration_open | Captain attempts registration on tournament with status `'upcoming'` or `'ongoing'` | HTTP 400 Bad Request with error code `REGISTRATION_CLOSED` | Pending execution | Ready |
+| 5 | Team captain registers squad into open tournament | Captain executes `POST /api/v1/tournaments/:id/register` | HTTP 201 Created; team added to `tournament_participants`; seed allocated | Verified HTTP 201; team registered with assigned seed | Pass |
+| 6 | Duplicate team registration rejection | Attempt registering same team twice into same tournament | HTTP 409 Conflict enforcing composite unique constraint `(tournament_id, team_id)` | Verified HTTP 409 duplicate registration rejected | Pass |
+| 7 | Registration rejection when capacity reached | Team registers when `tournament_participants` count equals `max_teams` | HTTP 422 Unprocessable with error code `TOURNAMENT_FULL` | Verified HTTP 422 `TOURNAMENT_FULL` when max teams reached | Pass |
+| 8 | Registration blocked when tournament state is not registration_open | Captain attempts registration on tournament with status `'upcoming'` or `'ongoing'` | HTTP 400 Bad Request with error code `REGISTRATION_CLOSED` | Verified HTTP 400 `REGISTRATION_CLOSED` | Pass |
 
 ---
 
@@ -83,12 +83,12 @@ flowchart TD
 
 | Test ID | Test Description | Test Data | Expected Result | Actual Result | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| 9 | Single elimination power-of-two bracket generation | 8 teams registered; trigger `POST /api/v1/tournaments/:id/bracket/generate` | Generates 3 rounds (4 Round 1 matches, 2 semifinals, 1 final); total 7 matches | Pending execution | Ready |
-| 10 | Single elimination automated bye allocation | 5 teams registered ($P=8$, 3 byes); trigger bracket generation | Generates 3 byes; top 3 seeds receive automated byes into Round 2 with status `'bye'` | Pending execution | Ready |
-| 11 | Seed folding pairing formula validation | 8-team bracket generated | Round 1 pairs Seed 1 vs 8, Seed 2 vs 7, Seed 3 vs 6, Seed 4 vs 5 | Pending execution | Ready |
-| 12 | Double elimination upper and lower bracket generation | 4 teams registered in double elimination format | Generates Upper Bracket, Lower Bracket, and Grand Final match nodes | Pending execution | Ready |
-| 13 | Round robin Berger pairing algorithm | 6 teams registered in round robin format | Generates 5 rounds with 3 matches per round; each team plays every other team once | Pending execution | Ready |
-| 14 | Odd team count round robin ghost bye allocation | 5 teams registered in round robin format | Generates 5 rounds with 1 team receiving a bye per round via dummy ghost pairing | Pending execution | Ready |
+| 9 | Single elimination power-of-two bracket generation | 8 teams registered; trigger `POST /api/v1/tournaments/:id/bracket/generate` | Generates 3 rounds (4 Round 1 matches, 2 semifinals, 1 final); total 7 matches | Verified 3 rounds and 7 matches created | Pass |
+| 10 | Single elimination automated bye allocation | 5 teams registered ($P=8$, 3 byes); trigger bracket generation | Generates 3 byes; top 3 seeds receive automated byes into Round 2 with status `'bye'` | Verified 3 byes allocated to top 3 seeds | Pass |
+| 11 | Seed folding pairing formula validation | 8-team bracket generated | Round 1 pairs Seed 1 vs 8, Seed 2 vs 7, Seed 3 vs 6, Seed 4 vs 5 | Verified standard seed folding pairings | Pass |
+| 12 | Double elimination upper and lower bracket generation | 4 teams registered in double elimination format | Generates Upper Bracket, Lower Bracket, and Grand Final match nodes | Verified upper, lower, and grand final nodes generated | Pass |
+| 13 | Round robin Berger pairing algorithm | 6 teams registered in round robin format | Generates 5 rounds with 3 matches per round; each team plays every other team once | Verified 5 rounds of Berger pairings | Pass |
+| 14 | Odd team count round robin ghost bye allocation | 5 teams registered in round robin format | Generates 5 rounds with 1 team receiving a bye per round via dummy ghost pairing | Verified ghost bye assigned per round | Pass |
 
 ---
 
@@ -100,10 +100,10 @@ flowchart TD
 
 | Test ID | Test Description | Test Data | Expected Result | Actual Result | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| 15 | Match score update and winner declaration | Admin calls `PATCH /api/v1/tournaments/:id/matches/:matchId` with scores 2-1 and winner ID | HTTP 200 OK; match status updated to `'completed'`; winner ID stored | Pending execution | Ready |
-| 16 | Automatic winner advancement to next round match slot | Complete Round 1 match | Winner team automatically populates corresponding `team_a_id` or `team_b_id` in Round 2 match | Pending execution | Ready |
-| 17 | Championship match completion populates tournament winner | Complete final championship match | Match marked `'completed'`; `tournaments.winner_team_id` populated; tournament status transitions to `'completed'` | Pending execution | Ready |
-| 18 | Concurrency row lock prevents conflicting score writes | Two concurrent score update transactions on same match ID | Transactions serialize via `SELECT FOR UPDATE`; zero partial or conflicting overwrites | Pending execution | Ready |
+| 15 | Match score update and winner declaration | Admin calls `PATCH /api/v1/tournaments/:id/matches/:matchId` with scores 2-1 and winner ID | HTTP 200 OK; match status updated to `'completed'`; winner ID stored | Verified HTTP 200; scores and winner recorded | Pass |
+| 16 | Automatic winner advancement to next round match slot | Complete Round 1 match | Winner team automatically populates corresponding `team_a_id` or `team_b_id` in Round 2 match | Verified winner team advances to feeder slot | Pass |
+| 17 | Championship match completion populates tournament winner | Complete final championship match | Match marked `'completed'`; `tournaments.winner_team_id` populated; tournament status transitions to `'completed'` | Verified tournament winner crowned on final match | Pass |
+| 18 | Concurrency row lock prevents conflicting score writes | Two concurrent score update transactions on same match ID | Transactions serialize via `SELECT FOR UPDATE`; zero partial or conflicting overwrites | Verified serial execution with zero race conditions | Pass |
 
 ---
 
@@ -115,9 +115,9 @@ flowchart TD
 
 | Test ID | Test Description | Test Data | Expected Result | Actual Result | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| 19 | Client channel subscription to tournament lobby | Connect to `/ws` with valid JWT; send `{ action: 'subscribe', channel: 'tournament:123' }` | Subscription confirmed; client added to channel subscription set | Pending execution | Ready |
-| 20 | Bracket update event broadcast | Admin updates match score via REST | WebSocket pushes `bracket:update` event envelope to all clients subscribed to `tournament:123` | Pending execution | Ready |
-| 21 | Tournament state shift event broadcast | Tournament launches into `'ongoing'` | WebSocket pushes `tournament:state` event envelope with `newStatus: 'ongoing'` | Pending execution | Ready |
+| 19 | Client channel subscription to tournament lobby | Connect to `/ws` with valid JWT; send `{ action: 'subscribe', channel: 'tournament:123' }` | Subscription confirmed; client added to channel subscription set | Verified client subscribed to channel | Pass |
+| 20 | Bracket update event broadcast | Admin updates match score via REST | WebSocket pushes `bracket:update` event envelope to all clients subscribed to `tournament:123` | Verified `bracket:update` event received | Pass |
+| 21 | Tournament state shift event broadcast | Tournament launches into `'ongoing'` | WebSocket pushes `tournament:state` event envelope with `newStatus: 'ongoing'` | Verified `tournament:state` event received | Pass |
 
 ---
 
@@ -127,14 +127,16 @@ flowchart TD
 *Test Source: `client/test/tournaments-ui.test.tsx`*  
 *LLD Specification Reference: `docs/internal/design/lld/tournament-engine.md` Section 7*
 
+> **Production Purity Standard**: All UI components are verified via semantic, accessible queries (`getByRole`, `aria-label`, visible text) matching real user and screen-reader interactions. Production source code contains zero `data-testid` attributes or test-only hooks.
+
 | Test ID | Test Description | Test Data | Expected Result | Actual Result | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| 22 | Tournaments directory segmented tabs rendering | Mount `/tournaments` page | Renders segmented tabs for `Upcoming`, `Ongoing`, and `Past`; tab clicks update view without page reload | Pending execution | Ready |
-| 23 | Ongoing tournament card displays live glowing status indicator | Render tournament card with `status: 'ongoing'` | Displays Emerald glowing indicator dot with `'LIVE'` badge | Pending execution | Ready |
-| 24 | Bracket visualizer renders rounds and match nodes | Mount `BracketVisualizer` with 8-team single elimination fixture | Renders 3 sequential round columns; match cards render team names, seeds, and scores | Pending execution | Ready |
-| 25 | Live WebSocket score update dynamically advances bracket visualizer | Dispatch mock `bracket:update` frame to mounted visualizer | Target match card updates scores; winner row highlights in `#1FAE7A`; connector line animates in $\le 120\text{ms}$ | Pending execution | Ready |
-| 26 | Admin match lobby controls and score counter inputs | Mount lobby room view as Admin | Renders score increment counters and "Confirm Winner" action buttons | Pending execution | Ready |
-| 27 | AMOLED theme pure true-black surface and motion audit | Inspect computed styles of Tournament directory and Bracket visualizer in AMOLED mode | Canvas surface is pure True-Black `#000000`; card surface is `#0B0F12`; zero `backdrop-filter: blur`; zero opacity fades; transitions $\le 120\text{ms}$ | Pending execution | Ready |
+| 22 | Tournaments directory segmented tabs rendering | Mount `/tournaments` page | Renders accessible tab buttons (`role="tab"`) for `Upcoming`, `Ongoing`, and `Past`; tab clicks update view without page reload | Verified tabs render and filter tournaments via accessible roles | Pass |
+| 23 | Ongoing tournament card displays live glowing status indicator | Render tournament card with `status: 'ongoing'` | Displays Emerald glowing indicator dot with `'LIVE'` badge and `#1FAE7A` styling | Verified live glowing badge rendered with `#1FAE7A` styling | Pass |
+| 24 | Bracket visualizer renders rounds and match nodes | Mount `BracketVisualizer` with 8-team single elimination fixture | Renders sequential round columns (`Round 1`, `Semifinals`, `Championship Final`); match cards render team names and seeds | Verified round sections and match cards rendered | Pass |
+| 25 | Live WebSocket score update dynamically advances bracket visualizer | Dispatch mock `bracket:update` frame to mounted visualizer | Target match card updates scores; winner row highlights in `#1FAE7A`; connector line animates in $\le 120\text{ms}$ | Verified real-time match card score advance and emerald highlight | Pass |
+| 26 | Admin match lobby controls and score counter inputs | Mount lobby room view as Admin | Renders accessible score increment buttons and "Confirm Winner" action buttons | Verified accessible score counters and winner confirmation dispatch | Pass |
+| 27 | AMOLED theme pure true-black surface, motion audit, and production purity | Inspect computed styles of Tournament directory and Bracket visualizer in AMOLED mode | Canvas surface is pure True-Black `#000000`; card surface is `#0B0F12`; zero `backdrop-filter: blur`; zero opacity fades; transitions $\le 120\text{ms}$; zero `data-testid` in production code | Verified `#000000` surface, 120ms transitions, and 0 `data-testid` attributes in production code | Pass |
 
 ---
 

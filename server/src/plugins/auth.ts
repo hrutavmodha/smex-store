@@ -18,6 +18,7 @@ declare module 'fastify' {
   interface FastifyInstance {
     authenticate: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
     emailVerifiedGuard: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
+    adminGuard: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
   }
 }
 
@@ -105,8 +106,21 @@ const authPlugin: FastifyPluginAsync = async (fastify) => {
     }
   };
 
+  const adminGuard = async (request: FastifyRequest, reply: FastifyReply) => {
+    if (!request.user || request.user.role !== 'admin') {
+      return reply.code(403).send({
+        type: 'https://api.smexstore.com/errors/forbidden',
+        title: 'Forbidden',
+        status: 403,
+        detail: 'Admin privileges required',
+        code: 'FORBIDDEN',
+      });
+    }
+  };
+
   fastify.decorate('authenticate', authenticate);
   fastify.decorate('emailVerifiedGuard', emailVerifiedGuard);
+  fastify.decorate('adminGuard', adminGuard);
 };
 
 export default fp(authPlugin, {

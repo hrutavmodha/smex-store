@@ -13,6 +13,7 @@ import healthRoutes from './routes/health.js'
 import authRoutes from './routes/auth.js'
 import devicesRoutes from './routes/devices.js'
 import teamsRoutes from './routes/teams.js'
+import tournamentsRoutes from './routes/tournaments.js'
 import exampleRoutes from './routes/example/index.js'
 
 export type AppOptions = {
@@ -45,6 +46,7 @@ const app: FastifyPluginAsync<AppOptions> = async (
   await fastify.register(authRoutes)
   await fastify.register(devicesRoutes)
   await fastify.register(teamsRoutes)
+  await fastify.register(tournamentsRoutes)
   await fastify.register(exampleRoutes, { prefix: '/example' })
 }
 

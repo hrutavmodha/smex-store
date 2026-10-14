@@ -2,6 +2,7 @@ import { type FastifyPluginAsync } from 'fastify';
 import fp from 'fastify-plugin';
 import fastifyWebsocket, { type WebSocket } from '@fastify/websocket';
 import crypto from 'node:crypto';
+import { type AccessTokenPayload } from './auth.js';
 
 export interface WebSocketClientMeta {
   id: string;
@@ -91,6 +92,81 @@ const websocketPlugin: FastifyPluginAsync = async (fastify) => {
   };
 
   fastify.decorate('wsGateway', wsGateway);
+
+  // Redis Pub/Sub Subscriber for horizontal multi-instance synchronization
+  if (fastify.redis) {
+    const redisSubscriber = fastify.redis.duplicate();
+    redisSubscriber.psubscribe('tournament:*', (err) => {
+      if (err) {
+        fastify.log.error({ err }, 'Failed to psubscribe to tournament:* channel pattern');
+      }
+    });
+
+    redisSubscriber.on('pmessage', (_pattern: string, channel: string, message: string) => {
+      let parsed: unknown = message;
+      try {
+        parsed = JSON.parse(message);
+      } catch {
+        // Keep string format
+      }
+      wsGateway.broadcastToChannel(channel, parsed);
+    });
+
+    fastify.addHook('onClose', async () => {
+      await redisSubscriber.quit().catch(() => {});
+    });
+  }
+
+  // Register public WebSocket gateway route
+  fastify.get('/ws', { websocket: true }, (socket, req) => {
+    const query = (req.query || {}) as { token?: string };
+    let userId: string | null = null;
+    let sessionId: string | null = null;
+
+    if (query.token && fastify.jwt) {
+      try {
+        const decoded = fastify.jwt.verify<AccessTokenPayload>(query.token);
+        userId = decoded.sub;
+        sessionId = decoded.sessionId;
+      } catch {
+        // Unauthenticated or expired token: allow guest or restricted connection
+      }
+    }
+
+    const meta = registerSocket(socket, clients, fastify.log, userId, sessionId);
+
+    socket.on('message', (raw: Buffer | string) => {
+      try {
+        const text = typeof raw === 'string' ? raw : raw.toString();
+        const msg = JSON.parse(text);
+        if (msg.action === 'subscribe' && typeof msg.channel === 'string') {
+          meta.subscriptions.add(msg.channel);
+          if (socket.readyState === socket.OPEN) {
+            socket.send(
+              JSON.stringify({
+                event: 'subscribed',
+                channel: msg.channel,
+                timestamp: Date.now(),
+              })
+            );
+          }
+        } else if (msg.action === 'unsubscribe' && typeof msg.channel === 'string') {
+          meta.subscriptions.delete(msg.channel);
+          if (socket.readyState === socket.OPEN) {
+            socket.send(
+              JSON.stringify({
+                event: 'unsubscribed',
+                channel: msg.channel,
+                timestamp: Date.now(),
+              })
+            );
+          }
+        }
+      } catch (err) {
+        fastify.log.warn({ err }, 'Invalid WebSocket incoming message frame');
+      }
+    });
+  });
 };
 
 export function registerSocket(

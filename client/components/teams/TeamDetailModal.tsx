@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { X, Crown, Users, UserX, Check, Ban, AlertTriangle } from 'lucide-react';
 import type { TeamCardData } from './TeamCard';
 
@@ -75,7 +75,10 @@ export function TeamDetailModal({
     targetName?: string;
   } | null>(null);
 
-  useEffect(() => {
+  const [prevSyncKey, setPrevSyncKey] = useState(`${team.id}-${hasPendingRequest}-${isOpen}`);
+
+  if (`${team.id}-${hasPendingRequest}-${isOpen}` !== prevSyncKey) {
+    setPrevSyncKey(`${team.id}-${hasPendingRequest}-${isOpen}`);
     setRequestSubmitted(hasPendingRequest);
     setShowJoinForm(false);
     setErrorMsg(null);
@@ -83,7 +86,7 @@ export function TeamDetailModal({
     setPlayerIgn('');
     setMessage('');
     setPlayerRole('Roam');
-  }, [team.id, hasPendingRequest, isOpen]);
+  }
 
   if (!isOpen) return null;
 
