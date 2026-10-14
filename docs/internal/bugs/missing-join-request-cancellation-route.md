@@ -6,7 +6,7 @@
 - **Target Files**:
   - `server/src/routes/teams.ts` (lines 75–372)
   - `server/src/services/team-join.service.ts` (lines 373–415)
-- **Status**: Identified
+- **Status**: Resolved
 
 ---
 

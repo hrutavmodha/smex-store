@@ -162,4 +162,63 @@ describe('Join Request Submission Suite (LLT 2.3)', () => {
     const body = JSON.parse(res.body);
     assert.equal(body.code, 'TEAM_CLOSED');
   });
+
+  test('BUG-M4-001: Applicant cancels pending join request and can re-apply', async (t) => {
+    const app = await build(t);
+    const { user: captain } = await createVerifiedUser(app, 'cancel_c1');
+    const { user: applicant, token: applicantToken } = await createVerifiedUser(app, 'cancel_a1');
+    const { token: otherToken } = await createVerifiedUser(app, 'cancel_other');
+
+    const { team } = await TeamService.createTeam(
+      captain.id,
+      { name: `CancelTestSquad_${Date.now()}`, tag: 'CTS', memberCap: 5 },
+      app.db
+    );
+
+    // 1. Submit join request
+    const createRes = await app.inject({
+      method: 'POST',
+      url: `/api/v1/teams/${team.id}/join-requests`,
+      headers: { authorization: `Bearer ${applicantToken}` },
+      payload: { playerIgn: 'OldIGN', playerRole: 'Mage' },
+    });
+    assert.equal(createRes.statusCode, 201);
+    const { joinRequest } = JSON.parse(createRes.body);
+
+    // 2. Unauthorized user cannot cancel another user's request (403)
+    const unauthorizedRes = await app.inject({
+      method: 'DELETE',
+      url: `/api/v1/teams/${team.id}/join-requests/${joinRequest.id}`,
+      headers: { authorization: `Bearer ${otherToken}` },
+    });
+    assert.equal(unauthorizedRes.statusCode, 403);
+
+    // 3. Applicant cancels their own pending join request (200)
+    const cancelRes = await app.inject({
+      method: 'DELETE',
+      url: `/api/v1/teams/${team.id}/join-requests/${joinRequest.id}`,
+      headers: { authorization: `Bearer ${applicantToken}` },
+    });
+    assert.equal(cancelRes.statusCode, 200);
+    const cancelBody = JSON.parse(cancelRes.body);
+    assert.equal(cancelBody.success, true);
+    assert.equal(cancelBody.message, 'Join request cancelled');
+
+    // 4. Cannot cancel an already cancelled request (400)
+    const repeatCancelRes = await app.inject({
+      method: 'DELETE',
+      url: `/api/v1/teams/${team.id}/join-requests/${joinRequest.id}`,
+      headers: { authorization: `Bearer ${applicantToken}` },
+    });
+    assert.equal(repeatCancelRes.statusCode, 400);
+
+    // 5. Applicant can submit a new join request without unique constraint violation
+    const reapplyRes = await app.inject({
+      method: 'POST',
+      url: `/api/v1/teams/${team.id}/join-requests`,
+      headers: { authorization: `Bearer ${applicantToken}` },
+      payload: { playerIgn: 'CorrectedIGN', playerRole: 'Assassin' },
+    });
+    assert.equal(reapplyRes.statusCode, 201);
+  });
 });

@@ -317,7 +317,30 @@ const teamsRoutes: FastifyPluginAsync = async (fastify) => {
     }
   );
 
-  // 9. DELETE /api/v1/teams/:id/members/:userId - Remove member (Kick by captain / Voluntary leave)
+  // 9. DELETE /api/v1/teams/:id/join-requests/:requestId - Cancel pending join request (Applicant only)
+  fastify.delete(
+    '/api/v1/teams/:id/join-requests/:requestId',
+    {
+      preHandler: [fastify.authenticate],
+    },
+    async (request, reply) => {
+      const { id, requestId } = request.params as { id: string; requestId: string };
+
+      try {
+        const result = await TeamJoinService.cancelJoinRequest(
+          id,
+          requestId,
+          request.user.sub,
+          fastify.db
+        );
+        return reply.code(200).send(result);
+      } catch (err: any) {
+        return handleError(reply, err);
+      }
+    }
+  );
+
+  // 10. DELETE /api/v1/teams/:id/members/:userId - Remove member (Kick by captain / Voluntary leave)
   fastify.delete(
     '/api/v1/teams/:id/members/:userId',
     {
