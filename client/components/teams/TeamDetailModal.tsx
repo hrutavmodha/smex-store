@@ -28,6 +28,9 @@ export interface JoinRequestItem {
   avatarPreset?: string | null;
 }
 
+export const STANDARDIZED_ROLES = ['Roam', 'Hyper', 'Exp', 'Gold', 'Mid'] as const;
+export type StandardizedRole = (typeof STANDARDIZED_ROLES)[number];
+
 export interface TeamDetailModalProps {
   team: TeamCardData;
   members: RosterMember[];
@@ -61,25 +64,50 @@ export function TeamDetailModal({
 }: TeamDetailModalProps) {
   const [showJoinForm, setShowJoinForm] = useState(false);
   const [playerIgn, setPlayerIgn] = useState('');
-  const [playerRole, setPlayerRole] = useState('Assassin');
+  const [playerRole, setPlayerRole] = useState<string>('Roam');
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [requestSubmitted, setRequestSubmitted] = useState(hasPendingRequest);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [confirmAction, setConfirmAction] = useState<{
+    type: 'kick' | 'disband';
+    targetUserId?: string;
+    targetName?: string;
+  } | null>(null);
 
   useEffect(() => {
     setRequestSubmitted(hasPendingRequest);
     setShowJoinForm(false);
     setErrorMsg(null);
+    setConfirmAction(null);
     setPlayerIgn('');
     setMessage('');
-    setPlayerRole('Assassin');
+    setPlayerRole('Roam');
   }, [team.id, hasPendingRequest, isOpen]);
 
   if (!isOpen) return null;
 
   const isFullOrClosed = team.availability !== 'open';
   const isAlreadyMember = members.some((m) => m.userId === currentUserId);
+
+  const handleConfirmAction = async () => {
+    if (!confirmAction) return;
+    setIsSubmitting(true);
+    setErrorMsg(null);
+    try {
+      if (confirmAction.type === 'disband' && onDisbandTeam) {
+        await onDisbandTeam();
+      } else if (confirmAction.type === 'kick' && confirmAction.targetUserId && onKickMember) {
+        await onKickMember(confirmAction.targetUserId);
+      }
+      setConfirmAction(null);
+    } catch (err: unknown) {
+      setErrorMsg(err instanceof Error ? err.message : 'Action failed');
+      setConfirmAction(null);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const handleJoinSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -221,7 +249,13 @@ export function TeamDetailModal({
                     {isCaptain && !isMemberCaptain && onKickMember && (
                       <button
                         type="button"
-                        onClick={() => onKickMember(member.userId)}
+                        onClick={() =>
+                          setConfirmAction({
+                            type: 'kick',
+                            targetUserId: member.userId,
+                            targetName: member.username || member.inGameId || member.userId,
+                          })
+                        }
                         data-testid="kick-member-button"
                         className="p-1.5 text-xs text-red-400 hover:text-red-300 hover:bg-red-950/30 rounded-lg border border-transparent hover:border-red-900/30 transition-colors duration-[120ms] min-h-[36px] flex items-center gap-1"
                         title="Kick member from squad"
@@ -256,7 +290,11 @@ export function TeamDetailModal({
                 {onDisbandTeam && (
                   <button
                     type="button"
-                    onClick={onDisbandTeam}
+                    onClick={() =>
+                      setConfirmAction({
+                        type: 'disband',
+                      })
+                    }
                     data-testid="disband-team-button"
                     className="px-2.5 py-1 text-xs font-semibold rounded text-red-400 bg-red-950/20 border border-red-900/30 hover:bg-red-950/40 transition-colors duration-[120ms]"
                   >
@@ -363,15 +401,19 @@ export function TeamDetailModal({
                     <label className="block text-[11px] font-semibold text-text-secondary mb-1">
                       Designated Role *
                     </label>
-                    <input
-                      type="text"
+                    <select
                       required
                       value={playerRole}
                       onChange={(e) => setPlayerRole(e.target.value)}
-                      placeholder="e.g. Assassin, Mage, Tank"
                       data-testid="join-role-input"
                       className="w-full px-3 py-2 text-xs rounded-lg bg-bg-canvas border border-border-subtle text-text-primary focus:outline-none focus:border-emerald-primary min-h-[36px]"
-                    />
+                    >
+                      {STANDARDIZED_ROLES.map((role) => (
+                        <option key={role} value={role} className="bg-bg-surface text-text-primary">
+                          {role}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 
@@ -421,6 +463,63 @@ export function TeamDetailModal({
                 <span>{isFullOrClosed ? 'Roster Full or Closed' : 'Request to Join Squad'}</span>
               </button>
             )}
+          </div>
+        )}
+
+        {/* Destructive Action Confirmation Dialog */}
+        {confirmAction && (
+          <div
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="confirm-dialog-title"
+            aria-describedby="confirm-dialog-desc"
+            data-testid="confirmation-dialog"
+            className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-[#000000]/80 transition-colors duration-[120ms]"
+          >
+            <div className="relative w-full max-w-md rounded-2xl border border-red-900/40 bg-bg-surface p-6 shadow-2xl transition-transform duration-[120ms] ease-out">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2.5 rounded-full bg-red-950/30 text-red-400 border border-red-900/30">
+                  <AlertTriangle className="h-6 w-6" />
+                </div>
+                <div>
+                  <h4 id="confirm-dialog-title" className="text-lg font-bold text-text-primary">
+                    {confirmAction.type === 'disband' ? 'Disband Squad?' : 'Kick Member?'}
+                  </h4>
+                  <span className="text-xs text-text-muted">Destructive Action</span>
+                </div>
+              </div>
+
+              <p id="confirm-dialog-desc" className="text-xs text-text-secondary mb-6 leading-relaxed">
+                {confirmAction.type === 'disband'
+                  ? 'Are you sure you want to disband this squad? This will permanently delete the squad profile and remove all members. This action cannot be undone.'
+                  : `Are you sure you want to kick ${confirmAction.targetName || 'this member'} from the squad? They will need to re-apply to rejoin.`}
+              </p>
+
+              <div className="flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setConfirmAction(null)}
+                  data-testid="cancel-confirm-button"
+                  disabled={isSubmitting}
+                  className="px-4 py-2 text-xs font-semibold rounded-lg bg-bg-surface-elevated text-text-secondary hover:text-text-primary border border-border-subtle hover:border-border-prominent transition-colors duration-[120ms] min-h-[44px]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmAction}
+                  data-testid="confirm-destructive-button"
+                  disabled={isSubmitting}
+                  className="px-4 py-2 text-xs font-bold rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors duration-[120ms] min-h-[44px] flex items-center gap-1.5"
+                >
+                  {isSubmitting
+                    ? 'Processing...'
+                    : confirmAction.type === 'disband'
+                    ? 'Yes, Disband Squad'
+                    : 'Yes, Kick Member'}
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>

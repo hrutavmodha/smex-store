@@ -6,7 +6,7 @@
 - **Target Files**:
   - `client/components/teams/TeamDetailModal.tsx` (lines 212–224, 247–256)
   - `client/app/teams/page.tsx` (lines 170–182, 203–215)
-- **Status**: Identified
+- **Status**: Resolved
 
 ---
 
@@ -42,11 +42,14 @@ In `client/components/teams/TeamDetailModal.tsx`:
 ```
 
 In `docs/internal/design/lld/squad-recruitment.md` Section 7.3:
+
 > "Captain Controls:
->  - Member row action: 'Kick Member' (with confirmation modal).
->  - 'Disband Squad' danger action."
+>
+> - Member row action: 'Kick Member' (with confirmation modal).
+> - 'Disband Squad' danger action."
 
 Currently:
+
 - Clicking "Kick" directly fires `onKickMember(member.userId)`, immediately expelling the player from the squad without asking for confirmation.
 - Clicking "Disband Squad" immediately invokes `onDisbandTeam()`, which issues `DELETE /api/v1/teams/:id`, permanently destroying the squad profile and all member records instantly.
 - On mobile devices, where touch targets are compact, an accidental tap immediately triggers permanent deletion.
@@ -79,6 +82,7 @@ Currently:
 ## 5. Recommended Remediation
 
 Implement an inline or modal confirmation prompt before triggering `onKickMember` and `onDisbandTeam`:
+
 ```tsx
 const [confirmAction, setConfirmAction] = useState<{
   type: 'kick' | 'disband';
@@ -86,4 +90,5 @@ const [confirmAction, setConfirmAction] = useState<{
   targetName?: string;
 } | null>(null);
 ```
+
 Show a warning dialog requiring explicit confirmation (e.g. "Are you sure you want to disband this squad? This action cannot be undone.") before executing the deletion.

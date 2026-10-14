@@ -20,9 +20,12 @@ const updateTeamSchema = z.object({
   description: z.string().trim().max(1000).optional(),
 });
 
+export const STANDARDIZED_ROLES = ['Roam', 'Hyper', 'Exp', 'Gold', 'Mid'] as const;
+export type StandardizedRole = (typeof STANDARDIZED_ROLES)[number];
+
 const joinRequestSchema = z.object({
   playerIgn: z.string().trim().min(1, 'In-game name is required').max(50),
-  playerRole: z.string().trim().min(1, 'Competitive role is required').max(50),
+  playerRole: z.enum(STANDARDIZED_ROLES),
   message: z.string().trim().max(500).optional(),
 });
 

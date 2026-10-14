@@ -6,7 +6,7 @@
 - **Target Files**:
   - `server/src/routes/teams.ts` (line 24)
   - `client/components/teams/TeamDetailModal.tsx` (lines 354–366)
-- **Status**: Identified
+- **Status**: Resolved
 
 ---
 

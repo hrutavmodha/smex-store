@@ -58,7 +58,7 @@ describe('Join Request Submission Suite (LLT 2.3)', () => {
       headers: { authorization: `Bearer ${applicantToken}` },
       payload: {
         playerIgn: 'Valkyrie99',
-        playerRole: 'Assassin',
+        playerRole: 'Hyper',
         message: 'Looking for a competitive team',
       },
     });
@@ -69,7 +69,7 @@ describe('Join Request Submission Suite (LLT 2.3)', () => {
     assert.equal(body.joinRequest.teamId, team.id);
     assert.equal(body.joinRequest.userId, applicant.id);
     assert.equal(body.joinRequest.playerIgn, 'Valkyrie99');
-    assert.equal(body.joinRequest.playerRole, 'Assassin');
+    assert.equal(body.joinRequest.playerRole, 'Hyper');
     assert.equal(body.joinRequest.status, 'pending');
 
     // DB record verification
@@ -97,7 +97,7 @@ describe('Join Request Submission Suite (LLT 2.3)', () => {
       method: 'POST',
       url: `/api/v1/teams/${team.id}/join-requests`,
       headers: { authorization: `Bearer ${applicantToken}` },
-      payload: { playerIgn: 'Valkyrie99', playerRole: 'Assassin' },
+      payload: { playerIgn: 'Valkyrie99', playerRole: 'Hyper' },
     });
     assert.equal(res1.statusCode, 201);
 
@@ -106,7 +106,7 @@ describe('Join Request Submission Suite (LLT 2.3)', () => {
       method: 'POST',
       url: `/api/v1/teams/${team.id}/join-requests`,
       headers: { authorization: `Bearer ${applicantToken}` },
-      payload: { playerIgn: 'Valkyrie99', playerRole: 'Assassin' },
+      payload: { playerIgn: 'Valkyrie99', playerRole: 'Hyper' },
     });
     assert.equal(res2.statusCode, 409);
     const body2 = JSON.parse(res2.body);
@@ -128,7 +128,7 @@ describe('Join Request Submission Suite (LLT 2.3)', () => {
       method: 'POST',
       url: `/api/v1/teams/${team.id}/join-requests`,
       headers: { authorization: `Bearer ${captainToken}` },
-      payload: { playerIgn: 'CaptainIGN', playerRole: 'IGL' },
+      payload: { playerIgn: 'CaptainIGN', playerRole: 'Roam' },
     });
 
     assert.equal(res.statusCode, 400);
@@ -155,7 +155,7 @@ describe('Join Request Submission Suite (LLT 2.3)', () => {
       method: 'POST',
       url: `/api/v1/teams/${team.id}/join-requests`,
       headers: { authorization: `Bearer ${applicantToken}` },
-      payload: { playerIgn: 'HopefulPlayer', playerRole: 'Support' },
+      payload: { playerIgn: 'HopefulPlayer', playerRole: 'Roam' },
     });
 
     assert.equal(res.statusCode, 400);
@@ -180,7 +180,7 @@ describe('Join Request Submission Suite (LLT 2.3)', () => {
       method: 'POST',
       url: `/api/v1/teams/${team.id}/join-requests`,
       headers: { authorization: `Bearer ${applicantToken}` },
-      payload: { playerIgn: 'OldIGN', playerRole: 'Mage' },
+      payload: { playerIgn: 'OldIGN', playerRole: 'Mid' },
     });
     assert.equal(createRes.statusCode, 201);
     const { joinRequest } = JSON.parse(createRes.body);
@@ -217,7 +217,7 @@ describe('Join Request Submission Suite (LLT 2.3)', () => {
       method: 'POST',
       url: `/api/v1/teams/${team.id}/join-requests`,
       headers: { authorization: `Bearer ${applicantToken}` },
-      payload: { playerIgn: 'CorrectedIGN', playerRole: 'Assassin' },
+      payload: { playerIgn: 'CorrectedIGN', playerRole: 'Hyper' },
     });
     assert.equal(reapplyRes.statusCode, 201);
   });
@@ -260,7 +260,7 @@ describe('Join Request Submission Suite (LLT 2.3)', () => {
       method: 'POST',
       url: `/api/v1/teams/${team.id}/join-requests`,
       headers: { authorization: `Bearer ${applicantToken}` },
-      payload: { playerIgn: 'QueryTester', playerRole: 'Tank' },
+      payload: { playerIgn: 'QueryTester', playerRole: 'Roam' },
     });
     assert.equal(joinRes.statusCode, 201);
     const { joinRequest } = JSON.parse(joinRes.body);
@@ -318,5 +318,44 @@ describe('Join Request Submission Suite (LLT 2.3)', () => {
     });
     assert.equal(cancelledMyReqRes.statusCode, 200);
     assert.equal(JSON.parse(cancelledMyReqRes.body).hasPendingRequest, false);
+  });
+
+  test('Test 15: Invalid competitive playerRole rejection with 422 (BUG-M4-008)', async (t) => {
+    const app = await build(t);
+    const { user: captain } = await createVerifiedUser(app, 'role_c');
+    const { token: applicantToken } = await createVerifiedUser(app, 'role_a');
+
+    const { team } = await TeamService.createTeam(
+      captain.id,
+      { name: `RoleSquad_${Date.now()}`, tag: 'ROLE', memberCap: 5 },
+      app.db
+    );
+
+    // 1. Non-standardized role rejected with 422 VALIDATION_FAILED
+    const invalidRes = await app.inject({
+      method: 'POST',
+      url: `/api/v1/teams/${team.id}/join-requests`,
+      headers: { authorization: `Bearer ${applicantToken}` },
+      payload: { playerIgn: 'RoleTester', playerRole: 'InvalidRole' },
+    });
+    assert.equal(invalidRes.statusCode, 422);
+    const invalidBody = JSON.parse(invalidRes.body);
+    assert.equal(invalidBody.code, 'VALIDATION_FAILED');
+    assert.ok(invalidBody.detail.includes('Roam') || invalidBody.detail.includes('Invalid'));
+
+    // 2. Standardized roles (Roam, Hyper, Exp, Gold, Mid) all succeed with 201
+    const validRoles = ['Roam', 'Hyper', 'Exp', 'Gold', 'Mid'] as const;
+    for (const role of validRoles) {
+      const { token } = await createVerifiedUser(app, `role_${role.toLowerCase()}`);
+      const validRes = await app.inject({
+        method: 'POST',
+        url: `/api/v1/teams/${team.id}/join-requests`,
+        headers: { authorization: `Bearer ${token}` },
+        payload: { playerIgn: `${role}Player`, playerRole: role },
+      });
+      assert.equal(validRes.statusCode, 201);
+      const validBody = JSON.parse(validRes.body);
+      assert.equal(validBody.joinRequest.playerRole, role);
+    }
   });
 });

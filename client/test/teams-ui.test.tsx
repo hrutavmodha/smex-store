@@ -183,17 +183,17 @@ describe('Milestone 4: Client Recruitment Directory & Modal UI Suite (LLT Tests 
     expect(form).toBeTruthy();
 
     const ignInput = getByTestId('join-ign-input') as HTMLInputElement;
-    const roleInput = getByTestId('join-role-input') as HTMLInputElement;
+    const roleInput = getByTestId('join-role-input') as HTMLSelectElement;
     const submitBtn = getByTestId('join-submit-button');
 
     fireEvent.change(ignInput, { target: { value: 'NewChallenger' } });
-    fireEvent.change(roleInput, { target: { value: 'Marksman' } });
+    fireEvent.change(roleInput, { target: { value: 'Gold' } });
     fireEvent.click(submitBtn);
 
     await waitFor(() => {
       expect(handleSubmitJoin).toHaveBeenCalledWith({
         playerIgn: 'NewChallenger',
-        playerRole: 'Marksman',
+        playerRole: 'Gold',
       });
     });
 
@@ -240,10 +240,16 @@ describe('Milestone 4: Client Recruitment Directory & Modal UI Suite (LLT Tests 
     fireEvent.click(approveBtn);
     expect(handleResolve).toHaveBeenCalledWith('req-1', 'accept');
 
-    // Kick member action for non-captain
+    // Kick member action for non-captain (requires confirmation dialog)
     const kickBtn = getByTestId('kick-member-button');
     expect(kickBtn).toBeTruthy();
     fireEvent.click(kickBtn);
+    expect(handleKick).not.toHaveBeenCalled();
+
+    // Confirm kick dialog
+    const confirmBtn = getByTestId('confirm-destructive-button');
+    expect(confirmBtn).toBeTruthy();
+    fireEvent.click(confirmBtn);
     expect(handleKick).toHaveBeenCalledWith('user-mem-2');
 
     // Close roster toggle button
@@ -303,7 +309,7 @@ describe('Milestone 4: Client Recruitment Directory & Modal UI Suite (LLT Tests 
     // Submit join request for squad 1
     fireEvent.click(getByTestId('request-to-join-button'));
     fireEvent.change(getByTestId('join-ign-input'), { target: { value: 'Applicant1' } });
-    fireEvent.change(getByTestId('join-role-input'), { target: { value: 'Mage' } });
+    fireEvent.change(getByTestId('join-role-input'), { target: { value: 'Mid' } });
     fireEvent.click(getByTestId('join-submit-button'));
 
     await waitFor(() => {
@@ -407,7 +413,7 @@ describe('Milestone 4: Client Recruitment Directory & Modal UI Suite (LLT Tests 
     // Submit join request on squad 1
     fireEvent.click(page.getByTestId('request-to-join-button'));
     fireEvent.change(page.getByTestId('join-ign-input'), { target: { value: 'GhostPlayer' } });
-    fireEvent.change(page.getByTestId('join-role-input'), { target: { value: 'Assassin' } });
+    fireEvent.change(page.getByTestId('join-role-input'), { target: { value: 'Hyper' } });
     fireEvent.click(page.getByTestId('join-submit-button'));
 
     await waitFor(() => {
@@ -490,5 +496,94 @@ describe('Milestone 4: Client Recruitment Directory & Modal UI Suite (LLT Tests 
     expect(page.queryByTestId('request-to-join-button')).toBeNull();
     expect(page.queryByTestId('join-request-form')).toBeNull();
     expect(page.getByTestId('request-pending-badge').textContent).toContain('Join Request Pending (Awaiting Captain Approval)');
+  });
+
+  it('Test 29: Destructive action confirmation dialogs for squad disbanding and member kick (BUG-M4-007)', async () => {
+    const handleKick = vi.fn().mockResolvedValue(undefined);
+    const handleDisband = vi.fn().mockResolvedValue(undefined);
+
+    const { getByTestId, queryByTestId } = render(
+      <TeamDetailModal
+        team={mockTeams[0]}
+        members={mockMembers}
+        currentUserId="user-cap-1"
+        isCaptain={true}
+        isOpen={true}
+        onClose={vi.fn()}
+        onKickMember={handleKick}
+        onDisbandTeam={handleDisband}
+      />
+    );
+
+    // 1. Kick Member: Cancel dismisses dialog without calling onKickMember
+    const kickBtn = getByTestId('kick-member-button');
+    fireEvent.click(kickBtn);
+
+    const kickDialog = getByTestId('confirmation-dialog');
+    expect(kickDialog).toBeTruthy();
+    expect(kickDialog.textContent).toContain('Kick Member?');
+    expect(handleKick).not.toHaveBeenCalled();
+
+    const cancelKickBtn = getByTestId('cancel-confirm-button');
+    fireEvent.click(cancelKickBtn);
+    expect(queryByTestId('confirmation-dialog')).toBeNull();
+    expect(handleKick).not.toHaveBeenCalled();
+
+    // 2. Kick Member: Confirm executes onKickMember
+    fireEvent.click(kickBtn);
+    expect(getByTestId('confirmation-dialog')).toBeTruthy();
+    const confirmKickBtn = getByTestId('confirm-destructive-button');
+    fireEvent.click(confirmKickBtn);
+    await waitFor(() => {
+      expect(handleKick).toHaveBeenCalledWith('user-mem-2');
+      expect(queryByTestId('confirmation-dialog')).toBeNull();
+    });
+
+    // 3. Disband Squad: Cancel dismisses dialog without calling onDisbandTeam
+    const disbandBtn = getByTestId('disband-team-button');
+    fireEvent.click(disbandBtn);
+
+    const disbandDialog = getByTestId('confirmation-dialog');
+    expect(disbandDialog).toBeTruthy();
+    expect(disbandDialog.textContent).toContain('Disband Squad?');
+    expect(handleDisband).not.toHaveBeenCalled();
+
+    const cancelDisbandBtn = getByTestId('cancel-confirm-button');
+    fireEvent.click(cancelDisbandBtn);
+    expect(queryByTestId('confirmation-dialog')).toBeNull();
+    expect(handleDisband).not.toHaveBeenCalled();
+
+    // 4. Disband Squad: Confirm executes onDisbandTeam
+    fireEvent.click(disbandBtn);
+    expect(getByTestId('confirmation-dialog')).toBeTruthy();
+    const confirmDisbandBtn = getByTestId('confirm-destructive-button');
+    fireEvent.click(confirmDisbandBtn);
+    await waitFor(() => {
+      expect(handleDisband).toHaveBeenCalled();
+      expect(queryByTestId('confirmation-dialog')).toBeNull();
+    });
+  });
+
+  it('Test 30: Standardized competitive roles dropdown options validation (BUG-M4-008)', async () => {
+    const { getByTestId } = render(
+      <TeamDetailModal
+        team={mockTeams[0]}
+        members={mockMembers}
+        currentUserId="user-visitor-99"
+        isOpen={true}
+        onClose={vi.fn()}
+      />
+    );
+
+    // Open join request form
+    fireEvent.click(getByTestId('request-to-join-button'));
+
+    const roleSelect = getByTestId('join-role-input') as HTMLSelectElement;
+    expect(roleSelect.tagName.toLowerCase()).toBe('select');
+
+    // Extract all option values
+    const options = Array.from(roleSelect.querySelectorAll('option')).map((opt) => opt.value);
+    expect(options).toEqual(['Roam', 'Hyper', 'Exp', 'Gold', 'Mid']);
+    expect(roleSelect.value).toBe('Roam');
   });
 });

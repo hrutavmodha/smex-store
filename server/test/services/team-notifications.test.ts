@@ -68,7 +68,7 @@ describe('Real-Time Event Dispatch Suite (LLT 2.6)', () => {
       method: 'POST',
       url: `/api/v1/teams/${team.id}/join-requests`,
       headers: { authorization: `Bearer ${applicantToken}` },
-      payload: { playerIgn: 'Valkyrie99', playerRole: 'Assassin' },
+      payload: { playerIgn: 'Valkyrie99', playerRole: 'Hyper' },
     });
     assert.equal(res.statusCode, 201);
     const reqId = JSON.parse(res.body).joinRequest.id;
@@ -84,7 +84,7 @@ describe('Real-Time Event Dispatch Suite (LLT 2.6)', () => {
     assert.equal(notif.data.requestId, reqId);
     assert.equal(notif.data.applicantId, applicant.id);
     assert.equal(notif.data.playerIgn, 'Valkyrie99');
-    assert.equal(notif.data.playerRole, 'Assassin');
+    assert.equal(notif.data.playerRole, 'Hyper');
 
     await subscriber.quit();
   });
@@ -105,7 +105,7 @@ describe('Real-Time Event Dispatch Suite (LLT 2.6)', () => {
       method: 'POST',
       url: `/api/v1/teams/${team.id}/join-requests`,
       headers: { authorization: `Bearer ${applicantToken}` },
-      payload: { playerIgn: 'NinjaGamer', playerRole: 'Fighter' },
+      payload: { playerIgn: 'NinjaGamer', playerRole: 'Exp' },
     });
     assert.equal(joinRes.statusCode, 201);
     const reqId = JSON.parse(joinRes.body).joinRequest.id;
