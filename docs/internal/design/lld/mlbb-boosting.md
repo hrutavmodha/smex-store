@@ -66,7 +66,7 @@ flowchart TD
 ## 2. Core Calculation Engine Architecture
 
 *Target Source: `server/src/services/boosting-calc.service.ts`*  
-*Shared Client Engine: `client/src/lib/boosting/calculator.ts`*
+*Shared Client Engine: `client/lib/boosting/calculator.ts`*
 
 The MLBB ranking ladder transitions from discrete division leagues (Sub-Mythic: Warrior, Elite, Master, Grandmaster, Epic, Legend) to continuous Star accumulations (Mythic and above: Mythic, Mythical Honor, Mythical Glory, Mythical Immortal). The engine provides deterministic, mathematical calculation across both regimes, including composite cross-regime progressions.
 
@@ -204,7 +204,7 @@ $$\text{FinalPriceInr} = \text{round}\Big(\text{BasePrice} \times \text{Percenta
 ## 3. External Communication Link Dispatcher
 
 *Target Source: `server/src/services/boosting-dispatch.service.ts`*  
-*Shared Client Dispatcher: `client/src/lib/boosting/dispatcher.ts`*
+*Shared Client Dispatcher: `client/lib/boosting/dispatcher.ts`*
 
 In accordance with **ADR 0001 (Zero In-App Payment Gateway)**, commercial settlement and credential coordination are conducted off-platform via direct external communication channels.
 
@@ -449,8 +449,8 @@ stateDiagram-v2
 
 ## 6. Client Presentation UI Specification (`/boosting`)
 
-*Target File: `client/src/app/boosting/page.tsx`*  
-*Subcomponents: `client/src/components/boosting/Calculator.tsx`, `client/src/components/boosting/DispatchActions.tsx`*
+*Target File: `client/app/boosting/page.tsx`*  
+*Subcomponents: `client/components/boosting/Calculator.tsx`, `client/components/boosting/DispatchActions.tsx`*
 
 ### 6.1 Theme & AMOLED Surface Conformance
 

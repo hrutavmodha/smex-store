@@ -2,12 +2,28 @@ import { type FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { BoostingRateService } from '../../services/boosting-rate.service.js';
 
-const updateRateSchema = z.object({
-  priceInr: z.union([z.number(), z.string()]).optional(),
-  isActive: z.boolean().optional(),
-  minStars: z.number().int().optional(),
-  maxStars: z.number().int().optional(),
-});
+const updateRateSchema = z
+  .object({
+    priceInr: z
+      .union([
+        z.number().positive('priceInr must be strictly positive'),
+        z.string().regex(/^\d+(\.\d{1,2})?$/, 'priceInr must be a valid positive amount'),
+      ])
+      .refine((val) => Number(val) > 0, { message: 'priceInr must be strictly positive' })
+      .optional(),
+    isActive: z.boolean().optional(),
+    minStars: z.number().int().min(0, 'minStars must be >= 0').optional(),
+    maxStars: z.number().int().min(0, 'maxStars must be >= 0').optional(),
+  })
+  .refine(
+    (data) => {
+      if (data.minStars !== undefined && data.maxStars !== undefined) {
+        return data.maxStars >= data.minStars;
+      }
+      return true;
+    },
+    { message: 'maxStars must be greater than or equal to minStars', path: ['maxStars'] }
+  );
 
 const updateOrderStatusSchema = z.object({
   status: z.enum(['inquiry', 'confirmed', 'in_progress', 'completed', 'cancelled']),
@@ -47,21 +63,32 @@ const adminBoostingRoutes: FastifyPluginAsync = async (fastify) => {
       });
     }
 
-    const updated = await BoostingRateService.updateRate(id, parseResult.data, fastify.db);
-    if (!updated) {
-      return reply.code(404).send({
-        statusCode: 404,
-        error: 'Not Found',
-        message: 'Rate row not found',
-      });
-    }
+    try {
+      const updated = await BoostingRateService.updateRate(id, parseResult.data, fastify.db);
+      if (!updated) {
+        return reply.code(404).send({
+          statusCode: 404,
+          error: 'Not Found',
+          message: 'Rate row not found',
+        });
+      }
 
-    return reply.code(200).send(updated);
+      return reply.code(200).send(updated);
+    } catch (err: any) {
+      if (err.name === 'ValidationError' || err.statusCode) {
+        return reply.code(err.statusCode || 400).send({
+          statusCode: err.statusCode || 400,
+          error: err.code || 'Bad Request',
+          message: err.message,
+        });
+      }
+      throw err;
+    }
   });
 
   /**
    * GET /api/v1/admin/boosting/orders
-   * Lists all boosting orders with optional status/channel filters and pagination
+   * Lists all boosting orders with optional status/channel filters and pagination (BUG-M6-008 sanitized)
    */
   fastify.get('/api/v1/admin/boosting/orders', async (request, reply) => {
     const query = request.query as {
@@ -71,8 +98,11 @@ const adminBoostingRoutes: FastifyPluginAsync = async (fastify) => {
       limit?: string;
     };
 
-    const limit = query.limit ? parseInt(query.limit, 10) : 20;
-    const page = query.page ? parseInt(query.page, 10) : 1;
+    const rawPage = query.page ? parseInt(query.page, 10) : 1;
+    const rawLimit = query.limit ? parseInt(query.limit, 10) : 20;
+
+    const page = Math.max(1, isNaN(rawPage) ? 1 : rawPage);
+    const limit = Math.max(1, Math.min(100, isNaN(rawLimit) ? 20 : rawLimit));
     const offset = (page - 1) * limit;
 
     const orders = await BoostingRateService.getOrders(

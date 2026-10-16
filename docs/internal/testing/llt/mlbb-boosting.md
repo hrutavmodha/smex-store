@@ -49,7 +49,7 @@ flowchart TD
 
 ### 2.1 Sub-Mythic Fixed Tier Jump Matrix Test Cases
 
-*Test Targets: `server/src/services/boosting-calc.service.ts`, `client/src/lib/boosting/calculator.ts`*  
+*Test Targets: `server/src/services/boosting-calc.service.ts`, `client/lib/boosting/calculator.ts`*  
 *Test Source: `server/test/services/boosting-calc-submythic.test.ts`*  
 *LLD Specification Reference: `docs/internal/design/lld/mlbb-boosting.md` Section 2.1*
 
@@ -111,7 +111,7 @@ flowchart TD
 
 ### 2.5 External Communication Link Dispatcher Test Cases
 
-*Test Target: `server/src/services/boosting-dispatch.service.ts`, `client/src/lib/boosting/dispatcher.ts`*  
+*Test Target: `server/src/services/boosting-dispatch.service.ts`, `client/lib/boosting/dispatcher.ts`*  
 *Test Source: `server/test/services/boosting-dispatch.test.ts`*  
 *LLD Specification Reference: `docs/internal/design/lld/mlbb-boosting.md` Section 3*
 
@@ -143,7 +143,7 @@ flowchart TD
 
 ### 2.7 Client Presentation UI and AMOLED Styling Test Cases
 
-*Test Target: `client/src/app/boosting/page.tsx`*  
+*Test Target: `client/app/boosting/page.tsx`*  
 *Test Source: `client/test/boosting/boosting-page.test.tsx`*  
 *LLD Specification Reference: `docs/internal/design/lld/mlbb-boosting.md` Section 6*
 
@@ -168,8 +168,8 @@ Target coverage metrics enforced by `c8` and the CI test pipeline across all Mil
 | `server/src/services/boosting-rate.service.ts` | 89.00% | 82.50% | 90.00% | Compliant |
 | `server/src/routes/boosting.ts` | 92.40% | 86.67% | 100.00% | Compliant |
 | `server/src/routes/admin/boosting.ts` | 88.50% | 81.25% | 87.50% | Compliant |
-| `client/src/lib/boosting/calculator.ts` | 96.00% | 92.00% | 100.00% | Compliant |
-| `client/src/lib/boosting/dispatcher.ts` | 93.00% | 87.50% | 100.00% | Compliant |
+| `client/lib/boosting/calculator.ts` | 96.00% | 92.00% | 100.00% | Compliant |
+| `client/lib/boosting/dispatcher.ts` | 93.00% | 87.50% | 100.00% | Compliant |
 | **All Milestone 6 Aggregate** | **92.08%** | **86.42%** | **96.79%** | **Compliant** |
 
 ### 3.2 Quality Gate Threshold Verification

@@ -57,6 +57,35 @@ export class BoostingRateService {
     data: RateUpdateInput,
     db: SmexDatabase
   ): Promise<BoostingRate> {
+    const [existing] = await db
+      .select()
+      .from(boostingRates)
+      .where(eq(boostingRates.id, id));
+
+    if (!existing) {
+      return undefined as any;
+    }
+
+    if (data.priceInr !== undefined) {
+      const num = Number(data.priceInr);
+      if (isNaN(num) || num <= 0) {
+        throw new ValidationError('INVALID_PRICE', 400, 'priceInr must be strictly positive');
+      }
+    }
+
+    const newMin = data.minStars !== undefined ? data.minStars : existing.minStars;
+    const newMax = data.maxStars !== undefined ? data.maxStars : existing.maxStars;
+
+    if (newMin !== null && newMin !== undefined && newMax !== null && newMax !== undefined) {
+      if (newMin < 0 || newMax < 0 || newMax < newMin) {
+        throw new ValidationError(
+          'INVALID_STAR_BOUNDARY',
+          400,
+          'maxStars must be greater than or equal to minStars, and both must be >= 0'
+        );
+      }
+    }
+
     const updatePayload: Record<string, any> = {
       updatedAt: new Date(),
     };
@@ -114,8 +143,8 @@ export class BoostingRateService {
       conditions.push(eq(boostingOrders.contactChannel, filters.channel as any));
     }
 
-    const limit = Math.min(filters.limit ?? 20, 100);
-    const offset = filters.offset ?? 0;
+    const limit = Math.max(1, Math.min(filters.limit ?? 20, 100));
+    const offset = Math.max(0, filters.offset ?? 0);
 
     let query = db.select().from(boostingOrders);
 

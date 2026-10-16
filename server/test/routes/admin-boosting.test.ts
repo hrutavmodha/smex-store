@@ -254,5 +254,71 @@ describe('Admin Rate Management & RBAC Suite (LLT 2.6)', () => {
     const reopenErr = JSON.parse(reopen.payload);
     assert.match(reopenErr.message, /Cannot transition order status from 'completed' to 'inquiry'/);
   });
+
+  it('Test 26b: Admin rate update validates positive price and star boundaries (BUG-M6-007)', async (t) => {
+    const app = await build(t);
+    const adminToken = createAdminToken(app);
+
+    const [perStarRate] = await app.db
+      .select()
+      .from(boostingRates)
+      .where(eq(boostingRates.pricingMode, 'per_star'))
+      .limit(1);
+    assert.ok(perStarRate);
+
+    // 1. Reject non-positive price
+    const negPrice = await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/admin/boosting/rates/${perStarRate.id}`,
+      headers: { authorization: `Bearer ${adminToken}` },
+      payload: { priceInr: -15.0 },
+    });
+    assert.equal(negPrice.statusCode, 400);
+
+    const zeroPrice = await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/admin/boosting/rates/${perStarRate.id}`,
+      headers: { authorization: `Bearer ${adminToken}` },
+      payload: { priceInr: 0 },
+    });
+    assert.equal(zeroPrice.statusCode, 400);
+
+    // 2. Reject inverted star boundaries: minStars > maxStars
+    const invertedStars = await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/admin/boosting/rates/${perStarRate.id}`,
+      headers: { authorization: `Bearer ${adminToken}` },
+      payload: { minStars: 80, maxStars: 20 },
+    });
+    assert.equal(invertedStars.statusCode, 400);
+
+    // 3. Reject negative minStars
+    const negStars = await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/admin/boosting/rates/${perStarRate.id}`,
+      headers: { authorization: `Bearer ${adminToken}` },
+      payload: { minStars: -5 },
+    });
+    assert.equal(negStars.statusCode, 400);
+  });
+
+  it('Test 26c: Admin orders query sanitizes negative page and limit parameters (BUG-M6-008)', async (t) => {
+    const app = await build(t);
+    const adminToken = createAdminToken(app);
+
+    // Query with negative page and limit
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/v1/admin/boosting/orders?page=0&limit=-5',
+      headers: { authorization: `Bearer ${adminToken}` },
+    });
+
+    assert.equal(res.statusCode, 200);
+    const body = JSON.parse(res.payload);
+    assert.ok(Array.isArray(body.orders));
+    assert.equal(body.page, 1);
+    assert.equal(body.limit, 1);
+  });
 });
+
 
