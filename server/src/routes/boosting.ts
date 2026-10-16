@@ -85,7 +85,7 @@ const boostingRoutes: FastifyPluginAsync = async (fastify) => {
       });
 
       return reply.code(200).send(calculation);
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (err instanceof ValidationError) {
         return reply.code(err.statusCode).send({
           statusCode: err.statusCode,
@@ -143,7 +143,7 @@ const boostingRoutes: FastifyPluginAsync = async (fastify) => {
         addons: data.addons,
         rates,
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (err instanceof ValidationError) {
         return reply.code(err.statusCode).send({
           statusCode: err.statusCode,
@@ -176,7 +176,7 @@ const boostingRoutes: FastifyPluginAsync = async (fastify) => {
       {
         customerId,
         gameSlug: 'mlbb',
-        pricingMode: dbPricingMode as any,
+        pricingMode: dbPricingMode as 'fixed_tier' | 'per_star',
         startingRank: data.startingRank,
         targetRank: data.targetRank,
         startingStars: data.startingStars,

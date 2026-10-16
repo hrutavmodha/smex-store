@@ -54,10 +54,10 @@ const health: FastifyPluginAsync = async (fastify, _opts): Promise<void> => {
           dbStatus = 'disconnected';
           latencyMs = Math.round(elapsed * 100) / 100;
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         const elapsed = performance.now() - start;
         dbStatus = 'disconnected';
-        if (err?.message === 'HEALTH_TIMEOUT') {
+        if (err instanceof Error && err.message === 'HEALTH_TIMEOUT') {
           latencyMs = Math.round(elapsed * 100) / 100;
         } else {
           latencyMs = -1;

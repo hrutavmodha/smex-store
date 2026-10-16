@@ -414,7 +414,7 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
 
   // 6. POST /api/v1/auth/verify-email
   fastify.post('/api/v1/auth/verify-email', async (request, reply) => {
-    const { token } = (request.body as any) || {};
+    const { token } = (request.body as { token?: unknown } | undefined) || {};
     if (!token || typeof token !== 'string') {
       return reply.code(400).send({
         type: 'https://api.smexstore.com/errors/bad-request',
@@ -456,7 +456,7 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (request, reply) => {
-      const email = String((request.body as any)?.email || '')
+      const email = String((request.body as { email?: unknown } | undefined)?.email || '')
         .toLowerCase()
         .trim();
 
@@ -490,7 +490,7 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (request, reply) => {
-      const email = String((request.body as any)?.email || '')
+      const email = String((request.body as { email?: unknown } | undefined)?.email || '')
         .toLowerCase()
         .trim();
 

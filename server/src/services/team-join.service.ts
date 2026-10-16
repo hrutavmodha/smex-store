@@ -9,6 +9,7 @@ import {
 } from '../db/schema/teams.js';
 import { profiles } from '../db/schema/users.js';
 import { NotificationService } from './notification.service.js';
+import { createServiceError } from './team.service.js';
 import type { WsGatewayDecorator } from '../plugins/websocket.js';
 
 export interface SubmitJoinRequestInput {
@@ -42,10 +43,7 @@ export class TeamJoinService {
       .limit(1);
 
     if (!team) {
-      const err: any = new Error('Team not found');
-      err.statusCode = 404;
-      err.code = 'TEAM_NOT_FOUND';
-      throw err;
+      throw createServiceError('Team not found', 404, 'TEAM_NOT_FOUND');
     }
 
     // Verify that the squad is open and has available roster slots
@@ -56,10 +54,7 @@ export class TeamJoinService {
 
     const activeMembersCount = countResult?.count ?? 0;
     if (team.status === 'closed' || activeMembersCount >= team.memberCap) {
-      const err: any = new Error('Cannot submit join request to a full or closed squad');
-      err.statusCode = 400;
-      err.code = 'TEAM_CLOSED';
-      throw err;
+      throw createServiceError('Cannot submit join request to a full or closed squad', 400, 'TEAM_CLOSED');
     }
 
     // Check if user is already an active member of this squad
@@ -70,10 +65,7 @@ export class TeamJoinService {
       .limit(1);
 
     if (existingRosterMember) {
-      const err: any = new Error('You are already a member of this squad');
-      err.statusCode = 400;
-      err.code = 'ALREADY_ROSTER_MEMBER';
-      throw err;
+      throw createServiceError('You are already a member of this squad', 400, 'ALREADY_ROSTER_MEMBER');
     }
 
     // MLBB Single Squad Rule: Check if user is already in any active squad for this game
@@ -85,10 +77,7 @@ export class TeamJoinService {
       .limit(1);
 
     if (existingGameMembership) {
-      const err: any = new Error('Player is already a member of an active squad in this game');
-      err.statusCode = 400;
-      err.code = 'ALREADY_IN_SQUAD';
-      throw err;
+      throw createServiceError('Player is already a member of an active squad in this game', 400, 'ALREADY_IN_SQUAD');
     }
 
     // Duplicate pending join request pre-check
@@ -105,10 +94,7 @@ export class TeamJoinService {
       .limit(1);
 
     if (existingPending) {
-      const err: any = new Error('You already have a pending join request for this squad');
-      err.statusCode = 409;
-      err.code = 'DUPLICATE_PENDING_REQUEST';
-      throw err;
+      throw createServiceError('You already have a pending join request for this squad', 409, 'DUPLICATE_PENDING_REQUEST');
     }
 
     let createdRequest: TeamJoinRequest;
@@ -127,13 +113,11 @@ export class TeamJoinService {
         .returning();
 
       createdRequest = inserted;
-    } catch (dbErr: any) {
+    } catch (dbErr: unknown) {
+      const dbError = dbErr as { code?: string; cause?: { code?: string } };
       // 23505 is PostgreSQL unique constraint violation (partial index team_join_requests_pending_unq)
-      if (dbErr.code === '23505' || dbErr.cause?.code === '23505') {
-        const err: any = new Error('You already have a pending join request for this squad');
-        err.statusCode = 409;
-        err.code = 'DUPLICATE_PENDING_REQUEST';
-        throw err;
+      if (dbError.code === '23505' || dbError.cause?.code === '23505') {
+        throw createServiceError('You already have a pending join request for this squad', 409, 'DUPLICATE_PENDING_REQUEST');
       }
       throw dbErr;
     }
@@ -175,17 +159,11 @@ export class TeamJoinService {
       .limit(1);
 
     if (!team) {
-      const err: any = new Error('Team not found');
-      err.statusCode = 404;
-      err.code = 'TEAM_NOT_FOUND';
-      throw err;
+      throw createServiceError('Team not found', 404, 'TEAM_NOT_FOUND');
     }
 
     if (team.captainId !== callerId) {
-      const err: any = new Error('Only the team captain can view join requests');
-      err.statusCode = 403;
-      err.code = 'CAPTAIN_PERMISSION_REQUIRED';
-      throw err;
+      throw createServiceError('Only the team captain can view join requests', 403, 'CAPTAIN_PERMISSION_REQUIRED');
     }
 
     const rows = await db
@@ -229,17 +207,11 @@ export class TeamJoinService {
       .limit(1);
 
     if (!team) {
-      const err: any = new Error('Team not found');
-      err.statusCode = 404;
-      err.code = 'TEAM_NOT_FOUND';
-      throw err;
+      throw createServiceError('Team not found', 404, 'TEAM_NOT_FOUND');
     }
 
     if (team.captainId !== callerId) {
-      const err: any = new Error('Only the team captain can resolve join requests');
-      err.statusCode = 403;
-      err.code = 'CAPTAIN_PERMISSION_REQUIRED';
-      throw err;
+      throw createServiceError('Only the team captain can resolve join requests', 403, 'CAPTAIN_PERMISSION_REQUIRED');
     }
 
     const txResult = await db.transaction(async (tx) => {
@@ -258,10 +230,7 @@ export class TeamJoinService {
         .for('update');
 
       if (!joinReq) {
-        const err: any = new Error('Join request not found');
-        err.statusCode = 404;
-        err.code = 'REQUEST_NOT_FOUND';
-        throw err;
+        throw createServiceError('Join request not found', 404, 'REQUEST_NOT_FOUND');
       }
 
       // If action is accept, check roster capacity first under the lock
@@ -279,18 +248,12 @@ export class TeamJoinService {
             .set({ status: 'rejected', updatedAt: new Date() })
             .where(eq(teamJoinRequests.id, requestId));
 
-          const err: any = new Error('Team roster is full');
-          err.statusCode = 409;
-          err.code = 'TEAM_ROSTER_FULL';
-          throw err;
+          throw createServiceError('Team roster is full', 409, 'TEAM_ROSTER_FULL');
         }
       }
 
       if (joinReq.status !== 'pending') {
-        const err: any = new Error(`Request has already been resolved (${joinReq.status})`);
-        err.statusCode = 400;
-        err.code = 'REQUEST_ALREADY_RESOLVED';
-        throw err;
+        throw createServiceError(`Request has already been resolved (${joinReq.status})`, 400, 'REQUEST_ALREADY_RESOLVED');
       }
 
       if (action === 'reject') {
@@ -329,10 +292,7 @@ export class TeamJoinService {
           .set({ status: 'cancelled', updatedAt: new Date() })
           .where(eq(teamJoinRequests.id, requestId));
 
-        const err: any = new Error('Player has already joined another squad in this game');
-        err.statusCode = 409;
-        err.code = 'ALREADY_IN_SQUAD';
-        throw err;
+        throw createServiceError('Player has already joined another squad in this game', 409, 'ALREADY_IN_SQUAD');
       }
 
       // 6. Insert applicant into team_members with platform role 'member'
@@ -403,24 +363,15 @@ export class TeamJoinService {
       .limit(1);
 
     if (!joinReq) {
-      const err: any = new Error('Join request not found');
-      err.statusCode = 404;
-      err.code = 'REQUEST_NOT_FOUND';
-      throw err;
+      throw createServiceError('Join request not found', 404, 'REQUEST_NOT_FOUND');
     }
 
     if (joinReq.userId !== callerId) {
-      const err: any = new Error('You can only cancel your own join request');
-      err.statusCode = 403;
-      err.code = 'FORBIDDEN';
-      throw err;
+      throw createServiceError('You can only cancel your own join request', 403, 'FORBIDDEN');
     }
 
     if (joinReq.status !== 'pending') {
-      const err: any = new Error(`Cannot cancel a request that is already ${joinReq.status}`);
-      err.statusCode = 400;
-      err.code = 'REQUEST_ALREADY_RESOLVED';
-      throw err;
+      throw createServiceError(`Cannot cancel a request that is already ${joinReq.status}`, 400, 'REQUEST_ALREADY_RESOLVED');
     }
 
     await db
@@ -449,10 +400,7 @@ export class TeamJoinService {
       .limit(1);
 
     if (!team) {
-      const err: any = new Error('Team not found');
-      err.statusCode = 404;
-      err.code = 'TEAM_NOT_FOUND';
-      throw err;
+      throw createServiceError('Team not found', 404, 'TEAM_NOT_FOUND');
     }
 
     const [joinReq] = await db

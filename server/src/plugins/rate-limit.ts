@@ -1,8 +1,18 @@
 import { type FastifyPluginAsync, type FastifyRequest } from 'fastify';
 import fp from 'fastify-plugin';
-import fastifyRateLimit, { type RateLimitOptions } from '@fastify/rate-limit';
+import fastifyRateLimit, {
+  type RateLimitOptions,
+  type errorResponseBuilderContext,
+} from '@fastify/rate-limit';
 
-export function errorResponseBuilder(request: FastifyRequest, context: any) {
+interface EmailBody {
+  email?: unknown;
+}
+
+export function errorResponseBuilder(
+  request: FastifyRequest,
+  context: errorResponseBuilderContext
+) {
   const retryAfter = Math.ceil(context.ttl / 1000);
   return {
     type: 'https://api.smexstore.com/errors/rate-limit-exceeded',
@@ -27,7 +37,7 @@ export const loginRateLimitConfig: RateLimitOptions = {
   max: 5,
   timeWindow: 60 * 1000, // 60 seconds
   keyGenerator: (req) => {
-    const email = String((req.body as any)?.email || '')
+    const email = String((req.body as EmailBody | undefined)?.email || '')
       .toLowerCase()
       .trim();
     return `rl:login:${req.ip}:${email}`;
@@ -40,7 +50,7 @@ export const forgotPasswordRateLimitConfig: RateLimitOptions = {
   max: 3,
   timeWindow: 3600 * 1000, // 1 hour
   keyGenerator: (req) => {
-    const email = String((req.body as any)?.email || '')
+    const email = String((req.body as EmailBody | undefined)?.email || '')
       .toLowerCase()
       .trim();
     return `rl:forgot:${req.ip}:${email}`;
@@ -53,7 +63,7 @@ export const resendVerificationRateLimitConfig: RateLimitOptions = {
   max: 3,
   timeWindow: 3600 * 1000, // 1 hour
   keyGenerator: (req) => {
-    const email = String((req.body as any)?.email || '')
+    const email = String((req.body as EmailBody | undefined)?.email || '')
       .toLowerCase()
       .trim();
     return `rl:resend:${req.ip}:${email}`;

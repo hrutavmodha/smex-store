@@ -1,4 +1,4 @@
-import { type FastifyPluginAsync } from 'fastify';
+import { type FastifyPluginAsync, type FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { eq, sql, and } from 'drizzle-orm';
 import {
@@ -10,7 +10,6 @@ import { MatchService, MatchError } from '../services/match.service.js';
 import {
   tournaments,
   tournamentParticipants,
-  tournamentMatches,
 } from '../db/schema/tournaments.js';
 import { teams } from '../db/schema/teams.js';
 
@@ -69,14 +68,22 @@ function formatRfc7807(statusCode: number, code: string, title: string, detail: 
   };
 }
 
-function handleError(reply: any, err: any) {
+interface TournamentRouteError {
+  code?: string;
+  statusCode?: number;
+  message?: string;
+  cause?: { code?: string };
+}
+
+function handleError(reply: FastifyReply, err: unknown) {
   if (err instanceof TournamentLifecycleError || err instanceof MatchError) {
     return reply
       .code(err.statusCode)
       .send(formatRfc7807(err.statusCode, err.code, err.name, err.message));
   }
 
-  const code = err.code || err.cause?.code;
+  const errorObj = err as TournamentRouteError;
+  const code = errorObj?.code || errorObj?.cause?.code;
   if (code === '23505' || code === 'DUPLICATE_REGISTRATION') {
     return reply
       .code(409)
@@ -90,9 +97,9 @@ function handleError(reply: any, err: any) {
       );
   }
 
-  const statusCode = err.statusCode || 500;
-  const errCode = err.code || 'INTERNAL_ERROR';
-  const detail = err.message || 'An unexpected error occurred';
+  const statusCode = errorObj?.statusCode || 500;
+  const errCode = errorObj?.code || 'INTERNAL_ERROR';
+  const detail = errorObj?.message || 'An unexpected error occurred';
 
   if (statusCode < 500) {
     return reply.code(statusCode).send(formatRfc7807(statusCode, errCode, 'Error', detail));
@@ -245,7 +252,7 @@ const tournamentsRoutes: FastifyPluginAsync = async (fastify) => {
         }
 
         // Handle field updates
-        const updateFields: Record<string, any> = {};
+        const updateFields: Partial<typeof tournaments.$inferInsert> = {};
         if (input.title !== undefined) updateFields.title = input.title;
         if (input.gameSlug !== undefined) updateFields.gameSlug = input.gameSlug;
         if (input.format !== undefined) updateFields.format = input.format;

@@ -26,7 +26,7 @@ const options: AppOptions = {}
 
 const app: FastifyPluginAsync<AppOptions> = async (
   fastify,
-  opts
+  _opts
 ): Promise<void> => {
   // Validate and load typed environment configuration
   const config = loadEnv()

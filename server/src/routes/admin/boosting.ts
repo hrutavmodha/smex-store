@@ -2,6 +2,13 @@ import { type FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { BoostingRateService } from '../../services/boosting-rate.service.js';
 
+interface BoostingRouteError {
+  name?: string;
+  statusCode?: number;
+  code?: string;
+  message?: string;
+}
+
 const updateRateSchema = z
   .object({
     priceInr: z
@@ -74,12 +81,13 @@ const adminBoostingRoutes: FastifyPluginAsync = async (fastify) => {
       }
 
       return reply.code(200).send(updated);
-    } catch (err: any) {
-      if (err.name === 'ValidationError' || err.statusCode) {
-        return reply.code(err.statusCode || 400).send({
-          statusCode: err.statusCode || 400,
-          error: err.code || 'Bad Request',
-          message: err.message,
+    } catch (err: unknown) {
+      const errorObj = err as BoostingRouteError;
+      if (errorObj?.name === 'ValidationError' || errorObj?.statusCode) {
+        return reply.code(errorObj.statusCode || 400).send({
+          statusCode: errorObj.statusCode || 400,
+          error: errorObj.code || 'Bad Request',
+          message: errorObj.message,
         });
       }
       throw err;
@@ -145,12 +153,13 @@ const adminBoostingRoutes: FastifyPluginAsync = async (fastify) => {
         });
       }
       return reply.code(200).send(updated);
-    } catch (err: any) {
-      if (err.name === 'ValidationError' || err.statusCode) {
-        return reply.code(err.statusCode || 400).send({
-          statusCode: err.statusCode || 400,
-          error: err.code || 'Bad Request',
-          message: err.message,
+    } catch (err: unknown) {
+      const errorObj = err as BoostingRouteError;
+      if (errorObj?.name === 'ValidationError' || errorObj?.statusCode) {
+        return reply.code(errorObj.statusCode || 400).send({
+          statusCode: errorObj.statusCode || 400,
+          error: errorObj.code || 'Bad Request',
+          message: errorObj.message,
         });
       }
       throw err;

@@ -26,13 +26,19 @@ const dbPlugin: FastifyPluginAsync<DbPluginOptions> = async (fastify, opts) => {
   fastify.decorate('dbPool', pool);
   fastify.decorate('db', db);
 
+interface ClosablePool extends pg.Pool {
+  ending: boolean;
+  ended: boolean;
+}
+
   fastify.addHook('onClose', async (instance) => {
+    const poolInstance = instance.dbPool as ClosablePool | undefined;
     if (
-      instance.dbPool &&
-      !(instance.dbPool as any).ending &&
-      !(instance.dbPool as any).ended
+      poolInstance &&
+      !poolInstance.ending &&
+      !poolInstance.ended
     ) {
-      await instance.dbPool.end();
+      await poolInstance.end();
     }
   });
 };

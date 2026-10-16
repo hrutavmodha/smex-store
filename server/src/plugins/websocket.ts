@@ -1,4 +1,4 @@
-import { type FastifyPluginAsync } from 'fastify';
+import { type FastifyPluginAsync, type FastifyBaseLogger } from 'fastify';
 import fp from 'fastify-plugin';
 import fastifyWebsocket, { type WebSocket } from '@fastify/websocket';
 import crypto from 'node:crypto';
@@ -172,7 +172,7 @@ const websocketPlugin: FastifyPluginAsync = async (fastify) => {
 export function registerSocket(
   socket: WebSocket,
   clients: Map<WebSocket, WebSocketClientMeta>,
-  logger: FastifyPluginAsync extends (...args: any[]) => any ? any : any,
+  logger?: FastifyBaseLogger | null,
   userId: string | null = null,
   sessionId: string | null = null
 ): WebSocketClientMeta {

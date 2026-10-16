@@ -10,6 +10,18 @@ import {
 } from '../db/schema/teams.js';
 import { profiles } from '../db/schema/users.js';
 
+export interface ServiceError extends Error {
+  statusCode?: number;
+  code?: string;
+}
+
+export function createServiceError(message: string, statusCode: number, code: string): ServiceError {
+  const err = new Error(message) as ServiceError;
+  err.statusCode = statusCode;
+  err.code = code;
+  return err;
+}
+
 export interface CreateTeamInput {
   name: string;
   tag: string;
@@ -69,10 +81,7 @@ export class TeamService {
 
     // Boundary check for memberCap
     if (input.memberCap !== undefined && (input.memberCap < 1 || input.memberCap > 10)) {
-      const err: any = new Error('Member capacity must be between 1 and 10');
-      err.statusCode = 422;
-      err.code = 'INVALID_MEMBER_CAP';
-      throw err;
+      throw createServiceError('Member capacity must be between 1 and 10', 422, 'INVALID_MEMBER_CAP');
     }
 
     // MLBB Single Squad Rule: Check if creator is already an active member/captain of a squad in this game
@@ -84,10 +93,7 @@ export class TeamService {
       .limit(1);
 
     if (existingMembership) {
-      const err: any = new Error('You are already an active member of a squad in this game');
-      err.statusCode = 400;
-      err.code = 'ALREADY_IN_SQUAD';
-      throw err;
+      throw createServiceError('You are already an active member of a squad in this game', 400, 'ALREADY_IN_SQUAD');
     }
 
     // Duplicate squad name pre-check
@@ -98,10 +104,7 @@ export class TeamService {
       .limit(1);
 
     if (existingName) {
-      const err: any = new Error('A squad with this name already exists');
-      err.statusCode = 409;
-      err.code = 'DUPLICATE_TEAM_NAME';
-      throw err;
+      throw createServiceError('A squad with this name already exists', 409, 'DUPLICATE_TEAM_NAME');
     }
 
     const memberCap = input.memberCap ?? 5;
@@ -341,25 +344,16 @@ export class TeamService {
       .limit(1);
 
     if (!existing) {
-      const err: any = new Error('Team not found');
-      err.statusCode = 404;
-      err.code = 'TEAM_NOT_FOUND';
-      throw err;
+      throw createServiceError('Team not found', 404, 'TEAM_NOT_FOUND');
     }
 
     if (existing.captainId !== callerId) {
-      const err: any = new Error('Only team captain can update squad metadata');
-      err.statusCode = 403;
-      err.code = 'CAPTAIN_PERMISSION_REQUIRED';
-      throw err;
+      throw createServiceError('Only team captain can update squad metadata', 403, 'CAPTAIN_PERMISSION_REQUIRED');
     }
 
     if (input.memberCap !== undefined) {
       if (input.memberCap < 1 || input.memberCap > 10) {
-        const err: any = new Error('Member capacity must be between 1 and 10');
-        err.statusCode = 422;
-        err.code = 'INVALID_MEMBER_CAP';
-        throw err;
+        throw createServiceError('Member capacity must be between 1 and 10', 422, 'INVALID_MEMBER_CAP');
       }
 
       const [activeCountResult] = await db
@@ -369,12 +363,11 @@ export class TeamService {
 
       const currentMembers = activeCountResult?.count ?? 0;
       if (input.memberCap < currentMembers) {
-        const err: any = new Error(
-          `Cannot set member capacity to ${input.memberCap} because the team currently has ${currentMembers} active members`
+        throw createServiceError(
+          `Cannot set member capacity to ${input.memberCap} because the team currently has ${currentMembers} active members`,
+          400,
+          'CAPACITY_BELOW_MEMBER_COUNT'
         );
-        err.statusCode = 400;
-        err.code = 'CAPACITY_BELOW_MEMBER_COUNT';
-        throw err;
       }
     }
 
@@ -405,17 +398,11 @@ export class TeamService {
       .limit(1);
 
     if (!existing) {
-      const err: any = new Error('Team not found');
-      err.statusCode = 404;
-      err.code = 'TEAM_NOT_FOUND';
-      throw err;
+      throw createServiceError('Team not found', 404, 'TEAM_NOT_FOUND');
     }
 
     if (existing.captainId !== callerId) {
-      const err: any = new Error('Only team captain can disband squad');
-      err.statusCode = 403;
-      err.code = 'CAPTAIN_PERMISSION_REQUIRED';
-      throw err;
+      throw createServiceError('Only team captain can disband squad', 403, 'CAPTAIN_PERMISSION_REQUIRED');
     }
 
     await db.delete(teams).where(eq(teams.id, teamId));
@@ -444,28 +431,19 @@ export class TeamService {
         .for('update');
 
       if (!team) {
-        const err: any = new Error('Team not found');
-        err.statusCode = 404;
-        err.code = 'TEAM_NOT_FOUND';
-        throw err;
+        throw createServiceError('Team not found', 404, 'TEAM_NOT_FOUND');
       }
 
       const isCaptain = team.captainId === callerId;
       const isSelf = targetUserId === callerId;
 
       if (!isCaptain && !isSelf) {
-        const err: any = new Error('You do not have permission to remove this member');
-        err.statusCode = 403;
-        err.code = 'CAPTAIN_PERMISSION_REQUIRED';
-        throw err;
+        throw createServiceError('You do not have permission to remove this member', 403, 'CAPTAIN_PERMISSION_REQUIRED');
       }
 
       // Captain cannot voluntarily leave without transferring captaincy or disbanding
       if (isSelf && team.captainId === callerId) {
-        const err: any = new Error('Captain cannot leave squad without transferring captaincy');
-        err.statusCode = 400;
-        err.code = 'CAPTAIN_CANNOT_LEAVE';
-        throw err;
+        throw createServiceError('Captain cannot leave squad without transferring captaincy', 400, 'CAPTAIN_CANNOT_LEAVE');
       }
 
       const [memberRecord] = await tx
@@ -475,10 +453,7 @@ export class TeamService {
         .for('update');
 
       if (!memberRecord) {
-        const err: any = new Error('Member not found in squad roster');
-        err.statusCode = 404;
-        err.code = 'MEMBER_NOT_FOUND';
-        throw err;
+        throw createServiceError('Member not found in squad roster', 404, 'MEMBER_NOT_FOUND');
       }
 
       await tx
@@ -502,10 +477,7 @@ export class TeamService {
     db: SmexDatabase
   ): Promise<{ success: boolean; newCaptainId: string }> {
     if (newCaptainId === callerId) {
-      const err: any = new Error('Target is already the captain');
-      err.statusCode = 400;
-      err.code = 'ALREADY_CAPTAIN';
-      throw err;
+      throw createServiceError('Target is already the captain', 400, 'ALREADY_CAPTAIN');
     }
 
     return await db.transaction(async (tx) => {
@@ -516,17 +488,11 @@ export class TeamService {
         .for('update');
 
       if (!team) {
-        const err: any = new Error('Team not found');
-        err.statusCode = 404;
-        err.code = 'TEAM_NOT_FOUND';
-        throw err;
+        throw createServiceError('Team not found', 404, 'TEAM_NOT_FOUND');
       }
 
       if (team.captainId !== callerId) {
-        const err: any = new Error('Only the current captain can transfer captaincy');
-        err.statusCode = 403;
-        err.code = 'CAPTAIN_PERMISSION_REQUIRED';
-        throw err;
+        throw createServiceError('Only the current captain can transfer captaincy', 403, 'CAPTAIN_PERMISSION_REQUIRED');
       }
 
       // Verify new captain is an active member of this squad
@@ -537,10 +503,7 @@ export class TeamService {
         .for('update');
 
       if (!targetMember) {
-        const err: any = new Error('Target player must be an active member of the squad');
-        err.statusCode = 400;
-        err.code = 'TARGET_NOT_A_MEMBER';
-        throw err;
+        throw createServiceError('Target player must be an active member of the squad', 400, 'TARGET_NOT_A_MEMBER');
       }
 
       // 1. Update teams table captainId

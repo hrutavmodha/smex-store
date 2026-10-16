@@ -1,4 +1,4 @@
-import { type FastifyPluginAsync } from 'fastify';
+import { type FastifyPluginAsync, type FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { TeamService } from '../services/team.service.js';
 import { TeamJoinService } from '../services/team-join.service.js';
@@ -47,8 +47,20 @@ function formatRfc7807(statusCode: number, code: string, title: string, detail: 
   };
 }
 
-function handleError(reply: any, err: any) {
-  const code = err.code || err.cause?.code;
+interface TeamRouteError {
+  code?: string;
+  statusCode?: number;
+  message?: string;
+  cause?: {
+    code?: string;
+    statusCode?: number;
+    message?: string;
+  };
+}
+
+function handleError(reply: FastifyReply, err: unknown) {
+  const errorObj = err as TeamRouteError;
+  const code = errorObj?.code || errorObj?.cause?.code;
   if (code === '23505' || code === 'DUPLICATE_TEAM_NAME') {
     return reply.code(409).send(
       formatRfc7807(409, 'DUPLICATE_TEAM_NAME', 'Conflict', 'A squad with this name already exists')
@@ -66,13 +78,13 @@ function handleError(reply: any, err: any) {
   }
   if (code === 'CAPACITY_BELOW_MEMBER_COUNT') {
     return reply.code(400).send(
-      formatRfc7807(400, 'CAPACITY_BELOW_MEMBER_COUNT', 'Bad Request', err.message || 'Cannot reduce member capacity below active member count')
+      formatRfc7807(400, 'CAPACITY_BELOW_MEMBER_COUNT', 'Bad Request', errorObj?.message || 'Cannot reduce member capacity below active member count')
     );
   }
 
-  const statusCode = err.statusCode || err.cause?.statusCode;
-  const errCode = err.code || err.cause?.code || 'ERROR';
-  const detail = err.message || err.cause?.message || 'Error occurred';
+  const statusCode = errorObj?.statusCode || errorObj?.cause?.statusCode;
+  const errCode = errorObj?.code || errorObj?.cause?.code || 'ERROR';
+  const detail = errorObj?.message || errorObj?.cause?.message || 'Error occurred';
 
   if (statusCode) {
     return reply.code(statusCode).send(formatRfc7807(statusCode, errCode, 'Error', detail));
@@ -153,7 +165,7 @@ const teamsRoutes: FastifyPluginAsync = async (fastify) => {
           team,
           captainMember,
         });
-      } catch (err: any) {
+      } catch (err: unknown) {
         return handleError(reply, err);
       }
     }
@@ -222,7 +234,7 @@ const teamsRoutes: FastifyPluginAsync = async (fastify) => {
       try {
         const updated = await TeamService.updateTeam(id, request.user.sub, input, fastify.db);
         return reply.code(200).send({ team: updated });
-      } catch (err: any) {
+      } catch (err: unknown) {
         return handleError(reply, err);
       }
     }
@@ -240,7 +252,7 @@ const teamsRoutes: FastifyPluginAsync = async (fastify) => {
       try {
         const result = await TeamService.disbandTeam(id, request.user.sub, fastify.db);
         return reply.code(200).send(result);
-      } catch (err: any) {
+      } catch (err: unknown) {
         return handleError(reply, err);
       }
     }
@@ -277,7 +289,7 @@ const teamsRoutes: FastifyPluginAsync = async (fastify) => {
         );
 
         return reply.code(201).send({ joinRequest });
-      } catch (err: any) {
+      } catch (err: unknown) {
         return handleError(reply, err);
       }
     }
@@ -295,7 +307,7 @@ const teamsRoutes: FastifyPluginAsync = async (fastify) => {
       try {
         const requests = await TeamJoinService.listJoinRequests(id, request.user.sub, fastify.db);
         return reply.code(200).send({ requests });
-      } catch (err: any) {
+      } catch (err: unknown) {
         return handleError(reply, err);
       }
     }
@@ -316,7 +328,7 @@ const teamsRoutes: FastifyPluginAsync = async (fastify) => {
           hasPendingRequest: !!myRequest,
           request: myRequest || null,
         });
-      } catch (err: any) {
+      } catch (err: unknown) {
         return handleError(reply, err);
       }
     }
@@ -354,7 +366,7 @@ const teamsRoutes: FastifyPluginAsync = async (fastify) => {
         );
 
         return reply.code(200).send(result);
-      } catch (err: any) {
+      } catch (err: unknown) {
         return handleError(reply, err);
       }
     }
@@ -377,7 +389,7 @@ const teamsRoutes: FastifyPluginAsync = async (fastify) => {
           fastify.db
         );
         return reply.code(200).send(result);
-      } catch (err: any) {
+      } catch (err: unknown) {
         return handleError(reply, err);
       }
     }
@@ -395,7 +407,7 @@ const teamsRoutes: FastifyPluginAsync = async (fastify) => {
       try {
         const result = await TeamService.removeMember(id, userId, request.user.sub, fastify.db);
         return reply.code(200).send(result);
-      } catch (err: any) {
+      } catch (err: unknown) {
         return handleError(reply, err);
       }
     }
@@ -430,7 +442,7 @@ const teamsRoutes: FastifyPluginAsync = async (fastify) => {
         );
 
         return reply.code(200).send(result);
-      } catch (err: any) {
+      } catch (err: unknown) {
         return handleError(reply, err);
       }
     }

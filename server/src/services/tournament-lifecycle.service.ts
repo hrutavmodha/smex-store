@@ -1,4 +1,4 @@
-import { eq, count, sql, and, desc } from 'drizzle-orm';
+import { eq, sql, and, desc } from 'drizzle-orm';
 import { type SmexDatabase } from '../db/index.js';
 import {
   tournaments,
@@ -8,7 +8,6 @@ import {
   type NewTournament,
 } from '../db/schema/tournaments.js';
 import { teams } from '../db/schema/teams.js';
-import { users } from '../db/schema/users.js';
 import { type Redis } from 'ioredis';
 
 export type TournamentStatus = 'upcoming' | 'registration_open' | 'ongoing' | 'completed';
@@ -141,7 +140,7 @@ export class TournamentLifecycleService {
           sql`${tournaments.status} IN ('upcoming', 'registration_open')`
         );
       } else {
-        conditions.push(eq(tournaments.status, filters.status as any));
+        conditions.push(eq(tournaments.status, filters.status as TournamentStatus));
       }
     }
 

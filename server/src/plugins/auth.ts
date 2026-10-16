@@ -67,12 +67,12 @@ const authPlugin: FastifyPluginAsync = async (fastify) => {
       }
 
       request.user = payload;
-    } catch (err: any) {
+    } catch (err: unknown) {
       return reply.code(401).send({
         type: 'https://api.smexstore.com/errors/unauthorized',
         title: 'Unauthorized',
         status: 401,
-        detail: err?.message || 'Authentication required',
+        detail: err instanceof Error ? err.message : 'Authentication required',
         code: 'UNAUTHORIZED',
       });
     }

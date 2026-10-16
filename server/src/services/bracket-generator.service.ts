@@ -2,8 +2,6 @@ import { eq } from 'drizzle-orm';
 import { type SmexDatabase } from '../db/index.js';
 import {
   tournamentMatches,
-  tournaments,
-  tournamentParticipants,
   type NewTournamentMatch,
 } from '../db/schema/tournaments.js';
 

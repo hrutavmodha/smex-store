@@ -56,14 +56,14 @@ export class BoostingRateService {
     id: string,
     data: RateUpdateInput,
     db: SmexDatabase
-  ): Promise<BoostingRate> {
+  ): Promise<BoostingRate | undefined> {
     const [existing] = await db
       .select()
       .from(boostingRates)
       .where(eq(boostingRates.id, id));
 
     if (!existing) {
-      return undefined as any;
+      return undefined;
     }
 
     if (data.priceInr !== undefined) {
@@ -86,7 +86,7 @@ export class BoostingRateService {
       }
     }
 
-    const updatePayload: Record<string, any> = {
+    const updatePayload: Partial<typeof boostingRates.$inferInsert> = {
       updatedAt: new Date(),
     };
 
@@ -137,20 +137,17 @@ export class BoostingRateService {
     const conditions = [];
 
     if (filters.status) {
-      conditions.push(eq(boostingOrders.status, filters.status as any));
+      conditions.push(eq(boostingOrders.status, filters.status as BoostingOrder['status']));
     }
     if (filters.channel) {
-      conditions.push(eq(boostingOrders.contactChannel, filters.channel as any));
+      conditions.push(eq(boostingOrders.contactChannel, filters.channel as BoostingOrder['contactChannel']));
     }
 
     const limit = Math.max(1, Math.min(filters.limit ?? 20, 100));
     const offset = Math.max(0, filters.offset ?? 0);
 
-    let query = db.select().from(boostingOrders);
-
-    if (conditions.length > 0) {
-      query = query.where(and(...conditions)) as any;
-    }
+    const baseQuery = db.select().from(boostingOrders);
+    const query = conditions.length > 0 ? baseQuery.where(and(...conditions)) : baseQuery;
 
     return query
       .orderBy(desc(boostingOrders.createdAt))
@@ -188,8 +185,8 @@ export class BoostingRateService {
       );
     }
 
-    const updatePayload: Record<string, any> = {
-      status: status as any,
+    const updatePayload: Partial<NewBoostingOrder> = {
+      status: status as BoostingOrder['status'],
     };
     if (notes !== undefined) {
       updatePayload.notes = notes;
