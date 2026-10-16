@@ -136,19 +136,19 @@ flowchart TD
 
 ### Milestone 6: MLBB Dual-Mode Boosting Engine
 
-* [ ] **6.1 Core Calculation Logic**:
+* [X] **6.1 Core Calculation Logic**:
   * Sub-Mythic: Tier jump fixed matrix for Epic to Legend, Legend to Mythic, and Epic to Mythic bundles.
   * Mythic and Above: Progressive difficulty-scaled per-star tiers from Mythic 0-24 stars to Mythical Immortal 100+ stars.
   * Role and hero surcharges and multi-bracket traversal.
-* [ ] **6.2 External Communication Link Dispatcher**:
+* [X] **6.2 External Communication Link Dispatcher**:
   * Generates pre-formatted URI-encoded WhatsApp, Telegram, and Discord direct links.
   * Formats exact order summary text with starting/target ranks, calculated price in INR, and customer in-game IGN.
-* [ ] **6.3 Admin Rate Override**: Secure endpoints allowing admins to update per-tier and per-star rates in PostgreSQL.
-* [ ] **6.4 Client Rank Boosting UI**:
+* [X] **6.3 Admin Rate Override**: Secure endpoints allowing admins to update per-tier and per-star rates in PostgreSQL.
+* [X] **6.4 Client Rank Boosting UI**:
   * Build Rank Boosting booking page with dynamic dual-mode slider and dropdown selectors.
   * Implement instant live price computation in INR without page reload.
   * Build one-click dispatch action buttons launching pre-formatted WhatsApp, Telegram, and Discord chats.
-* [ ] **6.5 Automated Boosting Engine Testing**: Execute test suite validating sub-mythic fixed tier matrices, mythic progressive per-star pricing, surcharge calculations, order link formatting, and interactive slider UI events.
+* [X] **6.5 Automated Boosting Engine Testing**: Execute test suite validating sub-mythic fixed tier matrices, mythic progressive per-star pricing, surcharge calculations, order link formatting, and interactive slider UI events (28 server tests passing, 9 client browser tests passing; 37/37 total).
 
 ---
 

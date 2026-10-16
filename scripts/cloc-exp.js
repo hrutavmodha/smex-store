@@ -3,9 +3,16 @@
 import { readdirSync, readFileSync } from 'fs'
 
 let mdLoc = 0
+let mdFiles = 0
+
 let tsLoc = 0
+let tsFiles = 0
+
 let tsTestLoc = 0
+let tsTestFiles = 0
+
 let otherLoc = 0
+let otherFiles = 0
 
 /**
  * 
@@ -31,12 +38,16 @@ function clocDir(dirName) {
         if (entry.isFile()) {
             if (entryName.endsWith('.md')) {
                 mdLoc += cloc(`${dirName}/${entryName}`)
-            } else if (entryName.endsWith('.test.ts')) {
+                mdFiles++
+            } else if (entryName.endsWith('.test.ts') || entryName.endsWith('.test.jsx') || entryName.endsWith('.test.tsx') ) {
                 tsTestLoc += cloc(`${dirName}/${entryName}`)
-            } else if (entryName.endsWith('.ts')) {
+                tsTestFiles++
+            } else if (entryName.endsWith('.ts') || entryName.endsWith('.jsx') || entryName.endsWith('.tsx')) {
                 tsLoc += cloc(`${dirName}/${entryName}`)
+                tsFiles++
             } else {
                 otherLoc += cloc(`${dirName}/${entryName}`)
+                otherFiles++
             }
         } else if (entry.isDirectory()) {
             if (entryName !== 'node_modules' && entryName !== '.next' && entryName !== 'dist') {
@@ -45,15 +56,31 @@ function clocDir(dirName) {
         }
     }
 }
+/**
+ * 
+ * @param {{[key: string]: Array<any>}} dict 
+ * @param {Array<string>} headings 
+ */
+function table(dict, headings) {
+    process.stdout.write('| ')
+    process.stdout.write('File Type')
+    process.stdout.write('\t|\n')
+    process.stdout.write('|---|\n')
 
-clocDir('client')
-clocDir('docs')
-clocDir('server')
+    for (let key in dict) {
+        process.stdout.write('| ')
+        process.stdout.write(String(key))
+        process.stdout.write('\t|\n')
+    }
+}
 
-console.table({
-    'MarkDown': mdLoc,
-    'TypeScript': tsLoc,
-    'TypeScript Test': tsTestLoc
-})
+clocDir('.')
 
-console.log('Total LOC in CodeBase:', mdLoc + tsLoc + tsTestLoc)
+const dataTable = {
+    'MarkDown': [mdLoc, mdFiles],
+    'TypeScript': [tsLoc, tsFiles],
+    'TS Test': [tsTestLoc, tsTestFiles],
+    'Other Type': [otherLoc, otherFiles]
+}
+
+table(dataTable, ['Type'])

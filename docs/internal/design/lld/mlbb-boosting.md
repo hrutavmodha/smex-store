@@ -17,7 +17,7 @@ flowchart TD
         SURCHARGE_CTRL["Role Priority & Hero Pool Checklist"]
         IGN_INPUT["Customer IGN & Server ID Input"]
         LIVE_QUOTE["Real-Time Price Display (INR ₹)"]
-        DISPATCH_BTNS["1-Click Dispatch Buttons (WhatsApp / Telegram / Discord)"]
+        DISPATCH_BTNS["Communication Handoff Actions (WhatsApp & Instagram)"]
     end
 
     subgraph Gateway["API Gateway Tier (Fastify)"]
@@ -38,10 +38,9 @@ flowchart TD
         PG_ORDERS[("boosting_orders")]
     end
 
-    subgraph External["Off-Platform Communication & Settlement"]
-        WA_API["WhatsApp Chat Intent (wa.me)"]
-        TG_API["Telegram Share Intent (t.me)"]
-        DC_API["Discord Channel Invite + Auto-Clipboard"]
+    subgraph External["Off-Platform Communication Channels"]
+        WA_HANDOFF["Official WhatsApp Channel / Direct Chat"]
+        IG_HANDOFF["Official Instagram Handle"]
     end
 
     MODE_TOGGLE --> SLIDER_CTRL
@@ -55,9 +54,8 @@ flowchart TD
     ORDER_ROUTE --> CALC_SERVICE
     ORDER_ROUTE --> DISPATCH_SERVICE
     DISPATCH_SERVICE --> PG_ORDERS
-    DISPATCH_SERVICE --> WA_API
-    DISPATCH_SERVICE --> TG_API
-    DISPATCH_SERVICE --> DC_API
+    DISPATCH_SERVICE --> WA_HANDOFF
+    DISPATCH_SERVICE --> IG_HANDOFF
     ADMIN_ROUTES --> RATE_SERVICE
     RATE_SERVICE --> PG_RATES
     RATE_SERVICE --> PG_ORDERS
@@ -212,13 +210,13 @@ In accordance with **ADR 0001 (Zero In-App Payment Gateway)**, commercial settle
 
 ### 3.1 Environment Configuration Parameters
 
-Target handles and phone numbers are loaded strictly via environment variables (zero hardcoded credentials or phone numbers in source code):
+Platform communication channels are resolved dynamically via environment configuration:
 
 ```typescript
 export interface BoostingDispatchConfig {
-  whatsappPhone: string;     // env: NEXT_PUBLIC_BOOSTING_WHATSAPP_PHONE (e.g. "919876543210")
-  telegramHandle: string;    // env: NEXT_PUBLIC_BOOSTING_TELEGRAM_HANDLE (e.g. "smex_store_support")
-  discordInviteUrl: string;  // env: NEXT_PUBLIC_BOOSTING_DISCORD_INVITE (e.g. "https://discord.gg/smexstore")
+  whatsappChannelUrl: string;     // env: NEXT_PUBLIC_SOCIAL_WHATSAPP_CHANNEL
+  instagramUrl: string;           // env: NEXT_PUBLIC_SOCIAL_INSTAGRAM
+  whatsappDirectPhone?: string;   // env: NEXT_PUBLIC_BOOSTING_WHATSAPP_PHONE (optional direct business number)
 }
 ```
 
@@ -226,7 +224,7 @@ export interface BoostingDispatchConfig {
 
 ### 3.2 Standardized Order Inquiry Message Block
 
-The dispatcher constructs a deterministic message block used across all external channels:
+The dispatcher constructs a deterministic message block used across external channels:
 
 ```text
 [SMEX STORE BOOSTING ORDER]
@@ -243,26 +241,28 @@ Please confirm booster availability and payment details.
 
 ---
 
-### 3.3 Channel-Specific URI Schemes
+### 3.3 Channel-Specific Dispatch Schemes
 
 ```mermaid
 flowchart TD
     ORDER_DATA["Order Data & Verified Price"] --> FORMAT_MSG["Format Standardized Message Block"]
+    FORMAT_MSG --> CLIPBOARD["navigator.clipboard.writeText(message)"]
     FORMAT_MSG --> ENCODE["encodeURIComponent(message)"]
 
-    ENCODE --> WA_LINK["WhatsApp: https://wa.me/{phone}?text={encoded}"]
-    ENCODE --> TG_LINK["Telegram: https://t.me/{handle}?text={encoded}"]
-    ENCODE --> DC_ACTION["Discord: Copy to Clipboard + Open https://discord.gg/{invite}"]
+    ENCODE --> WA_CHECK{"Direct WhatsApp Phone Configured?"}
+    WA_CHECK -->|Yes| WA_DIRECT["Open https://wa.me/{phone}?text={encoded}"]
+    WA_CHECK -->|No| WA_CHAN["Copy to Clipboard + Open WhatsApp Channel"]
+
+    CLIPBOARD --> IG_ACTION["Copy to Clipboard + Open Instagram Profile/DM"]
 ```
 
-1. **WhatsApp Web Intent**:
-   $$\text{URL} = \text{https://wa.me/} + \text{config.whatsappPhone} + \text{?text=} + \text{encodeURIComponent}(\text{message})$$
-2. **Telegram Share Intent**:
-   $$\text{URL} = \text{https://t.me/} + \text{config.telegramHandle} + \text{?text=} + \text{encodeURIComponent}(\text{message})$$
-3. **Discord Dispatch & Clipboard Fallback**:
-   Because Discord does not support message prefill query parameters via web links, the client executes a two-phase action:
-   * **Phase 1**: Copies the formatted plain-text order block to the system clipboard via `navigator.clipboard.writeText(message)`.
-   * **Phase 2**: Displays an instantaneous toast notification: `"Order details copied to clipboard! Opening Discord..."` and navigates to `config.discordInviteUrl`.
+1. **WhatsApp Handoff**:
+   * If `NEXT_PUBLIC_BOOSTING_WHATSAPP_PHONE` is configured: opens `https://wa.me/{phone}?text={encodeURIComponent(message)}`.
+   * When using the official WhatsApp Channel (`NEXT_PUBLIC_SOCIAL_WHATSAPP_CHANNEL`): copies the formatted quote block to the system clipboard via `navigator.clipboard.writeText` and navigates to the verified channel link.
+2. **Instagram Handoff**:
+   * Copies the formatted plain-text order block to the system clipboard via `navigator.clipboard.writeText(message)`.
+   * Displays toast notification: `"Order details copied to clipboard! Paste into Instagram DM to confirm."`
+   * Opens the official Instagram URL (`NEXT_PUBLIC_SOCIAL_INSTAGRAM`).
 
 ---
 
@@ -276,7 +276,7 @@ flowchart TD
 ```typescript
 // Enums
 export const boostingPricingModeEnum = pgEnum('boosting_pricing_mode', ['fixed_tier', 'per_star']);
-export const boostingContactChannelEnum = pgEnum('boosting_contact_channel', ['whatsapp', 'telegram', 'discord']);
+export const boostingContactChannelEnum = pgEnum('boosting_contact_channel', ['whatsapp', 'instagram']);
 export const boostingOrderStatusEnum = pgEnum('boosting_order_status', [
   'inquiry',
   'confirmed',
@@ -402,8 +402,8 @@ stateDiagram-v2
     "calculatedPriceInr": "668.00",
     "dispatch": {
       "channel": "whatsapp",
-      "dispatchUrl": "https://wa.me/919876543210?text=...",
-      "formattedText": "[SMEX STORE BOOSTING ORDER]..."
+      "destinationUrl": "<env:NEXT_PUBLIC_SOCIAL_WHATSAPP_CHANNEL>",
+      "formattedText": "[SMEX STORE BOOSTING ORDER] Ref: BST-202610-7492 | Mythic 10★ -> Mythical Honor 30★ | Price: ₹668 INR | IGN: ViperMLBB"
     }
   }
   ```
@@ -500,7 +500,7 @@ Per `docs/internal/design/ui.md`:
 |  | -------------------------------------------------------------------------------   |  |
 |  | TOTAL ESTIMATED PRICE:                                             ₹600.00 INR    |  |
 |  |                                                                                   |  |
-|  | [ 1-CLICK WHATSAPP ]      [ 1-CLICK TELEGRAM ]       [ COPY & OPEN DISCORD ]     |  |
+|  | [ 1-CLICK WHATSAPP ]                       [ COPY & OPEN INSTAGRAM ]              |  |
 |  +-----------------------------------------------------------------------------------+  |
 +-----------------------------------------------------------------------------------------+
 ```

@@ -4,7 +4,7 @@
 
 This document specifies the Low-Level Test (LLT) verification catalog for **Milestone 6: MLBB Dual-Mode Boosting Engine** of the Smex Store platform. It serves as the direct 1:1 verification counterpart to `docs/internal/design/lld/mlbb-boosting.md`.
 
-* **Verification Objective**: Rigorously validate the dual-mode pricing calculation engine (Sub-Mythic fixed tier leaps, Mythic progressive per-star brackets, multi-bracket traversal piecewise math, role/hero surcharges), external communication link dispatcher (WhatsApp, Telegram, Discord URI encoding), admin rate overrides, booking order persistence, and client interactive slider components under AMOLED `#000000` styling.
+* **Verification Objective**: Rigorously validate the dual-mode pricing calculation engine (Sub-Mythic fixed tier leaps, Mythic progressive per-star brackets, multi-bracket traversal piecewise math, role/hero surcharges), external communication link dispatcher (WhatsApp and Instagram handoff), admin rate overrides, booking order persistence, and client interactive slider components under AMOLED `#000000` styling.
 * **Test Toolchain**:
   * **Backend**: Native Node.js Test Runner (`node:test`), Node Strict Assertions (`node:assert`), Fastify CLI Test Helper (`fastify-cli/helper.js`), PostgreSQL test container with transactional rollback, and V8 Coverage Engine (`c8`).
   * **Frontend**: Next.js 16 Test Suite, React Testing Library (`@testing-library/react`), JSDOM environment, and WCAG AA contrast auditing.
@@ -117,9 +117,9 @@ flowchart TD
 
 | Test ID | Test Description | Test Data | Expected Result | Actual Result | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| 19 | WhatsApp web intent URI generation | Phone: `"919876543210"`, Order Ref: `"BST-202610-001"`, Price: ₹450 | Returns `https://wa.me/919876543210?text=...` with valid `%0A` line breaks and encoded summary | Verified valid WhatsApp URI structure and parameters | Pass |
-| 20 | Telegram share intent URI generation | Handle: `"smex_store_support"`, Order Ref: `"BST-202610-001"`, Price: ₹450 | Returns `https://t.me/smex_store_support?text=...` with properly escaped quote block | Verified valid Telegram URI structure | Pass |
-| 21 | Discord clipboard block and invite link formatting | Discord Invite: `"https://discord.gg/smexstore"`, Customer IGN: `"ViperMLBB"` | Formats deterministic plain-text markdown block; sets target redirect to invite URL | Verified Discord payload block and invite URL | Pass |
+| 19 | WhatsApp channel handoff URL resolution and clipboard copy | Active `process.env.NEXT_PUBLIC_SOCIAL_WHATSAPP_CHANNEL`, Order Ref: `"BST-202610-001"`, Price: ₹450 | Copies formatted order quote to clipboard; destination URL dynamically resolves to configured env variable | Verified clipboard copy and dynamic resolution of configured WhatsApp Channel URL | Pass |
+| 20 | Direct WhatsApp phone URI intent construction (optional override) | Unit mock `process.env.NEXT_PUBLIC_BOOSTING_WHATSAPP_PHONE = '15550100100'`, Order Ref: `"BST-202610-001"`, Price: ₹450 | Returns `https://wa.me/15550100100?text=...` with valid `%0A` line breaks and encoded summary | Verified URI intent format with mock fixture | Pass |
+| 21 | Instagram handoff clipboard payload and redirect URL | Active `process.env.NEXT_PUBLIC_SOCIAL_INSTAGRAM`, Customer IGN: `"ViperMLBB"` | Copies standardized plain-text order block to clipboard; destination URL dynamically resolves to configured env variable | Verified clipboard copy and dynamic resolution of configured Instagram URL | Pass |
 | 22 | Order reference ID formatting structure | Order creation with timestamp `2026-10-16` | Generates uppercase string matching `^BST-[0-9]{6}-[0-9]{4}$` | Verified reference format matches standard regex | Pass |
 
 ---
@@ -151,7 +151,7 @@ flowchart TD
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | 29 | Client-side slider recomputes live quote without network call | Move star slider from 10★ to 30★ in DOM | Price element text updates instantaneously to `"₹450.00 INR"`; zero fetch requests emitted | Verified instant DOM price update without network fetch | Pass |
 | 30 | AMOLED #000000 surface and motion physics compliance | Inspect rendered container styles and button transitions | Root container has background `#000000`; buttons have `transition-all duration-120`; zero blur filter | Verified `#000000` AMOLED base and 120ms transitions | Pass |
-| 31 | Dispatch buttons disabled when IGN is missing | Blank IGN input field | Dispatch buttons (WhatsApp, Telegram, Discord) have `disabled` attribute | Verified buttons disabled until valid IGN entered | Pass |
+| 31 | Dispatch buttons disabled when IGN is missing | Blank IGN input field | Dispatch buttons (WhatsApp, Instagram) have `disabled` attribute | Verified buttons disabled until valid IGN entered | Pass |
 
 ---
 
@@ -194,7 +194,7 @@ Target coverage metrics enforced by `c8` and the CI test pipeline across all Mil
 | **LLD 2.4** | Role priority and hero surcharge engine | 15, 16, 17, 18 | Unit tests for +15% role, +₹150 hero pool, +25% duo play, and rounding logic |
 | **LLD 3.1** | Environment-based channel handle resolution | 19, 20, 21 | Verification that dispatch URLs dynamically use configured phone/handle |
 | **LLD 3.2** | Standardized order summary block formatting | 19, 20, 21 | String inspection checking all required order fields and line items |
-| **LLD 3.3** | URI encoding and Discord clipboard fallback | 19, 20, 21 | URI validation checking `%0A` line-break encoding and clipboard invocation |
+| **LLD 3.3** | URI encoding and Instagram clipboard handoff | 19, 20, 21 | URI validation checking `%0A` line-break encoding and clipboard invocation |
 | **LLD 4.2** | Order lifecycle state machine progression | 25, 28 | State transition from `'inquiry'` to `'confirmed'` with audit notes |
 | **LLD 5.1** | Public rates and server-side calculation API | 23, 24 | Fastify test harness HTTP `GET` and `POST` calls |
 | **LLD 5.1** | Booking inquiry persistence | 25 | Database inspection after `POST /api/v1/boosting/orders` |
