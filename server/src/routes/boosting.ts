@@ -35,7 +35,7 @@ const createOrderSchema = z.object({
   targetStars: z.number().int().min(0).optional().default(0),
   customerIgn: z.string().min(1).max(50),
   serverId: z.string().max(50).optional().nullable(),
-  contactChannel: z.enum(['whatsapp', 'instagram', 'telegram', 'discord']).default('whatsapp'),
+  contactChannel: z.enum(['whatsapp', 'instagram']).default('whatsapp'),
   addons: z
     .object({
       rolePriority: z.string().optional(),
@@ -170,11 +170,6 @@ const boostingRoutes: FastifyPluginAsync = async (fastify) => {
       addons: data.addons,
     });
 
-    // DB channel mapping (fallback to whatsapp for DB enum safety)
-    const dbContactChannel = (['whatsapp', 'telegram', 'discord'].includes(data.contactChannel)
-      ? data.contactChannel
-      : 'whatsapp') as any;
-
     const dbPricingMode = data.pricingMode === 'composite' ? 'per_star' : data.pricingMode;
 
     const order = await BoostingRateService.createOrder(
@@ -188,7 +183,7 @@ const boostingRoutes: FastifyPluginAsync = async (fastify) => {
         targetStars: data.targetStars,
         calculatedPriceInr: calculation.totalPriceInr,
         customerIgn: data.customerIgn,
-        contactChannel: dbContactChannel,
+        contactChannel: data.contactChannel,
         status: 'inquiry',
         notes: data.notes
           ? `${data.notes} | Ref: ${orderRef} | Channel: ${data.contactChannel}`

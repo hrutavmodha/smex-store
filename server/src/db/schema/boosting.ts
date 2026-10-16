@@ -15,7 +15,7 @@ import {
 import { users } from './users.js';
 
 export const boostingPricingModeEnum = pgEnum('boosting_pricing_mode', ['fixed_tier', 'per_star']);
-export const boostingContactChannelEnum = pgEnum('boosting_contact_channel', ['whatsapp', 'telegram', 'discord']);
+export const boostingContactChannelEnum = pgEnum('boosting_contact_channel', ['whatsapp', 'instagram']);
 export const boostingOrderStatusEnum = pgEnum('boosting_order_status', [
   'inquiry',
   'confirmed',

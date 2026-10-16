@@ -7,7 +7,7 @@
   - `server/src/db/schema/boosting.ts` (line 18)
   - `server/src/routes/boosting.ts` (lines 38, 173–177)
   - `server/src/services/boosting-rate.service.ts` (line 105)
-- **Status**: Identified
+- **Status**: Resolved
 
 ---
 

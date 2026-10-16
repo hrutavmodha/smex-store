@@ -1,7 +1,12 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
-import { calculateBoostingPrice, type BoostingAddons } from '../../lib/boosting/calculator';
+import React, { useState, useMemo, useEffect } from 'react';
+import {
+  calculateBoostingPrice,
+  type BoostingAddons,
+  type BoostingRateRow,
+  type BoostingSurchargeConfig,
+} from '../../lib/boosting/calculator';
 import {
   generateOrderRef,
   resolveWhatsAppHandoff,
@@ -12,6 +17,27 @@ import { fetchWithAuth } from '../../lib/api';
 const SUB_MYTHIC_TIERS = ['Epic', 'Legend', 'Mythic'];
 const MYTHIC_TIERS = ['Mythic', 'Mythical Honor', 'Mythical Glory', 'Mythical Immortal'];
 const ROLES = ['Jungle', 'Gold', 'Mid', 'Roam', 'EXP'] as const;
+
+function getTierFromStars(stars: number): string {
+  if (stars >= 100) return 'Mythical Immortal';
+  if (stars >= 50) return 'Mythical Glory';
+  if (stars >= 25) return 'Mythical Honor';
+  return 'Mythic';
+}
+
+function getBaseStarsFromTier(tier: string): number {
+  switch (tier) {
+    case 'Mythical Immortal':
+      return 100;
+    case 'Mythical Glory':
+      return 50;
+    case 'Mythical Honor':
+      return 25;
+    case 'Mythic':
+    default:
+      return 0;
+  }
+}
 
 export function Calculator() {
   const [pricingMode, setPricingMode] = useState<'fixed_tier' | 'per_star'>('per_star');
@@ -25,6 +51,46 @@ export function Calculator() {
   const [starTargetTier, setStarTargetTier] = useState<string>('Mythical Honor');
   const [startingStars, setStartingStars] = useState<number>(10);
   const [targetStars, setTargetStars] = useState<number>(30);
+
+  // Active rates and surcharges fetched from API (BUG-M6-002)
+  const [rates, setRates] = useState<BoostingRateRow[] | undefined>(undefined);
+  const [surcharges, setSurcharges] = useState<Partial<BoostingSurchargeConfig> | undefined>(undefined);
+
+  useEffect(() => {
+    fetch('/api/v1/boosting/rates')
+      .then((res) => {
+        if (!res.ok) return null;
+        return res.json();
+      })
+      .then((data) => {
+        if (data?.rates) setRates(data.rates);
+        if (data?.surcharges) setSurcharges(data.surcharges);
+      })
+      .catch(() => {});
+  }, []);
+
+  // Dropdown <-> Slider bidirectional synchronization handlers (BUG-M6-003)
+  const handleStartTierChange = (tier: string) => {
+    setStarStartTier(tier);
+    setStartingStars(getBaseStarsFromTier(tier));
+  };
+
+  const handleStartStarsChange = (stars: number) => {
+    const clamped = Math.max(0, Math.min(999, isNaN(stars) ? 0 : stars));
+    setStartingStars(clamped);
+    setStarStartTier(getTierFromStars(clamped));
+  };
+
+  const handleTargetTierChange = (tier: string) => {
+    setStarTargetTier(tier);
+    setTargetStars(getBaseStarsFromTier(tier));
+  };
+
+  const handleTargetStarsChange = (stars: number) => {
+    const clamped = Math.max(0, Math.min(999, isNaN(stars) ? 0 : stars));
+    setTargetStars(clamped);
+    setStarTargetTier(getTierFromStars(clamped));
+  };
 
   // Add-ons
   const [hasRolePriority, setHasRolePriority] = useState<boolean>(false);
@@ -67,6 +133,8 @@ export function Calculator() {
           startingRank: fixedStartTier,
           targetRank: fixedTargetTier,
           addons,
+          rates,
+          surcharges,
         });
       } else {
         return calculateBoostingPrice({
@@ -76,6 +144,8 @@ export function Calculator() {
           startingStars,
           targetStars,
           addons,
+          rates,
+          surcharges,
         });
       }
     } catch {
@@ -96,6 +166,8 @@ export function Calculator() {
     startingStars,
     targetStars,
     addons,
+    rates,
+    surcharges,
   ]);
 
   const isDispatchDisabled = !customerIgn.trim() || Number(quote.totalPriceInr) <= 0 || isSubmitting;
@@ -279,12 +351,23 @@ export function Calculator() {
                 <label className="text-xs font-semibold uppercase tracking-wider text-[#22C58F]">
                   1. Current Rank & Stars
                 </label>
-                <span className="font-mono text-sm text-[#22C58F] font-bold">{startingStars}★</span>
+                <div className="flex items-center gap-1">
+                  <input
+                    type="number"
+                    data-testid="starting-stars-input"
+                    min={0}
+                    max={999}
+                    value={startingStars}
+                    onChange={(e) => handleStartStarsChange(parseInt(e.target.value, 10))}
+                    className="w-16 py-0.5 px-1.5 rounded bg-[#000000] border border-[#223530] text-[#22C58F] font-mono text-sm font-bold text-right focus:outline-none focus:border-[#22C58F] transition-all duration-[120ms] ease-out"
+                  />
+                  <span className="font-mono text-sm text-[#22C58F] font-bold">★</span>
+                </div>
               </div>
               <select
                 data-testid="starting-rank-select"
                 value={starStartTier}
-                onChange={(e) => setStarStartTier(e.target.value)}
+                onChange={(e) => handleStartTierChange(e.target.value)}
                 className="w-full py-2 px-3 rounded-lg bg-[#000000] border border-[#223530] text-[#EDEDED] text-sm focus:outline-none focus:border-[#22C58F] transition-all duration-[120ms] ease-out"
               >
                 {MYTHIC_TIERS.map((tier) => (
@@ -297,9 +380,9 @@ export function Calculator() {
                 type="range"
                 data-testid="starting-stars-slider"
                 min={0}
-                max={150}
+                max={999}
                 value={startingStars}
-                onChange={(e) => setStartingStars(parseInt(e.target.value, 10))}
+                onChange={(e) => handleStartStarsChange(parseInt(e.target.value, 10))}
                 className="w-full accent-[#22C58F] cursor-pointer"
               />
             </div>
@@ -309,12 +392,23 @@ export function Calculator() {
                 <label className="text-xs font-semibold uppercase tracking-wider text-[#22C58F]">
                   2. Target Rank & Stars
                 </label>
-                <span className="font-mono text-sm text-[#22C58F] font-bold">{targetStars}★</span>
+                <div className="flex items-center gap-1">
+                  <input
+                    type="number"
+                    data-testid="target-stars-input"
+                    min={0}
+                    max={999}
+                    value={targetStars}
+                    onChange={(e) => handleTargetStarsChange(parseInt(e.target.value, 10))}
+                    className="w-16 py-0.5 px-1.5 rounded bg-[#000000] border border-[#223530] text-[#22C58F] font-mono text-sm font-bold text-right focus:outline-none focus:border-[#22C58F] transition-all duration-[120ms] ease-out"
+                  />
+                  <span className="font-mono text-sm text-[#22C58F] font-bold">★</span>
+                </div>
               </div>
               <select
                 data-testid="target-rank-select"
                 value={starTargetTier}
-                onChange={(e) => setStarTargetTier(e.target.value)}
+                onChange={(e) => handleTargetTierChange(e.target.value)}
                 className="w-full py-2 px-3 rounded-lg bg-[#000000] border border-[#223530] text-[#EDEDED] text-sm focus:outline-none focus:border-[#22C58F] transition-all duration-[120ms] ease-out"
               >
                 {MYTHIC_TIERS.map((tier) => (
@@ -327,9 +421,9 @@ export function Calculator() {
                 type="range"
                 data-testid="target-stars-slider"
                 min={0}
-                max={150}
+                max={999}
                 value={targetStars}
-                onChange={(e) => setTargetStars(parseInt(e.target.value, 10))}
+                onChange={(e) => handleTargetStarsChange(parseInt(e.target.value, 10))}
                 className="w-full accent-[#22C58F] cursor-pointer"
               />
             </div>

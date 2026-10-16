@@ -99,6 +99,42 @@ describe('Boosting REST API Suite (LLT 2.6)', () => {
     assert.ok(saved);
     assert.equal(saved.customerIgn, 'ViperMLBB');
     assert.equal(saved.status, 'inquiry');
+    assert.equal(saved.contactChannel, 'whatsapp');
     assert.equal(Number(saved.calculatedPriceInr), 668.0);
   });
+
+  it('Test 25b: Customer booking inquiry with Instagram channel persistence', async (t) => {
+    const app = await build(t);
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/boosting/orders',
+      payload: {
+        pricingMode: 'per_star',
+        startingRank: 'Mythic',
+        targetRank: 'Mythical Honor',
+        startingStars: 10,
+        targetStars: 30,
+        customerIgn: 'InstaGamer',
+        contactChannel: 'instagram',
+      },
+    });
+
+    assert.equal(res.statusCode, 201);
+    const body = JSON.parse(res.payload);
+
+    assert.ok(body.orderId);
+    assert.equal(body.dispatch.channel, 'instagram');
+
+    // Verify persisted row in database has contactChannel = 'instagram'
+    const [saved] = await app.db
+      .select()
+      .from(boostingOrders)
+      .where(eq(boostingOrders.id, body.orderId));
+
+    assert.ok(saved);
+    assert.equal(saved.contactChannel, 'instagram');
+    assert.equal(saved.customerIgn, 'InstaGamer');
+  });
 });
+

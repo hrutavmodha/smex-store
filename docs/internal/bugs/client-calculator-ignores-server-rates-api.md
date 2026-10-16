@@ -7,7 +7,7 @@
   - `client/components/boosting/Calculator.tsx` (lines 62–99)
   - `client/lib/boosting/calculator.ts` (lines 101–112)
   - `server/src/routes/boosting.ts` (lines 56–62)
-- **Status**: Identified
+- **Status**: Resolved
 
 ---
 

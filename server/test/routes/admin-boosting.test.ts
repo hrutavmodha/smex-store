@@ -142,5 +142,37 @@ describe('Admin Rate Management & RBAC Suite (LLT 2.6)', () => {
       .from(boostingOrders)
       .where(eq(boostingOrders.id, order.id));
     assert.equal(dbOrder.status, 'confirmed');
+
+    // Admin queries orders filtered by channel=instagram
+    const [instaOrder] = await app.db
+      .insert(boostingOrders)
+      .values({
+        gameSlug: 'mlbb',
+        pricingMode: 'per_star',
+        startingRank: 'Mythic',
+        targetRank: 'Mythical Honor',
+        startingStars: 10,
+        targetStars: 30,
+        calculatedPriceInr: '450.00',
+        customerIgn: 'IGUser123',
+        contactChannel: 'instagram',
+        status: 'inquiry',
+      })
+      .returning();
+
+    const filterRes = await app.inject({
+      method: 'GET',
+      url: '/api/v1/admin/boosting/orders?channel=instagram',
+      headers: {
+        authorization: `Bearer ${adminToken}`,
+      },
+    });
+
+    assert.equal(filterRes.statusCode, 200);
+    const filterBody = JSON.parse(filterRes.payload);
+    assert.ok(Array.isArray(filterBody.orders));
+    const matchingOrder = filterBody.orders.find((o: any) => o.id === instaOrder.id);
+    assert.ok(matchingOrder, 'Must return the order filtered by instagram channel');
+    assert.equal(matchingOrder.contactChannel, 'instagram');
   });
 });

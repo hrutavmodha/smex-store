@@ -6,7 +6,7 @@
 - **Target Files**:
   - `client/components/boosting/Calculator.tsx` (lines 284–335)
   - `server/src/services/boosting-calc.service.ts` (lines 145–151)
-- **Status**: Identified
+- **Status**: Resolved
 
 ---
 
