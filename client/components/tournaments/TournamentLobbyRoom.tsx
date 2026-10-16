@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Trophy, Users, ShieldAlert, CheckCircle2 } from 'lucide-react';
 import { type MatchNodeData } from './BracketVisualizer';
+import { fetchWithAuth } from '../../lib/api';
 
 export interface ParticipantItem {
   id: string;
@@ -47,7 +48,13 @@ export function TournamentLobbyRoom({
 
   if (matches !== prevMatches) {
     setPrevMatches(matches);
-    if (matches[0]) {
+    const stillExists = matches.find((m) => m.id === selectedMatchId);
+    if (stillExists) {
+      // Keep existing selection and update active scores to match updated data
+      setTeamAScore(stillExists.teamAScore);
+      setTeamBScore(stillExists.teamBScore);
+    } else if (matches[0]) {
+      // Only fallback to first match if previous selection was deleted or didn't exist
       setSelectedMatchId(matches[0].id);
       setTeamAScore(matches[0].teamAScore);
       setTeamBScore(matches[0].teamBScore);
@@ -72,14 +79,13 @@ export function TournamentLobbyRoom({
       if (onScoreUpdate) {
         await onScoreUpdate(activeMatch.id, teamAScore, teamBScore, winnerId);
       } else {
-        const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/v1/tournaments/${tournamentId}/matches/${activeMatch.id}`,
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+        const res = await fetchWithAuth(
+          `${apiUrl}/api/v1/tournaments/${tournamentId}/matches/${activeMatch.id}`,
           {
             method: 'PATCH',
             headers: {
               'Content-Type': 'application/json',
-              ...(token ? { authorization: `Bearer ${token}` } : {}),
             },
             body: JSON.stringify({
               teamAScore,

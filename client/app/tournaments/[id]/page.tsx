@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Trophy, Swords, ArrowLeft, Users, Calendar, IndianRupee } from 'lucide-react';
 import { BracketVisualizer, type MatchNodeData } from '../../../components/tournaments/BracketVisualizer';
 import { TournamentLobbyRoom, type ParticipantItem } from '../../../components/tournaments/TournamentLobbyRoom';
+import { fetchWithAuth, getStoredToken } from '../../../lib/api';
 
 export interface TournamentDetailData {
   id: string;
@@ -29,6 +30,32 @@ export default function TournamentDetailPage() {
   const [activeTab, setActiveTab] = useState<'bracket' | 'lobby'>('bracket');
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    const checkRole = async () => {
+      const token = getStoredToken();
+      if (!token) {
+        if (isMounted) setIsAdmin(false);
+        return;
+      }
+      try {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+        const res = await fetchWithAuth(`${apiUrl}/api/v1/auth/me`);
+        if (res.ok && isMounted) {
+          const data = await res.json();
+          setIsAdmin(data.role === 'admin');
+        }
+      } catch {
+        if (isMounted) setIsAdmin(false);
+      }
+    };
+    void checkRole();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!id) return;
@@ -179,7 +206,7 @@ export default function TournamentDetailPage() {
               tournamentId={id}
               matches={tournament.matches || []}
               participants={tournament.participants || []}
-              isAdmin={false}
+              isAdmin={isAdmin}
             />
           )}
         </div>

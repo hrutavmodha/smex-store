@@ -462,14 +462,57 @@ const tournamentsRoutes: FastifyPluginAsync = async (fastify) => {
             );
         }
 
-        await fastify.db
-          .delete(tournamentParticipants)
-          .where(
-            and(
-              eq(tournamentParticipants.tournamentId, id),
-              eq(tournamentParticipants.teamId, teamId)
+        await fastify.db.transaction(async (tx) => {
+          const [participant] = await tx
+            .select()
+            .from(tournamentParticipants)
+            .where(
+              and(
+                eq(tournamentParticipants.tournamentId, id),
+                eq(tournamentParticipants.teamId, teamId)
+              )
             )
-          );
+            .limit(1);
+
+          if (!participant) {
+            throw new TournamentLifecycleError(
+              'PARTICIPANT_NOT_FOUND',
+              404,
+              'Squad is not registered in this tournament'
+            );
+          }
+
+          await tx
+            .delete(tournamentParticipants)
+            .where(
+              and(
+                eq(tournamentParticipants.tournamentId, id),
+                eq(tournamentParticipants.teamId, teamId)
+              )
+            );
+
+          // BUG-M5-003: Re-compact seeds of remaining participants sequentially
+          const remaining = await tx
+            .select()
+            .from(tournamentParticipants)
+            .where(eq(tournamentParticipants.tournamentId, id))
+            .orderBy(tournamentParticipants.seed, tournamentParticipants.registeredAt);
+
+          for (let i = 0; i < remaining.length; i++) {
+            const newSeed = i + 1;
+            if (remaining[i].seed !== newSeed) {
+              await tx
+                .update(tournamentParticipants)
+                .set({ seed: newSeed })
+                .where(
+                  and(
+                    eq(tournamentParticipants.tournamentId, id),
+                    eq(tournamentParticipants.teamId, remaining[i].teamId)
+                  )
+                );
+            }
+          }
+        });
 
         return reply.code(200).send({ message: 'Squad successfully withdrawn from tournament' });
       } catch (err) {
@@ -500,6 +543,18 @@ const tournamentsRoutes: FastifyPluginAsync = async (fastify) => {
             .send(formatRfc7807(404, 'TOURNAMENT_NOT_FOUND', 'Not Found', 'Tournament not found'));
         }
 
+        // BUG-M5-006: Guard against bracket generation on ongoing or completed tournaments
+        if (tourney.status !== 'registration_open' && tourney.status !== 'upcoming') {
+          return reply.code(400).send(
+            formatRfc7807(
+              400,
+              'INVALID_TOURNAMENT_STATE',
+              'Bad Request',
+              `Cannot generate brackets for tournament in '${tourney.status}' state`
+            )
+          );
+        }
+
         // Fetch participants
         const participants = await fastify.db
           .select({
@@ -508,7 +563,7 @@ const tournamentsRoutes: FastifyPluginAsync = async (fastify) => {
           })
           .from(tournamentParticipants)
           .where(eq(tournamentParticipants.tournamentId, id))
-          .orderBy(tournamentParticipants.seed);
+          .orderBy(tournamentParticipants.seed, tournamentParticipants.registeredAt);
 
         if (participants.length < 2) {
           return reply
@@ -523,9 +578,10 @@ const tournamentsRoutes: FastifyPluginAsync = async (fastify) => {
             );
         }
 
+        // BUG-M5-003: Contiguous seed mapping
         const validParticipants = participants.map((p, idx) => ({
           teamId: p.teamId,
-          seed: p.seed ?? idx + 1,
+          seed: idx + 1,
         }));
 
         // Generate bracket matches

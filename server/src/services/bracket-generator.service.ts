@@ -52,7 +52,7 @@ export class BracketGeneratorService {
     // Sort participants strictly by seed ascending
     const sorted = [...participants].sort((a, b) => a.seed - b.seed);
     const seedMap = new Map<number, string>();
-    sorted.forEach((p) => seedMap.set(p.seed, p.teamId));
+    sorted.forEach((p, idx) => seedMap.set(idx + 1, p.teamId));
 
     // Power-of-Two Normalization
     const P = Math.pow(2, Math.ceil(Math.log2(N)));
@@ -172,7 +172,7 @@ export class BracketGeneratorService {
 
     const sorted = [...participants].sort((a, b) => a.seed - b.seed);
     const seedMap = new Map<number, string>();
-    sorted.forEach((p) => seedMap.set(p.seed, p.teamId));
+    sorted.forEach((p, idx) => seedMap.set(idx + 1, p.teamId));
 
     // Power-of-Two Normalization
     const P = Math.pow(2, Math.ceil(Math.log2(N)));

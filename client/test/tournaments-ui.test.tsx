@@ -462,6 +462,118 @@ describe('Milestone 5: Client Presentation Tier & Bracket UI Suite (LLT Tests 22
     });
   });
 
+  // Test 26b: TournamentLobbyRoom dispatches authenticated PATCH using smex_auth_token (BUG-M5-005)
+  it('Test 26b: TournamentLobbyRoom dispatches authenticated PATCH using smex_auth_token (BUG-M5-005)', async () => {
+    localStorage.setItem('smex_auth_token', 'test_admin_jwt_999');
+
+    let capturedUrl = '';
+    let capturedMethod = '';
+    let capturedHeaders: Record<string, string> = {};
+    let capturedBody: any = null;
+
+    global.fetch = vi.fn().mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
+      const urlStr = typeof input === 'string' ? input : input.toString();
+      capturedUrl = urlStr;
+      capturedMethod = init?.method || 'GET';
+      if (init?.headers) {
+        if (init.headers instanceof Headers) {
+          capturedHeaders = Object.fromEntries(Array.from(init.headers.entries()));
+        } else {
+          capturedHeaders = init.headers as Record<string, string>;
+        }
+      }
+      if (init?.body) {
+        try {
+          capturedBody = JSON.parse(init.body as string);
+        } catch {
+          capturedBody = init.body;
+        }
+      }
+
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ success: true }),
+      });
+    });
+
+    const { getByRole, findByText } = render(
+      <TournamentLobbyRoom
+        tournamentId="test-tourney"
+        matches={mock8TeamBracket}
+        participants={[
+          { id: 'p1', teamId: 'team-1', teamName: 'Omega Elite', seed: 1 },
+          { id: 'p2', teamId: 'team-2', teamName: 'Valkyrie Squad', seed: 2 },
+        ]}
+        isAdmin={true}
+      />
+    );
+
+    const confirmBtn = getByRole('button', { name: /confirm team a winner/i });
+    fireEvent.click(confirmBtn);
+
+    const successMsg = await findByText(/match completed and winner confirmed!/i);
+    expect(successMsg).toBeTruthy();
+
+    expect(capturedUrl).toContain('/api/v1/tournaments/test-tourney/matches/m1-1');
+    expect(capturedMethod).toBe('PATCH');
+    const authHeader = capturedHeaders['authorization'] || capturedHeaders['Authorization'];
+    expect(authHeader).toBe('Bearer test_admin_jwt_999');
+    expect(capturedBody).toEqual({
+      teamAScore: 2,
+      teamBScore: 0,
+      winnerId: 'team-1',
+    });
+
+    localStorage.removeItem('smex_auth_token');
+  });
+
+  // Test 26c: TournamentLobbyRoom preserves selected match operator focus during matches list updates (BUG-M5-009)
+  it('Test 26c: TournamentLobbyRoom preserves selected match operator focus during matches list updates (BUG-M5-009)', async () => {
+    const { getByRole, getByText, rerender } = render(
+      <TournamentLobbyRoom
+        tournamentId="test-tourney"
+        matches={mock8TeamBracket}
+        participants={[
+          { id: 'p1', teamId: 'team-1', teamName: 'Omega Elite', seed: 1 },
+          { id: 'p2', teamId: 'team-2', teamName: 'Valkyrie Squad', seed: 2 },
+        ]}
+        isAdmin={true}
+      />
+    );
+
+    // Initial focus is on Match 1
+    expect(getByText(/Round 1 • Match #1/i)).toBeTruthy();
+
+    // Operator selects Match 2 in the match queue
+    const selectMatch2Btn = getByRole('button', { name: /select match 2 round 1/i });
+    fireEvent.click(selectMatch2Btn);
+
+    // Active operations desk switches to Match 2
+    expect(getByText(/Round 1 • Match #2/i)).toBeTruthy();
+
+    // Simulate an incoming match update (e.g. WebSocket event where Match 1 score changed)
+    const updatedMatches = mock8TeamBracket.map((m) =>
+      m.id === 'm1-1' ? { ...m, teamAScore: 3 } : { ...m }
+    );
+
+    // Re-render with updated matches prop
+    rerender(
+      <TournamentLobbyRoom
+        tournamentId="test-tourney"
+        matches={updatedMatches}
+        participants={[
+          { id: 'p1', teamId: 'team-1', teamName: 'Omega Elite', seed: 1 },
+          { id: 'p2', teamId: 'team-2', teamName: 'Valkyrie Squad', seed: 2 },
+        ]}
+        isAdmin={true}
+      />
+    );
+
+    // Operator focus must remain securely on Match 2, NOT yanked back to Match 1
+    expect(getByText(/Round 1 • Match #2/i)).toBeTruthy();
+  });
+
   // Test 27: AMOLED theme pure true-black surface, motion audit, and production purity
   it('Test 27: AMOLED theme pure true-black surface, motion audit, and production purity (LLT 27)', async () => {
     // 1. Surface colors: True-Black #000000 and Obsidian #0B0F12
