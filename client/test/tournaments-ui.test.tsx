@@ -149,11 +149,47 @@ const mock8TeamBracket: MatchNodeData[] = [
   },
 ];
 
+class MockWebSocket {
+  static instances: MockWebSocket[] = [];
+  url: string;
+  readyState = 1; // WebSocket.OPEN
+  onopen: ((e: Event) => void) | null = null;
+  onmessage: ((e: MessageEvent) => void) | null = null;
+  onclose: ((e: CloseEvent) => void) | null = null;
+  onerror: ((e: Event) => void) | null = null;
+
+  constructor(url: string) {
+    this.url = url;
+    MockWebSocket.instances.push(this);
+    setTimeout(() => {
+      if (this.onopen) this.onopen(new Event('open'));
+    }, 0);
+  }
+
+  send(data: string) {}
+  close() {
+    this.readyState = 3;
+    if (this.onclose) this.onclose(new CloseEvent('close'));
+  }
+
+  simulateMessage(payload: any) {
+    if (this.onmessage) {
+      this.onmessage(
+        new MessageEvent('message', {
+          data: JSON.stringify(payload),
+        })
+      );
+    }
+  }
+}
+
 describe('Milestone 5: Client Presentation Tier & Bracket UI Suite (LLT Tests 22-27)', () => {
   beforeEach(() => {
     cleanup();
     document.body.innerHTML = '';
     vi.restoreAllMocks();
+    MockWebSocket.instances = [];
+    (window as any).WebSocket = MockWebSocket;
 
     global.fetch = vi.fn().mockImplementation((url: string) => {
       if (url.includes('/api/v1/tournaments?status=ongoing')) {
@@ -232,9 +268,9 @@ describe('Milestone 5: Client Presentation Tier & Bracket UI Suite (LLT Tests 22
     expect(liveIndicator.className).toContain('text-[#1FAE7A]');
   });
 
-  // Test 24: Bracket visualizer renders rounds and match nodes
-  it('Test 24: Bracket visualizer renders rounds and match nodes (LLT 24)', async () => {
-    const { getByRole, getByText, getAllByText } = render(
+  // Test 24: Bracket visualizer renders rounds, match nodes, dynamic SVG connectors, and format-aware titles
+  it('Test 24: Bracket visualizer renders rounds, match nodes, dynamic SVG connectors, and format-aware titles (LLT 24)', async () => {
+    const { getByRole, getByText, getAllByText, queryByText } = render(
       <BracketVisualizer
         tournamentId="test-tourney"
         initialMatches={mock8TeamBracket}
@@ -250,6 +286,101 @@ describe('Milestone 5: Client Presentation Tier & Bracket UI Suite (LLT Tests 22
     // Renders team names & seeds
     expect(getAllByText('Omega Elite').length).toBeGreaterThanOrEqual(1);
     expect(getAllByText('Valkyrie Squad').length).toBeGreaterThanOrEqual(1);
+
+    // Dynamic SVG cubic bezier connector curves connect feeder matches into parent nodes
+    const svgConnectors = document.querySelectorAll('svg path[d*="M 0 25 C"]');
+    expect(svgConnectors.length).toBeGreaterThanOrEqual(1);
+
+    // Round robin format does not mash knockout titles
+    cleanup();
+    const { getByText: getByTextRR, queryByText: queryByTextRR } = render(
+      <BracketVisualizer
+        tournamentId="test-tourney"
+        format="round_robin"
+        initialMatches={[
+          {
+            id: 'rr-1',
+            roundNumber: 1,
+            matchOrder: 1,
+            teamAId: 'team-1',
+            teamBId: 'team-2',
+            teamAScore: 0,
+            teamBScore: 0,
+            winnerId: null,
+            status: 'scheduled',
+          },
+          {
+            id: 'rr-2',
+            roundNumber: 2,
+            matchOrder: 1,
+            teamAId: 'team-1',
+            teamBId: 'team-3',
+            teamAScore: 0,
+            teamBScore: 0,
+            winnerId: null,
+            status: 'scheduled',
+          },
+        ]}
+      />
+    );
+    expect(getByTextRR('Round 1')).toBeTruthy();
+    expect(getByTextRR('Round 2')).toBeTruthy();
+    expect(queryByTextRR('Semifinals')).toBeNull();
+    expect(queryByTextRR('Championship Final')).toBeNull();
+
+    // Double elimination format renders distinct tier sections
+    cleanup();
+    const { getByText: getByTextDE, getByRole: getByRoleDE } = render(
+      <BracketVisualizer
+        tournamentId="test-tourney"
+        format="double_elimination"
+        initialMatches={[
+          {
+            id: 'de-u1',
+            roundNumber: 1,
+            matchOrder: 1,
+            bracketType: 'upper',
+            teamAId: 'team-1',
+            teamBId: 'team-2',
+            teamAScore: 0,
+            teamBScore: 0,
+            winnerId: null,
+            status: 'scheduled',
+          },
+          {
+            id: 'de-l1',
+            roundNumber: 1,
+            matchOrder: 1,
+            bracketType: 'lower',
+            teamAId: 'team-3',
+            teamBId: 'team-4',
+            teamAScore: 0,
+            teamBScore: 0,
+            winnerId: null,
+            status: 'scheduled',
+          },
+          {
+            id: 'de-gf',
+            roundNumber: 1,
+            matchOrder: 1,
+            bracketType: 'grand_final',
+            teamAId: null,
+            teamBId: null,
+            teamAScore: 0,
+            teamBScore: 0,
+            winnerId: null,
+            status: 'scheduled',
+          },
+        ]}
+      />
+    );
+    expect(getByRoleDE('heading', { name: /upper bracket/i })).toBeTruthy();
+    expect(getByRoleDE('heading', { name: /lower bracket/i })).toBeTruthy();
+    expect(getByRoleDE('heading', { name: /grand championship final/i })).toBeTruthy();
+    expect(getByRoleDE('tab', { name: /all brackets/i })).toBeTruthy();
+    expect(getByRoleDE('tab', { name: /upper bracket/i })).toBeTruthy();
+    expect(getByRoleDE('tab', { name: /lower bracket/i })).toBeTruthy();
+    expect(getByRoleDE('tab', { name: /grand finals/i })).toBeTruthy();
   });
 
   // Test 25: Live WebSocket score update dynamically advances bracket visualizer
@@ -266,24 +397,22 @@ describe('Milestone 5: Client Presentation Tier & Bracket UI Suite (LLT Tests 22
     expect(matchNode).toBeTruthy();
     expect(matchNode.textContent).toContain('Omega Elite');
 
-    // Dispatch mock bracket:update event
+    // Dispatch real WebSocket frame to visualizer subscriber
     act(() => {
-      window.dispatchEvent(
-        new CustomEvent('bracket:update', {
-          detail: {
-            payload: {
-              matchId: 'm2-1',
-              roundNumber: 2,
-              matchOrder: 1,
-              teamAScore: 2,
-              teamBScore: 0,
-              winnerId: 'team-1',
-              status: 'completed',
-              nextMatchId: 'm3-1',
-            },
-          },
-        })
-      );
+      const socket = MockWebSocket.instances[MockWebSocket.instances.length - 1];
+      socket?.simulateMessage({
+        event: 'bracket:update',
+        payload: {
+          matchId: 'm2-1',
+          roundNumber: 2,
+          matchOrder: 1,
+          teamAScore: 2,
+          teamBScore: 0,
+          winnerId: 'team-1',
+          status: 'completed',
+          nextMatchId: 'm3-1',
+        },
+      });
     });
 
     // Score updates to 2-0 and winner row highlights in #1FAE7A

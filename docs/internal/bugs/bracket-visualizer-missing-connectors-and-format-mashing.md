@@ -14,13 +14,17 @@
 The bracket visualization component `BracketVisualizer.tsx` fails to implement the visual specifications outlined in the Low-Level Design (LLD):
 
 ### A. Missing Dynamic SVG Bezier Connectors
+
 In `docs/internal/design/lld/tournament-engine.md` Section 7.2:
+
 > "SVG Vector Connections: Dynamic cubic bezier curve paths connecting feeder match outcome nodes directly into parent round nodes across each bracket tier."
 
 In `BracketVisualizer.tsx`, there are **zero SVG paths or connector lines rendered**. The component renders plain flex columns with empty margins between matches. Users cannot visually discern which feeder match feeds into which parent round node.
 
 ### B. Mashing Double-Elimination Brackets into Common Round Columns
+
 In `BracketVisualizer.tsx`:
+
 ```typescript
 const roundGroups = useMemo(() => {
   const groups: Record<number, MatchNode[]> = {};
@@ -33,12 +37,15 @@ const roundGroups = useMemo(() => {
   return groups;
 }, [matches]);
 ```
+
 Matches are grouped solely by `roundNumber`.
 In a double-elimination bracket, there are Upper Bracket matches, Lower Bracket matches, and Grand Final matches. By grouping solely on `roundNumber`, Upper Round 1 matches and Lower Round 1 matches are dumped into the exact same column vertically.
 This creates a confusing, mashed layout where matches of completely different bracket tiers are visually interleaved.
 
 ### C. Inappropriate Round Titles in Round Robin
+
 `getRoundTitle(roundNum, totalRounds)` hardcodes:
+
 - Last round: `"Championship Final"`
 - Second to last round: `"Semifinals"`
 - Third to last round: `"Quarterfinals"`
@@ -51,6 +58,7 @@ In a Round Robin tournament with 3 rounds, Round 1 is titled `"Quarterfinals"`, 
 
 - **LLD Reference**: `docs/internal/design/lld/tournament-engine.md` Section 7.2:
   > Visual styling must distinguish Upper Brackets, Lower Brackets, and Grand Finals cleanly, with dynamic connector paths tracing match trees, and contextual round headings corresponding to tournament format.
+  >
 
 ---
 
@@ -73,7 +81,7 @@ In a Round Robin tournament with 3 rounds, Round 1 is titled `"Quarterfinals"`, 
 
 ---
 
-## 5. Recommended Remediation
+### 5. Recommended Remediation
 
 1. In `client/components/tournaments/BracketVisualizer.tsx`:
    - Split double-elimination display into distinct sections/tabs: Upper Bracket, Lower Bracket, and Grand Final.

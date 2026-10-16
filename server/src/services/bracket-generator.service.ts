@@ -174,85 +174,128 @@ export class BracketGeneratorService {
     const seedMap = new Map<number, string>();
     sorted.forEach((p) => seedMap.set(p.seed, p.teamId));
 
+    // Power-of-Two Normalization
+    const P = Math.pow(2, Math.ceil(Math.log2(N)));
+    const k = Math.log2(P);
+
     const matchInserts: NewTournamentMatch[] = [];
 
-    // For 4 teams:
-    // Upper Bracket:
-    // Round 1 (Upper Semis): Match 1 (Seed 1 vs 4), Match 2 (Seed 2 vs 3)
-    matchInserts.push({
-      tournamentId,
-      roundNumber: 1,
-      matchOrder: 1,
-      bracketType: 'upper',
-      teamAId: seedMap.get(1) ?? null,
-      teamBId: seedMap.get(4) ?? null,
-      teamAScore: 0,
-      teamBScore: 0,
-      winnerId: null,
-      status: 'scheduled',
-    });
+    // 1. Generate Upper Bracket
+    // Track Round 1 winners (including automated byes) to pre-seed Round 2
+    const round1Winners = new Map<number, string>();
+    const r1MatchCount = P / 2;
 
-    matchInserts.push({
-      tournamentId,
-      roundNumber: 1,
-      matchOrder: 2,
-      bracketType: 'upper',
-      teamAId: seedMap.get(2) ?? null,
-      teamBId: seedMap.get(3) ?? null,
-      teamAScore: 0,
-      teamBScore: 0,
-      winnerId: null,
-      status: 'scheduled',
-    });
+    for (let m = 1; m <= r1MatchCount; m++) {
+      const seedA = m;
+      const seedB = P + 1 - m;
 
-    // Round 2 (Upper Final): Match 1
-    matchInserts.push({
-      tournamentId,
-      roundNumber: 2,
-      matchOrder: 1,
-      bracketType: 'upper',
-      teamAId: null,
-      teamBId: null,
-      teamAScore: 0,
-      teamBScore: 0,
-      winnerId: null,
-      status: 'scheduled',
-    });
+      const teamAId = seedMap.get(seedA) ?? null;
+      const teamBId = seedMap.get(seedB) ?? null;
 
-    // Lower Bracket:
-    // Round 1 (Lower Semis): Match 1 (losers of Upper Semis)
-    matchInserts.push({
-      tournamentId,
-      roundNumber: 1,
-      matchOrder: 1,
-      bracketType: 'lower',
-      teamAId: null,
-      teamBId: null,
-      teamAScore: 0,
-      teamBScore: 0,
-      winnerId: null,
-      status: 'scheduled',
-    });
+      if (teamAId && !teamBId) {
+        round1Winners.set(m, teamAId);
+        matchInserts.push({
+          tournamentId,
+          roundNumber: 1,
+          matchOrder: m,
+          bracketType: 'upper',
+          teamAId,
+          teamBId: null,
+          teamAScore: 0,
+          teamBScore: 0,
+          winnerId: teamAId,
+          status: 'bye',
+        });
+      } else if (!teamAId && teamBId) {
+        round1Winners.set(m, teamBId);
+        matchInserts.push({
+          tournamentId,
+          roundNumber: 1,
+          matchOrder: m,
+          bracketType: 'upper',
+          teamAId: null,
+          teamBId,
+          teamAScore: 0,
+          teamBScore: 0,
+          winnerId: teamBId,
+          status: 'bye',
+        });
+      } else {
+        matchInserts.push({
+          tournamentId,
+          roundNumber: 1,
+          matchOrder: m,
+          bracketType: 'upper',
+          teamAId,
+          teamBId,
+          teamAScore: 0,
+          teamBScore: 0,
+          winnerId: null,
+          status: 'scheduled',
+        });
+      }
+    }
 
-    // Round 2 (Lower Final): Match 1 (winner Lower Round 1 vs loser Upper Final)
-    matchInserts.push({
-      tournamentId,
-      roundNumber: 2,
-      matchOrder: 1,
-      bracketType: 'lower',
-      teamAId: null,
-      teamBId: null,
-      teamAScore: 0,
-      teamBScore: 0,
-      winnerId: null,
-      status: 'scheduled',
-    });
+    // Subsequent Upper Rounds (2 through k)
+    for (let r = 2; r <= k; r++) {
+      const matchesInRound = P / Math.pow(2, r);
 
-    // Grand Final:
-    // Round 3 (Grand Final): Match 1 (winner Upper Final vs winner Lower Final)
+      for (let m = 1; m <= matchesInRound; m++) {
+        let teamAId: string | null = null;
+        let teamBId: string | null = null;
+
+        if (r === 2) {
+          const feederA = 2 * m - 1;
+          const feederB = 2 * m;
+          if (round1Winners.has(feederA)) {
+            teamAId = round1Winners.get(feederA)!;
+          }
+          if (round1Winners.has(feederB)) {
+            teamBId = round1Winners.get(feederB)!;
+          }
+        }
+
+        matchInserts.push({
+          tournamentId,
+          roundNumber: r,
+          matchOrder: m,
+          bracketType: 'upper',
+          teamAId,
+          teamBId,
+          teamAScore: 0,
+          teamBScore: 0,
+          winnerId: null,
+          status: 'scheduled',
+        });
+      }
+    }
+
+    // 2. Generate Lower Bracket (for P >= 4)
+    const totalLowerRounds = k >= 2 ? 2 * (k - 1) : 0;
+    for (let r = 1; r <= totalLowerRounds; r++) {
+      const matchesInRound = Math.pow(2, k - 1 - Math.ceil(r / 2));
+
+      for (let m = 1; m <= matchesInRound; m++) {
+        matchInserts.push({
+          tournamentId,
+          roundNumber: r,
+          matchOrder: m,
+          bracketType: 'lower',
+          teamAId: null,
+          teamBId: null,
+          teamAScore: 0,
+          teamBScore: 0,
+          winnerId: null,
+          status: 'scheduled',
+        });
+      }
+    }
+
+    // 3. Generate Grand Final
+    const grandFinalRound = (totalLowerRounds > 0 ? totalLowerRounds : k) + 1;
     matchInserts.push({
       tournamentId,
-      roundNumber: 3,
+      roundNumber: grandFinalRound,
       matchOrder: 1,
       bracketType: 'grand_final',
       teamAId: null,

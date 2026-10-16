@@ -6,7 +6,7 @@
 - **Target Files**:
   - `server/src/services/bracket-generator.service.ts` (lines 170–268)
   - `server/src/services/match.service.ts` (lines 95–136)
-- **Status**: Identified
+- **Status**: Resolved (Dynamic N-participant bracket generation implemented, loser drop-down routing active, verified by Test 12b and Test 19)
 
 ---
 

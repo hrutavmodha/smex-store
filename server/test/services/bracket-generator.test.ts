@@ -288,6 +288,59 @@ describe('Bracket Generation Algorithms Suite (LLT 2.3)', () => {
     assert.equal(grandFinalMatches[0].roundNumber, 3);
   });
 
+  // Test 12b: Dynamic double elimination bracket generation for 8 teams allocating 14 matches
+  test('Test 12b: Dynamic double elimination bracket generation for 8 teams allocating 14 matches (BUG-M5-001)', async (t) => {
+    const app = await build(t);
+    const tourney = await createTestTourney(app, 'DE8Tourney');
+    const teams = await createTestTeams(app, 8, 'de8');
+
+    const participants = teams.map((team, idx) => ({
+      teamId: team.id,
+      seed: idx + 1,
+    }));
+
+    const matches = await BracketGeneratorService.generateDoubleElimination(
+      tourney.id,
+      participants,
+      app.db
+    );
+
+    // Total 14 matches generated for 8-team double elimination: 2N - 2 = 14
+    assert.equal(matches.length, 14);
+
+    const upperMatches = matches.filter((m) => m.bracketType === 'upper');
+    const lowerMatches = matches.filter((m) => m.bracketType === 'lower');
+    const grandFinalMatches = matches.filter((m) => m.bracketType === 'grand_final');
+
+    // Upper: 7 matches across 3 rounds (4 in R1, 2 in R2, 1 in R3)
+    assert.equal(upperMatches.length, 7);
+    assert.equal(upperMatches.filter((m) => m.roundNumber === 1).length, 4);
+    assert.equal(upperMatches.filter((m) => m.roundNumber === 2).length, 2);
+    assert.equal(upperMatches.filter((m) => m.roundNumber === 3).length, 1);
+
+    // Lower: 6 matches across 4 rounds (2 in R1, 2 in R2, 1 in R3, 1 in R4)
+    assert.equal(lowerMatches.length, 6);
+    assert.equal(lowerMatches.filter((m) => m.roundNumber === 1).length, 2);
+    assert.equal(lowerMatches.filter((m) => m.roundNumber === 2).length, 2);
+    assert.equal(lowerMatches.filter((m) => m.roundNumber === 3).length, 1);
+    assert.equal(lowerMatches.filter((m) => m.roundNumber === 4).length, 1);
+
+    // Grand Final: 1 match at Round 5
+    assert.equal(grandFinalMatches.length, 1);
+    assert.equal(grandFinalMatches[0].roundNumber, 5);
+
+    // All 8 teams seeded in Upper Round 1
+    const r1 = upperMatches.filter((m) => m.roundNumber === 1).sort((a, b) => a.matchOrder - b.matchOrder);
+    assert.equal(r1[0].teamAId, participants[0].teamId); // Seed 1
+    assert.equal(r1[0].teamBId, participants[7].teamId); // Seed 8
+    assert.equal(r1[1].teamAId, participants[1].teamId); // Seed 2
+    assert.equal(r1[1].teamBId, participants[6].teamId); // Seed 7
+    assert.equal(r1[2].teamAId, participants[2].teamId); // Seed 3
+    assert.equal(r1[2].teamBId, participants[5].teamId); // Seed 6
+    assert.equal(r1[3].teamAId, participants[3].teamId); // Seed 4
+    assert.equal(r1[3].teamBId, participants[4].teamId); // Seed 5
+  });
+
   // Test 13: Round robin Berger pairing algorithm
   test('Test 13: Round robin Berger pairing algorithm', async (t) => {
     const app = await build(t);
