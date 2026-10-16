@@ -17,7 +17,7 @@ export default defineConfig({
       {
         test: {
           name: 'server',
-          root: './server',
+          root: path.resolve(__dirname, './server'),
           environment: 'node',
           setupFiles: ['./test/setup.ts'],
           include: ['test/**/*.test.ts'],
@@ -32,7 +32,7 @@ export default defineConfig({
       {
         test: {
           name: 'client',
-          root: './client',
+          root: path.resolve(__dirname, './client'),
           browser: {
             enabled: true,
             provider: playwright(),

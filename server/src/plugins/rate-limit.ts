@@ -71,6 +71,18 @@ export const resendVerificationRateLimitConfig: RateLimitOptions = {
   errorResponseBuilder,
 };
 
+export const presignedUploadRateLimitConfig: RateLimitOptions = {
+  hook: 'preValidation',
+  max: 10,
+  timeWindow: 3600 * 1000, // 1 hour
+  keyGenerator: (req) => {
+    const user = (req as FastifyRequest & { user?: { sub?: string } }).user;
+    return `rl:upload:${user?.sub || req.ip}`;
+  },
+  errorResponseBuilder,
+};
+
+
 const rateLimitPlugin: FastifyPluginAsync = async (fastify) => {
   await fastify.register(fastifyRateLimit, {
     global: true,

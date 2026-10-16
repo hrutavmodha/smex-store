@@ -29,6 +29,13 @@
       "when": 1792135758313,
       "tag": "0003_early_korvac",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792163024278,
+      "tag": "0004_oval_joystick",
+      "breakpoints": true
     }
   ]
 }

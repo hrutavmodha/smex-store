@@ -413,8 +413,8 @@ describe('Relational Schema Constraints and Cascades Suite', () => {
         title: 'Mythical Immortal Account',
         rankTier: 'Mythical Immortal',
         priceInr: '2500.00',
-        contactChannel: 'telegram',
-        contactHandle: '@smexseller',
+        contactChannel: 'whatsapp',
+        contactHandle: '+919876543210',
       })
       .returning();
 
@@ -455,8 +455,8 @@ describe('Relational Schema Constraints and Cascades Suite', () => {
         title: 'Self Rating Account',
         rankTier: 'Legend',
         priceInr: '500.00',
-        contactChannel: 'discord',
-        contactHandle: 'self#1234',
+        contactChannel: 'instagram',
+        contactHandle: 'smex_user',
       })
       .returning();
 
@@ -492,8 +492,8 @@ describe('Relational Schema Constraints and Cascades Suite', () => {
         title: 'Review Account',
         rankTier: 'Legend',
         priceInr: '500.00',
-        contactChannel: 'discord',
-        contactHandle: 'buyer#1234',
+        contactChannel: 'whatsapp',
+        contactHandle: '+919876543211',
       })
       .returning();
 

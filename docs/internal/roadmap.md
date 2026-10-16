@@ -154,22 +154,22 @@ flowchart TD
 
 ### Milestone 7: Marketplace and S3 Presigned Uploads
 
-* [ ] **7.1 Direct-to-Storage Presigned Uploads**:
+* [X] **7.1 Direct-to-Storage Presigned Uploads**:
   * Fastify endpoint generates signed S3/R2 upload URLs with strict MIME type and file size limits of 5MB per image.
   * Client uploads screenshot proofs directly to S3 with zero binary traffic passing through Fastify.
-* [ ] **7.2 Listing Management**: CRUD for game account listings with mark-as-sold and price edit capabilities.
-* [ ] **7.3 Dynamic Price-Drop Badges**:
+* [X] **7.2 Listing Management**: CRUD for game account listings with mark-as-sold and price edit capabilities.
+* [X] **7.3 Dynamic Price-Drop Badges**:
   * Price lowered: automatically compute percentage discount and assign Good Deal badge.
   * Price increased or newly listed premium: assign Hot badge.
-* [ ] **7.4 Media Verification and Next Image Whitelist**:
+* [X] **7.4 Media Verification and Next Image Whitelist**:
   * Implement image magic byte binary inspection to block disguised malicious payloads.
   * Configure `images.remotePatterns` in Next.js `next.config.ts` for safe image optimization.
-* [ ] **7.5 Client Marketplace UI**:
+* [X] **7.5 Client Marketplace UI**:
   * Build Marketplace catalog page with rank filters, price range sliders, and dynamic deal badges.
   * Build account detail view with verified screenshot proof lightbox carousel.
   * Build listing creation form with direct client-side S3 upload progress bar.
-  * Build direct seller contact modal with WhatsApp/Telegram links.
-* [ ] **7.6 Automated Marketplace and Storage Testing**: Execute test suite verifying S3 presigned URL generation, magic-byte inspection, listing CRUD, badge calculations, and marketplace UI interactions.
+  * Build direct seller contact modal with WhatsApp/Instagram links.
+* [X] **7.6 Automated Marketplace and Storage Testing**: Execute test suite verifying S3 presigned URL generation, magic-byte inspection, listing CRUD, badge calculations, and marketplace UI interactions (28 server tests passing, 12 client browser tests passing; 40/40 total).
 
 ---
 

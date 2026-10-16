@@ -4,6 +4,23 @@ const nextConfig: NextConfig = {
   /* config options here */
   cacheComponents: true,
   partialPrefetching: true,
+  images: {
+    remotePatterns: [
+      {
+        protocol: (process.env.NEXT_PUBLIC_STORAGE_PROTOCOL as 'http' | 'https') || 'http',
+        hostname: process.env.NEXT_PUBLIC_STORAGE_HOSTNAME || 'localhost',
+        port: process.env.NEXT_PUBLIC_STORAGE_PORT || '9000',
+        pathname: `/${process.env.NEXT_PUBLIC_STORAGE_BUCKET || 'smex-storage'}/**`,
+      },
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+        port: '3001',
+        pathname: '/api/v1/media/**',
+      },
+    ],
+  },
+
   turbopack: {
     rules: {
       "*.css": {

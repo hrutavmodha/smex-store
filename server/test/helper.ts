@@ -48,4 +48,40 @@ async function build(
   return app;
 }
 
-export { config, build, cleanupTestData };
+async function createVerifiedUser(app: FastifyInstance, prefix = 'u') {
+  const { users } = await import('../src/db/schema/users.js');
+  const { eq } = await import('drizzle-orm');
+  const ip = `10.${Math.floor(Math.random() * 200) + 1}.${Math.floor(Math.random() * 200) + 1}.${Math.floor(Math.random() * 200) + 1}`;
+  const email = `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}@smexstore.com`;
+  const username = `${prefix}_${Date.now().toString().slice(-4)}_${Math.random().toString(36).slice(2, 6)}`;
+  const password = 'ValidPassword123!';
+
+  const regRes = await app.inject({
+    method: 'POST',
+    url: '/api/v1/auth/register',
+    remoteAddress: ip,
+    payload: { email, password, username },
+  });
+  if (regRes.statusCode !== 201) {
+    throw new Error(`Registration failed with ${regRes.statusCode}: ${regRes.body}`);
+  }
+  const user = JSON.parse(regRes.body);
+
+  await app.db.update(users).set({ emailVerified: true }).where(eq(users.id, user.id));
+
+  const loginRes = await app.inject({
+    method: 'POST',
+    url: '/api/v1/auth/login',
+    remoteAddress: ip,
+    payload: { email, password },
+  });
+  if (loginRes.statusCode !== 200) {
+    throw new Error(`Login failed with ${loginRes.statusCode}: ${loginRes.body}`);
+  }
+  const { accessToken } = JSON.parse(loginRes.body);
+
+  return { user, token: accessToken };
+}
+
+export { config, build, cleanupTestData, createVerifiedUser };
+

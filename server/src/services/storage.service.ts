@@ -1,0 +1,155 @@
+import {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+  DeleteObjectCommand,
+} from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { randomUUID } from 'node:crypto';
+import { getEnv } from '../config/env.js';
+
+export const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB in bytes (5,242,880)
+export const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const;
+export type AllowedMimeType = (typeof ALLOWED_MIME_TYPES)[number];
+
+export class StorageError extends Error {
+  public readonly code: string;
+  public readonly statusCode: number;
+
+  constructor(code: string, message: string, statusCode: number = 422) {
+    super(message);
+    this.name = 'StorageError';
+    this.code = code;
+    this.statusCode = statusCode;
+  }
+}
+
+export interface PresignedUploadParams {
+  fileName: string;
+  contentType: string;
+  fileSize: number;
+}
+
+export interface PresignedUploadResult {
+  uploadUrl: string;
+  s3Key: string;
+  cdnUrl: string;
+  expiresIn: number;
+}
+
+export interface StorageServiceOptions {
+  s3Client?: S3Client;
+  bucket?: string;
+  endpoint?: string;
+}
+
+export class StorageService {
+  private s3Client: S3Client;
+  private bucket: string;
+  private endpoint?: string;
+
+  constructor(options?: StorageServiceOptions) {
+    const env = getEnv();
+    this.bucket = options?.bucket || env.S3_BUCKET || 'smex-storage';
+    this.endpoint = options?.endpoint || env.S3_ENDPOINT || 'http://localhost:9000';
+
+    if (options?.s3Client) {
+      this.s3Client = options.s3Client;
+    } else {
+      this.s3Client = new S3Client({
+        endpoint: this.endpoint,
+        region: env.S3_REGION || 'auto',
+        credentials: {
+          accessKeyId: env.S3_ACCESS_KEY_ID || 'minioadmin',
+          secretAccessKey: env.S3_SECRET_ACCESS_KEY || 'minioadmin',
+        },
+        forcePathStyle: true,
+      });
+    }
+  }
+
+  public getClient(): S3Client {
+    return this.s3Client;
+  }
+
+  public getBucket(): string {
+    return this.bucket;
+  }
+
+  public sanitizeFileName(fileName: string): string {
+    return fileName
+      .trim()
+      .replace(/[^a-zA-Z0-9._-]/g, '_')
+      .replace(/_{2,}/g, '_')
+      .substring(0, 100);
+  }
+
+  public async generatePresignedUpload(
+    userId: string,
+    params: PresignedUploadParams
+  ): Promise<PresignedUploadResult> {
+    const { fileName, contentType, fileSize } = params;
+
+    if (fileSize > MAX_FILE_SIZE) {
+      throw new StorageError(
+        'FILE_TOO_LARGE',
+        `File size ${fileSize} exceeds maximum limit of 5MB (${MAX_FILE_SIZE} bytes)`,
+        422
+      );
+    }
+
+    if (!ALLOWED_MIME_TYPES.includes(contentType as AllowedMimeType)) {
+      throw new StorageError(
+        'INVALID_MIME_TYPE',
+        `Content-Type '${contentType}' is not permitted. Allowed: ${ALLOWED_MIME_TYPES.join(', ')}`,
+        422
+      );
+    }
+
+    const cleanName = this.sanitizeFileName(fileName);
+    const uniqueId = randomUUID();
+    const s3Key = `marketplace/proofs/${userId}/${uniqueId}-${cleanName}`;
+    const expiresIn = 900; // 15 minutes
+
+    const command = new PutObjectCommand({
+      Bucket: this.bucket,
+      Key: s3Key,
+      ContentType: contentType,
+      ContentLength: fileSize,
+    });
+
+    const uploadUrl = await getSignedUrl(this.s3Client, command, { expiresIn });
+    const cdnUrl = `/api/v1/media/${s3Key}`;
+
+    return {
+      uploadUrl,
+      s3Key,
+      cdnUrl,
+      expiresIn,
+    };
+  }
+
+  public async getObjectHeader(s3Key: string, byteLength: number = 16): Promise<Buffer> {
+    const command = new GetObjectCommand({
+      Bucket: this.bucket,
+      Key: s3Key,
+      Range: `bytes=0-${byteLength - 1}`,
+    });
+
+    const response = await this.s3Client.send(command);
+    if (!response.Body) {
+      throw new StorageError('EMPTY_RESPONSE', 'S3 response body is empty', 422);
+    }
+
+    const byteArray = await response.Body.transformToByteArray();
+    return Buffer.from(byteArray);
+  }
+
+  public async deleteObject(s3Key: string): Promise<void> {
+    const command = new DeleteObjectCommand({
+      Bucket: this.bucket,
+      Key: s3Key,
+    });
+    await this.s3Client.send(command);
+  }
+}

@@ -14,7 +14,8 @@ import { users } from './users.js';
 
 export const listingStatusEnum = pgEnum('listing_status', ['active', 'sold', 'deleted']);
 export const listingBadgeEnum = pgEnum('listing_badge', ['none', 'good_deal', 'hot']);
-export const contactChannelEnum = pgEnum('contact_channel', ['whatsapp', 'telegram', 'discord', 'phone']);
+export const contactChannelEnum = pgEnum('contact_channel', ['whatsapp', 'instagram']);
+
 
 export const marketplaceListings = pgTable(
   'marketplace_listings',

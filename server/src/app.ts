@@ -17,6 +17,9 @@ import tournamentsRoutes from './routes/tournaments.js'
 import exampleRoutes from './routes/example/index.js'
 import boostingRoutes from './routes/boosting.js'
 import adminBoostingRoutes from './routes/admin/boosting.js'
+import marketplaceRoutes from './routes/marketplace/index.js'
+import marketplaceUploadsRoutes from './routes/marketplace/uploads.js'
+
 
 export type AppOptions = {
   // Place your custom options for app below here.
@@ -51,6 +54,8 @@ const app: FastifyPluginAsync<AppOptions> = async (
   await fastify.register(tournamentsRoutes)
   await fastify.register(boostingRoutes)
   await fastify.register(adminBoostingRoutes)
+  await fastify.register(marketplaceRoutes)
+  await fastify.register(marketplaceUploadsRoutes)
   await fastify.register(exampleRoutes, { prefix: '/example' })
 }
 

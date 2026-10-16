@@ -1,0 +1,155 @@
+import { type FastifyPluginAsync } from 'fastify';
+import { z } from 'zod';
+import { StorageService, StorageError } from '../../services/storage.service.js';
+import { MediaInspectorService, MediaInspectionError } from '../../services/media-inspector.service.js';
+import { presignedUploadRateLimitConfig } from '../../plugins/rate-limit.js';
+import { GetObjectCommand } from '@aws-sdk/client-s3';
+
+const presignedUrlBodySchema = z.object({
+  fileName: z.string().trim().min(1, 'File name is required').max(255),
+  contentType: z.string().trim().min(1, 'Content-Type is required'),
+  fileSize: z.number().int().positive('File size must be a positive integer'),
+});
+
+const verifyUploadBodySchema = z.object({
+  s3Key: z.string().trim().min(1, 'S3 key is required'),
+  expectedMime: z.string().trim().min(1, 'Expected MIME type is required'),
+});
+
+export const marketplaceUploadsRoutes: FastifyPluginAsync = async (fastify) => {
+  const storageService = new StorageService();
+  const mediaInspectorService = new MediaInspectorService();
+
+  /**
+   * POST /api/v1/marketplace/uploads/presigned-url
+   * Authenticated endpoint to generate direct S3 PUT presigned URLs
+   */
+  fastify.post(
+    '/api/v1/marketplace/uploads/presigned-url',
+    {
+      onRequest: [fastify.authenticate],
+      config: {
+        rateLimit: presignedUploadRateLimitConfig,
+      },
+    },
+    async (request, reply) => {
+      const parseResult = presignedUrlBodySchema.safeParse(request.body);
+      if (!parseResult.success) {
+        return reply.code(400).send({
+          type: 'https://api.smexstore.com/errors/validation-error',
+          title: 'Bad Request',
+          status: 400,
+          detail: parseResult.error.issues[0]?.message || 'Invalid payload',
+          code: 'VALIDATION_ERROR',
+        });
+      }
+
+      const userId = request.user.sub;
+      try {
+        const result = await storageService.generatePresignedUpload(
+          userId,
+          parseResult.data
+        );
+        return reply.code(200).send(result);
+      } catch (err: unknown) {
+        if (err instanceof StorageError) {
+          return reply.code(err.statusCode).send({
+            type: `https://api.smexstore.com/errors/${err.code.toLowerCase().replace(/_/g, '-')}`,
+            title: 'Storage Error',
+            status: err.statusCode,
+            detail: err.message,
+            code: err.code,
+          });
+        }
+        request.log.error(err, 'Failed to generate presigned upload URL');
+        return reply.code(500).send({
+          type: 'https://api.smexstore.com/errors/internal-server-error',
+          title: 'Internal Server Error',
+          status: 500,
+          detail: 'Unexpected storage error occurred',
+          code: 'INTERNAL_STORAGE_ERROR',
+        });
+      }
+    }
+  );
+
+  /**
+   * POST /api/v1/marketplace/uploads/verify
+   * Authenticated endpoint to verify uploaded object magic bytes
+   */
+  fastify.post(
+    '/api/v1/marketplace/uploads/verify',
+    {
+      onRequest: [fastify.authenticate],
+    },
+    async (request, reply) => {
+      const parseResult = verifyUploadBodySchema.safeParse(request.body);
+      if (!parseResult.success) {
+        return reply.code(400).send({
+          type: 'https://api.smexstore.com/errors/validation-error',
+          title: 'Bad Request',
+          status: 400,
+          detail: parseResult.error.issues[0]?.message || 'Invalid payload',
+          code: 'VALIDATION_ERROR',
+        });
+      }
+
+      const { s3Key, expectedMime } = parseResult.data;
+
+      try {
+        const result = await mediaInspectorService.inspectAndVerify(
+          storageService,
+          s3Key,
+          expectedMime
+        );
+        return reply.code(200).send(result);
+      } catch (err: unknown) {
+        if (err instanceof MediaInspectionError) {
+          return reply.code(err.statusCode).send({
+            type: `https://api.smexstore.com/errors/${err.code.toLowerCase().replace(/_/g, '-')}`,
+            title: 'Media Inspection Error',
+            status: err.statusCode,
+            detail: err.message,
+            code: err.code,
+          });
+        }
+        request.log.error(err, 'Failed to verify uploaded media');
+        return reply.code(500).send({
+          type: 'https://api.smexstore.com/errors/internal-server-error',
+          title: 'Internal Server Error',
+          status: 500,
+          detail: 'Failed to inspect media',
+          code: 'MEDIA_INSPECTION_FAILED',
+        });
+      }
+    }
+  );
+
+  /**
+   * GET /api/v1/media/*
+   * Serves public media streams from object storage
+   */
+  fastify.get('/api/v1/media/*', async (request, reply) => {
+    const s3Key = (request.params as { '*': string })['*'];
+    if (!s3Key) {
+      return reply.code(404).send({ error: 'Media key missing' });
+    }
+
+    try {
+      const command = new GetObjectCommand({
+        Bucket: storageService.getBucket(),
+        Key: s3Key,
+      });
+      const s3Res = await storageService.getClient().send(command);
+      if (s3Res.ContentType) {
+        reply.header('Content-Type', s3Res.ContentType);
+      }
+      reply.header('Cache-Control', 'public, max-age=31536000, immutable');
+      return reply.send(s3Res.Body);
+    } catch {
+      return reply.code(404).send({ error: 'Media not found' });
+    }
+  });
+};
+
+export default marketplaceUploadsRoutes;

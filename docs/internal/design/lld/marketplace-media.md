@@ -385,5 +385,5 @@ Per `docs/internal/design/ui.md`:
    * Uploads directly to S3 via `XMLHttpRequest` / `axios` with `onUploadProgress` driving a deterministic progress bar (0% $\rightarrow$ 100%).
    * Allows re-ordering screenshots to set `displayOrder`.
 2. **Contact Options**:
-   * Seller selects preferred contact channel from `contactChannelEnum` (`whatsapp`, `telegram`, `discord`, `phone`).
-   * Seller enters their contact handle or phone number.
+   * Seller selects preferred contact channel from `contactChannelEnum` (`whatsapp`, `instagram`).
+   * Seller enters their contact handle or coordinate.
