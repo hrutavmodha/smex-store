@@ -6,7 +6,7 @@
 - **Target Files**:
   - `server/src/routes/admin/boosting.ts` (lines 95–118)
   - `server/src/services/boosting-rate.service.ts` (lines 126–146)
-- **Status**: Identified
+- **Status**: Resolved
 
 ---
 

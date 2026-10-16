@@ -175,4 +175,84 @@ describe('Admin Rate Management & RBAC Suite (LLT 2.6)', () => {
     assert.ok(matchingOrder, 'Must return the order filtered by instagram channel');
     assert.equal(matchingOrder.contactChannel, 'instagram');
   });
+
+  it('Test 28b: Order lifecycle state machine transition enforcement (BUG-M6-006)', async (t) => {
+    const app = await build(t);
+    const adminToken = createAdminToken(app);
+
+    const [order] = await app.db
+      .insert(boostingOrders)
+      .values({
+        gameSlug: 'mlbb',
+        pricingMode: 'per_star',
+        startingRank: 'Mythic',
+        targetRank: 'Mythical Honor',
+        startingStars: 10,
+        targetStars: 30,
+        calculatedPriceInr: '450.00',
+        customerIgn: 'StateTester',
+        contactChannel: 'whatsapp',
+        status: 'inquiry',
+      })
+      .returning();
+
+    // 1. Reject illegal jump: inquiry -> completed
+    const illegalJump = await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/admin/boosting/orders/${order.id}/status`,
+      headers: { authorization: `Bearer ${adminToken}` },
+      payload: { status: 'completed' },
+    });
+    assert.equal(illegalJump.statusCode, 400);
+    const jumpErr = JSON.parse(illegalJump.payload);
+    assert.match(jumpErr.message, /Cannot transition order status from 'inquiry' to 'completed'/);
+
+    // 2. Reject illegal jump: inquiry -> in_progress
+    const illegalProgress = await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/admin/boosting/orders/${order.id}/status`,
+      headers: { authorization: `Bearer ${adminToken}` },
+      payload: { status: 'in_progress' },
+    });
+    assert.equal(illegalProgress.statusCode, 400);
+
+    // 3. Allowed: inquiry -> confirmed
+    const step1 = await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/admin/boosting/orders/${order.id}/status`,
+      headers: { authorization: `Bearer ${adminToken}` },
+      payload: { status: 'confirmed', notes: 'Payment verified' },
+    });
+    assert.equal(step1.statusCode, 200);
+
+    // 4. Allowed: confirmed -> in_progress
+    const step2 = await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/admin/boosting/orders/${order.id}/status`,
+      headers: { authorization: `Bearer ${adminToken}` },
+      payload: { status: 'in_progress', notes: 'Assigned to Booster' },
+    });
+    assert.equal(step2.statusCode, 200);
+
+    // 5. Allowed: in_progress -> completed
+    const step3 = await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/admin/boosting/orders/${order.id}/status`,
+      headers: { authorization: `Bearer ${adminToken}` },
+      payload: { status: 'completed', notes: 'Boost completed' },
+    });
+    assert.equal(step3.statusCode, 200);
+
+    // 6. Reject reopening terminal order: completed -> inquiry
+    const reopen = await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/admin/boosting/orders/${order.id}/status`,
+      headers: { authorization: `Bearer ${adminToken}` },
+      payload: { status: 'inquiry' },
+    });
+    assert.equal(reopen.statusCode, 400);
+    const reopenErr = JSON.parse(reopen.payload);
+    assert.match(reopenErr.message, /Cannot transition order status from 'completed' to 'inquiry'/);
+  });
 });
+

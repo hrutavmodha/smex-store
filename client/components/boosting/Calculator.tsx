@@ -40,7 +40,7 @@ function getBaseStarsFromTier(tier: string): number {
 }
 
 export function Calculator() {
-  const [pricingMode, setPricingMode] = useState<'fixed_tier' | 'per_star'>('per_star');
+  const [pricingMode, setPricingMode] = useState<'fixed_tier' | 'per_star' | 'composite'>('per_star');
 
   // Sub-mythic selection
   const [fixedStartTier, setFixedStartTier] = useState<string>('Epic');
@@ -51,6 +51,22 @@ export function Calculator() {
   const [starTargetTier, setStarTargetTier] = useState<string>('Mythical Honor');
   const [startingStars, setStartingStars] = useState<number>(10);
   const [targetStars, setTargetStars] = useState<number>(30);
+
+  // Composite mode selection (Sub-Mythic to Stars, BUG-M6-004)
+  const [compositeStartTier, setCompositeStartTier] = useState<string>('Legend');
+  const [compositeTargetTier, setCompositeTargetTier] = useState<string>('Mythical Honor');
+  const [compositeTargetStars, setCompositeTargetStars] = useState<number>(25);
+
+  const handleCompositeTargetTierChange = (tier: string) => {
+    setCompositeTargetTier(tier);
+    setCompositeTargetStars(getBaseStarsFromTier(tier));
+  };
+
+  const handleCompositeTargetStarsChange = (stars: number) => {
+    const clamped = Math.max(1, Math.min(999, isNaN(stars) ? 1 : stars));
+    setCompositeTargetStars(clamped);
+    setCompositeTargetTier(getTierFromStars(clamped));
+  };
 
   // Active rates and surcharges fetched from API (BUG-M6-002)
   const [rates, setRates] = useState<BoostingRateRow[] | undefined>(undefined);
@@ -136,6 +152,17 @@ export function Calculator() {
           rates,
           surcharges,
         });
+      } else if (pricingMode === 'composite') {
+        return calculateBoostingPrice({
+          pricingMode: 'composite',
+          startingRank: compositeStartTier,
+          targetRank: compositeTargetTier,
+          startingStars: 0,
+          targetStars: compositeTargetStars,
+          addons,
+          rates,
+          surcharges,
+        });
       } else {
         return calculateBoostingPrice({
           pricingMode: 'per_star',
@@ -165,6 +192,9 @@ export function Calculator() {
     starTargetTier,
     startingStars,
     targetStars,
+    compositeStartTier,
+    compositeTargetTier,
+    compositeTargetStars,
     addons,
     rates,
     surcharges,
@@ -180,13 +210,27 @@ export function Calculator() {
   const handleDispatch = async (channel: 'whatsapp' | 'instagram') => {
     if (isDispatchDisabled) return;
 
-    setIsSubmitting(true);
     const orderPayload = {
       pricingMode,
-      startingRank: pricingMode === 'fixed_tier' ? fixedStartTier : starStartTier,
-      targetRank: pricingMode === 'fixed_tier' ? fixedTargetTier : starTargetTier,
-      startingStars: pricingMode === 'fixed_tier' ? 0 : startingStars,
-      targetStars: pricingMode === 'fixed_tier' ? 0 : targetStars,
+      startingRank:
+        pricingMode === 'fixed_tier'
+          ? fixedStartTier
+          : pricingMode === 'composite'
+          ? compositeStartTier
+          : starStartTier,
+      targetRank:
+        pricingMode === 'fixed_tier'
+          ? fixedTargetTier
+          : pricingMode === 'composite'
+          ? compositeTargetTier
+          : starTargetTier,
+      startingStars: pricingMode === 'per_star' ? startingStars : 0,
+      targetStars:
+        pricingMode === 'fixed_tier'
+          ? 0
+          : pricingMode === 'composite'
+          ? compositeTargetStars
+          : targetStars,
       customerIgn: customerIgn.trim(),
       serverId: serverId.trim() || undefined,
       contactChannel: channel,
@@ -207,12 +251,15 @@ export function Calculator() {
         const data = await res.json();
         destinationUrl = data.dispatch?.destinationUrl;
         formattedText = data.dispatch?.formattedText;
+      } else {
+        const errData = await res.json().catch(() => null);
+        const errMsg = errData?.message || `Order submission failed (${res.status})`;
+        showToast(errMsg);
+        setIsSubmitting(false);
+        return;
       }
     } catch {
-      // Offline fallback: format client-side
-    }
-
-    if (!destinationUrl || !formattedText) {
+      // True network error / offline fallback: format client-side
       const orderRef = generateOrderRef();
       const clientInput = {
         orderRef,
@@ -277,7 +324,7 @@ export function Calculator() {
       )}
 
       {/* Mode Selector */}
-      <div className="flex rounded-xl bg-[#121C19] p-1 border border-[#223530]">
+      <div className="flex flex-col sm:flex-row rounded-xl bg-[#121C19] p-1 border border-[#223530] gap-1 sm:gap-0">
         <button
           type="button"
           data-testid="mode-fixed-tier"
@@ -301,6 +348,18 @@ export function Calculator() {
           }`}
         >
           Per-Star Ladder (Mythic & Above)
+        </button>
+        <button
+          type="button"
+          data-testid="mode-composite"
+          onClick={() => setPricingMode('composite')}
+          className={`flex-1 py-3 text-sm font-semibold rounded-lg transition-all duration-[120ms] ease-out ${
+            pricingMode === 'composite'
+              ? 'bg-[#22C58F] text-black shadow-md'
+              : 'text-[#EDEDED] hover:text-[#22C58F]'
+          }`}
+        >
+          Composite (Sub-Mythic to Stars)
         </button>
       </div>
 
@@ -341,6 +400,68 @@ export function Calculator() {
                 </option>
               ))}
             </select>
+          </div>
+        </div>
+      ) : pricingMode === 'composite' ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <div className="p-4 rounded-xl bg-[#121C19] border border-[#223530] space-y-4">
+            <label className="block text-xs font-semibold uppercase tracking-wider text-[#22C58F]">
+              1. Starting Sub-Mythic Rank
+            </label>
+            <select
+              data-testid="composite-starting-rank-select"
+              value={compositeStartTier}
+              onChange={(e) => setCompositeStartTier(e.target.value)}
+              className="w-full py-2 px-3 rounded-lg bg-[#000000] border border-[#223530] text-[#EDEDED] text-sm focus:outline-none focus:border-[#22C58F] transition-all duration-[120ms] ease-out"
+            >
+              {SUB_MYTHIC_TIERS.filter((t) => t !== 'Mythic').map((tier) => (
+                <option key={tier} value={tier}>
+                  {tier}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-[#7D8B87]">Cross-regime leap: base rank to Mythic base progression</p>
+          </div>
+
+          <div className="p-4 rounded-xl bg-[#121C19] border border-[#223530] space-y-4">
+            <div className="flex justify-between items-center">
+              <label className="text-xs font-semibold uppercase tracking-wider text-[#22C58F]">
+                2. Target Mythic Rank & Stars
+              </label>
+              <div className="flex items-center gap-1">
+                <input
+                  type="number"
+                  data-testid="composite-target-stars-input"
+                  min={1}
+                  max={999}
+                  value={compositeTargetStars}
+                  onChange={(e) => handleCompositeTargetStarsChange(parseInt(e.target.value, 10))}
+                  className="w-16 py-0.5 px-1.5 rounded bg-[#000000] border border-[#223530] text-[#22C58F] font-mono text-sm font-bold text-right focus:outline-none focus:border-[#22C58F] transition-all duration-[120ms] ease-out"
+                />
+                <span className="font-mono text-sm text-[#22C58F] font-bold">★</span>
+              </div>
+            </div>
+            <select
+              data-testid="composite-target-rank-select"
+              value={compositeTargetTier}
+              onChange={(e) => handleCompositeTargetTierChange(e.target.value)}
+              className="w-full py-2 px-3 rounded-lg bg-[#000000] border border-[#223530] text-[#EDEDED] text-sm focus:outline-none focus:border-[#22C58F] transition-all duration-[120ms] ease-out"
+            >
+              {MYTHIC_TIERS.map((tier) => (
+                <option key={tier} value={tier}>
+                  {tier}
+                </option>
+              ))}
+            </select>
+            <input
+              type="range"
+              data-testid="composite-target-stars-slider"
+              min={1}
+              max={999}
+              value={compositeTargetStars}
+              onChange={(e) => handleCompositeTargetStarsChange(parseInt(e.target.value, 10))}
+              className="w-full accent-[#22C58F] cursor-pointer"
+            />
           </div>
         </div>
       ) : (

@@ -171,5 +171,73 @@ describe('Milestone 6: Client Presentation Tier & AMOLED Boosting UI Suite (LLT 
     expect(targetSlider.value).toBe('350');
     expect(targetSelect.value).toBe('Mythical Immortal');
   });
+
+  it('Test 34: Composite cross-regime progression accessible and calculated in UI (BUG-M6-004)', async () => {
+    const { container } = render(<Calculator />);
+
+    // Click composite mode tab
+    const compositeBtn = container.querySelector('[data-testid="mode-composite"]') as HTMLButtonElement;
+    expect(compositeBtn).toBeTruthy();
+    fireEvent.click(compositeBtn);
+
+    const startSelect = container.querySelector('[data-testid="composite-starting-rank-select"]') as HTMLSelectElement;
+    const targetInput = container.querySelector('[data-testid="composite-target-stars-input"]') as HTMLInputElement;
+    const priceElem = container.querySelector('[data-testid="live-quote-price"]');
+
+    expect(startSelect).toBeTruthy();
+    expect(targetInput).toBeTruthy();
+    expect(priceElem).toBeTruthy();
+
+    // 1. Legend to 30★ (Mythical Honor) -> ₹300 (Legend->Mythic) + 25*20 + 5*30 = ₹950.00
+    fireEvent.change(startSelect, { target: { value: 'Legend' } });
+    fireEvent.change(targetInput, { target: { value: '30' } });
+    expect(priceElem?.textContent).toContain('950.00');
+
+    // 2. Epic to 20★ (Mythic) -> ₹600 (Epic->Mythic) + 20*20 = ₹1,000.00
+    fireEvent.change(startSelect, { target: { value: 'Epic' } });
+    fireEvent.change(targetInput, { target: { value: '20' } });
+    expect(priceElem?.textContent).toContain('1000.00');
+  });
+
+  it('Test 35: Server validation rejection displays error toast and halts dispatch without phantom fallback (BUG-M6-005)', async () => {
+    // Mock fetch so mount rates fetch succeeds
+    vi.spyOn(global, 'fetch').mockImplementation((url: any) => {
+      if (typeof url === 'string' && url.includes('/api/v1/boosting/rates')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ rates: [], surcharges: {} }),
+        } as any);
+      }
+      // Rejection for order creation
+      return Promise.resolve({
+        ok: false,
+        status: 422,
+        json: async () => ({ message: 'Server rejected: Invalid rank progression detected' }),
+      } as any);
+    });
+
+    const windowOpenSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+
+    const { container } = render(<Calculator />);
+
+    const ignInput = container.querySelector('[data-testid="customer-ign-input"]') as HTMLInputElement;
+    const waBtn = container.querySelector('[data-testid="dispatch-whatsapp-btn"]') as HTMLButtonElement;
+
+    fireEvent.change(ignInput, { target: { value: 'CheaterIGN' } });
+    expect(waBtn.disabled).toBe(false);
+
+    fireEvent.click(waBtn);
+
+    // Verify error toast appears with server rejection message
+    await waitFor(() => {
+      const toast = container.querySelector('[data-testid="toast-notification"]');
+      expect(toast).toBeTruthy();
+      expect(toast?.textContent).toContain('Server rejected: Invalid rank progression detected');
+    });
+
+    // Zero phantom links or window.open calls when server rejects
+    expect(windowOpenSpy).not.toHaveBeenCalled();
+  });
 });
+
 

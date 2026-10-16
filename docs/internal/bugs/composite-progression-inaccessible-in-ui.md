@@ -7,7 +7,7 @@
   - `client/components/boosting/Calculator.tsx` (lines 17, 208–274)
   - `server/src/services/boosting-calc.service.ts` (lines 217–258)
   - `server/test/services/boosting-calc-composite.test.ts`
-- **Status**: Identified
+- **Status**: Resolved
 
 ---
 

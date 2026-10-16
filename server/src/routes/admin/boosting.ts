@@ -105,16 +105,26 @@ const adminBoostingRoutes: FastifyPluginAsync = async (fastify) => {
     }
 
     const { status, notes } = parseResult.data;
-    const updated = await BoostingRateService.updateOrderStatus(id, status, notes, fastify.db);
-    if (!updated) {
-      return reply.code(404).send({
-        statusCode: 404,
-        error: 'Not Found',
-        message: 'Order not found',
-      });
+    try {
+      const updated = await BoostingRateService.updateOrderStatus(id, status, notes, fastify.db);
+      if (!updated) {
+        return reply.code(404).send({
+          statusCode: 404,
+          error: 'Not Found',
+          message: 'Order not found',
+        });
+      }
+      return reply.code(200).send(updated);
+    } catch (err: any) {
+      if (err.name === 'ValidationError' || err.statusCode) {
+        return reply.code(err.statusCode || 400).send({
+          statusCode: err.statusCode || 400,
+          error: err.code || 'Bad Request',
+          message: err.message,
+        });
+      }
+      throw err;
     }
-
-    return reply.code(200).send(updated);
   });
 };
 

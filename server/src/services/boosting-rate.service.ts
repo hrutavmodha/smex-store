@@ -7,6 +7,7 @@ import {
   type NewBoostingOrder,
   type BoostingOrder,
 } from '../db/schema/boosting.js';
+import { ValidationError } from './boosting-calc.service.js';
 
 export interface RateUpdateInput {
   priceInr?: number | string;
@@ -21,6 +22,14 @@ export interface OrderFilterOptions {
   limit?: number;
   offset?: number;
 }
+
+export const ALLOWED_ORDER_TRANSITIONS: Record<string, string[]> = {
+  inquiry: ['confirmed', 'cancelled'],
+  confirmed: ['in_progress', 'cancelled'],
+  in_progress: ['completed', 'cancelled'],
+  completed: [],
+  cancelled: [],
+};
 
 export class BoostingRateService {
   /**
@@ -122,6 +131,7 @@ export class BoostingRateService {
 
   /**
    * Updates boosting order lifecycle status and administrative notes
+   * Enforces LLD Section 4.2 State Machine Transition Invariants (BUG-M6-006)
    */
   static async updateOrderStatus(
     id: string,
@@ -129,6 +139,26 @@ export class BoostingRateService {
     notes: string | undefined,
     db: SmexDatabase
   ): Promise<BoostingOrder> {
+    const [existing] = await db
+      .select()
+      .from(boostingOrders)
+      .where(eq(boostingOrders.id, id));
+
+    if (!existing) {
+      throw new ValidationError('ORDER_NOT_FOUND', 404, 'Order not found');
+    }
+
+    const currentStatus = existing.status;
+    const allowed = ALLOWED_ORDER_TRANSITIONS[currentStatus] || [];
+
+    if (!allowed.includes(status)) {
+      throw new ValidationError(
+        'INVALID_STATUS_TRANSITION',
+        400,
+        `Cannot transition order status from '${currentStatus}' to '${status}'. Allowed transitions: [${allowed.join(', ')}]`
+      );
+    }
+
     const updatePayload: Record<string, any> = {
       status: status as any,
     };
@@ -145,3 +175,4 @@ export class BoostingRateService {
     return updated;
   }
 }
+
