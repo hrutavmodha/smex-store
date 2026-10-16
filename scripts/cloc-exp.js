@@ -62,16 +62,31 @@ function clocDir(dirName) {
  * @param {Array<string>} headings 
  */
 function table(dict, headings) {
+    process.stdout.write('|---------------------------------------|\n')
     process.stdout.write('| ')
     process.stdout.write('File Type')
-    process.stdout.write('\t|\n')
-    process.stdout.write('|---|\n')
+    process.stdout.write('\t|')
+
+    for (let text of headings) {
+        process.stdout.write(' ')
+        process.stdout.write(String(text))
+        process.stdout.write('\t| ')
+    }
+
+
+    process.stdout.write('\n|---------------|')
+    process.stdout.write('-------|')
+    process.stdout.write('---------------|\n')
 
     for (let key in dict) {
         process.stdout.write('| ')
         process.stdout.write(String(key))
-        process.stdout.write('\t|\n')
+        process.stdout.write('\t|')
+        process.stdout.write(` ${dict[key][0]}\t|`)
+        process.stdout.write(` ${dict[key][1]}\t\t|\n`)
     }
+
+    process.stdout.write('|---------------------------------------|\n')
 }
 
 clocDir('.')
@@ -83,4 +98,4 @@ const dataTable = {
     'Other Type': [otherLoc, otherFiles]
 }
 
-table(dataTable, ['Type'])
+table(dataTable, ['LOC', 'Files'])
