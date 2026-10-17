@@ -5,19 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Trophy, Users, Calendar, IndianRupee, Swords } from 'lucide-react';
 
-export interface TournamentCardData {
-  id: string;
-  title: string;
-  gameSlug: string;
-  format: 'single_elimination' | 'double_elimination' | 'round_robin';
-  status: 'upcoming' | 'registration_open' | 'ongoing' | 'completed';
-  startTime: string;
-  endTime?: string | null;
-  prizePoolInr: string;
-  maxTeams: number;
-  registeredTeams?: number;
-  winnerTeamId?: string | null;
-}
+import type { TournamentCardData } from '@smex/shared';
 
 function TournamentsDirectoryContent() {
   const searchParams = useSearchParams();

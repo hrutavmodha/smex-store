@@ -45,7 +45,8 @@
     "ioredis": "^6.0.0",
     "pg": "^8.23.1",
     "resend": "^6.32.1",
-    "zod": "^4.6.5"
+    "zod": "^4.6.5",
+    "@smex/shared": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^26.0.0",

@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Upload, X, ShieldAlert, AlertCircle, Loader2 } from 'lucide-react';
 import { uploadScreenshotProof, MAX_UPLOAD_SIZE, ALLOWED_UPLOAD_TYPES } from '../../lib/marketplace/uploader';
-import { createMarketplaceListing, type ProofImageItem } from '../../lib/marketplace/api';
+import { createMarketplaceListing } from '../../lib/marketplace/api';
+import type { ProofImageItem } from '@smex/shared';
 
 const RANK_TIERS = [
   'Epic',

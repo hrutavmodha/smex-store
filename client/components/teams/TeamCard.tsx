@@ -3,23 +3,7 @@
 import React from 'react';
 import { Users, Shield, ArrowRight } from 'lucide-react';
 
-export interface TeamCardData {
-  id: string;
-  name: string;
-  tag: string;
-  captainId: string;
-  gameSlug: string;
-  memberCap: number;
-  status: 'open' | 'closed';
-  description?: string | null;
-  activeMembersCount: number;
-  openSlots: number;
-  availability: 'open' | 'closed' | 'full';
-  captainUsername?: string | null;
-  captainIgn?: string | null;
-  captainAvatarPreset?: string | null;
-  hasPendingRequest?: boolean;
-}
+import type { TeamCardData } from '@smex/shared';
 
 export interface TeamCardProps {
   team: TeamCardData;

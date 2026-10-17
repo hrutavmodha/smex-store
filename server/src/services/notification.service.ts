@@ -4,25 +4,12 @@ import type { WsGatewayDecorator } from '../plugins/websocket.js';
 import type { SmexDatabase } from '../db/index.js';
 import { notifications } from '../db/schema/notifications.js';
 
-export type NotificationType = 'request' | 'update' | 'system';
-
-export interface NotificationPayload {
-  actionUrl?: string; // In-app destination route (e.g. "/teams/squad-123")
-  entityType?: 'team' | 'tournament' | 'marketplace' | 'boosting' | 'user';
-  entityId?: string;
-  metadata?: Record<string, unknown>;
-}
-
-export interface NotificationEnvelope {
-  id: string;
-  recipientId: string;
-  type: NotificationType;
-  title: string;
-  message: string;
-  payload: NotificationPayload;
-  isRead: boolean;
-  createdAt: string;
-}
+import type {
+  NotificationType,
+  NotificationPayload,
+  NotificationEnvelope,
+  PaginatedNotificationsResult,
+} from '@smex/shared';
 
 export interface BaseNotificationEnvelope<T = unknown> {
   event: string;
@@ -46,15 +33,6 @@ export interface RequestStatusNotificationData {
   status: 'accepted' | 'rejected' | 'cancelled';
 }
 
-export interface PaginatedNotificationsResult {
-  unreadCount: number;
-  notifications: NotificationEnvelope[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-  };
-}
 
 export class NotificationService {
   /**

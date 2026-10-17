@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Navbar, type UserProfile } from './Navbar';
 import { Footer } from './Footer';
+import { CookieConsentBanner } from './CookieConsentBanner';
 import { AuthModal, type AuthView } from '../auth/AuthModal';
 import { getStoredToken, setStoredToken, fetchWithAuth } from '../../lib/api';
 
@@ -102,6 +103,7 @@ export function AppShell({ children }: AppShellProps) {
         initialView={authView}
         onSuccess={handleAuthSuccess}
       />
+      <CookieConsentBanner />
     </div>
   );
 }

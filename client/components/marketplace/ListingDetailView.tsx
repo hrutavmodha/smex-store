@@ -11,7 +11,7 @@ import {
   CheckCircle,
   MessageCircle,
 } from 'lucide-react';
-import { type MarketplaceListingItem } from '../../lib/marketplace/api';
+import type { MarketplaceListingItem } from '@smex/shared';
 import { ProofLightboxCarousel } from './ProofLightboxCarousel';
 import { SellerContactModal } from './SellerContactModal';
 

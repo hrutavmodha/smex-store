@@ -13,11 +13,8 @@ import {
   Image as ImageIcon,
   Loader2,
 } from 'lucide-react';
-import {
-  fetchMarketplaceListings,
-  type MarketplaceListingItem,
-  type GetListingsParams,
-} from '../../lib/marketplace/api';
+import { fetchMarketplaceListings } from '../../lib/marketplace/api';
+import type { MarketplaceListingItem, GetListingsParams } from '@smex/shared';
 
 const ALL_RANK_TIERS = [
   'Epic',

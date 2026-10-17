@@ -19,7 +19,9 @@
       }
     ],
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@smex/shared": ["../shared/src/index.ts"],
+      "@smex/shared/*": ["../shared/src/*"]
     }
   },
   "include": [

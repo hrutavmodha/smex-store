@@ -218,6 +218,14 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
         maxAge: 2592000,
       });
 
+      reply.setCookie('smex_access_token', accessToken, {
+        path: '/',
+        httpOnly: true,
+        secure: true,
+        sameSite: 'strict',
+        maxAge: 900,
+      });
+
       const [profileRecord] = await fastify.db
         .select()
         .from(profiles)
@@ -300,8 +308,14 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
       );
     }
 
-    // 4. Always clear refresh token cookie
+    // 4. Always clear refresh and access token cookies
     reply.clearCookie('__Host-refresh-token', {
+      path: '/',
+      httpOnly: true,
+      secure: true,
+      sameSite: 'strict',
+    });
+    reply.clearCookie('smex_access_token', {
       path: '/',
       httpOnly: true,
       secure: true,
@@ -353,6 +367,14 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
         secure: true,
         sameSite: 'strict',
         maxAge: 2592000,
+      });
+
+      reply.setCookie('smex_access_token', newAccessToken, {
+        path: '/',
+        httpOnly: true,
+        secure: true,
+        sameSite: 'strict',
+        maxAge: 900,
       });
 
       return reply.code(200).send({

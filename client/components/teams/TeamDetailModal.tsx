@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { X, Crown, Users, UserX, Check, Ban, AlertTriangle } from 'lucide-react';
-import type { TeamCardData } from './TeamCard';
+import type { TeamCardData } from '@smex/shared';
 
 export interface RosterMember {
   id: string;

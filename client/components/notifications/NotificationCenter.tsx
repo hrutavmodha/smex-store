@@ -4,21 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Bell, CheckCheck, Inbox, ExternalLink } from 'lucide-react';
 import { fetchWithAuth, getStoredToken } from '../../lib/api';
-
-export interface NotificationItem {
-  id: string;
-  recipientId: string;
-  type: 'request' | 'update' | 'system';
-  title: string;
-  message: string;
-  payload?: {
-    actionUrl?: string;
-    entityType?: string;
-    entityId?: string;
-  };
-  isRead: boolean;
-  createdAt: string;
-}
+import type { NotificationEnvelope } from '@smex/shared';
 
 export interface NotificationCenterProps {
   user?: {
@@ -31,7 +17,7 @@ export interface NotificationCenterProps {
 export function NotificationCenter({ user }: NotificationCenterProps) {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
-  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [notifications, setNotifications] = useState<NotificationEnvelope[]>([]);
   const [unreadCount, setUnreadCount] = useState<number>(0);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -94,13 +80,13 @@ export function NotificationCenter({ user }: NotificationCenterProps) {
             setUnreadCount((prev) => (incomingCount !== undefined ? incomingCount : prev + 1));
 
             const rawItem = frame.data || frame;
-            const newRecord: NotificationItem = {
+            const newRecord: NotificationEnvelope = {
               id: rawItem.id || `notif-${Date.now()}`,
               recipientId: rawItem.recipientId || user.uid,
               type: rawItem.type || 'system',
               title: rawItem.title || 'New Notification',
               message: rawItem.message || '',
-              payload: rawItem.payload,
+              payload: rawItem.payload || {},
               isRead: false,
               createdAt: rawItem.createdAt || new Date().toISOString(),
             };
@@ -137,7 +123,7 @@ export function NotificationCenter({ user }: NotificationCenterProps) {
     };
   }, [isOpen]);
 
-  const handleNotificationClick = async (notif: NotificationItem) => {
+  const handleNotificationClick = async (notif: NotificationEnvelope) => {
     if (!notif.isRead) {
       // Optimistic unread decrement
       setNotifications((prev) =>

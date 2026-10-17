@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { fetchMarketplaceListingById, type MarketplaceListingItem } from '../../../lib/marketplace/api';
+import { fetchMarketplaceListingById } from '../../../lib/marketplace/api';
+import type { MarketplaceListingItem } from '@smex/shared';
 import { ListingDetailView } from '../../../components/marketplace/ListingDetailView';
 import { Loader2, AlertCircle } from 'lucide-react';
 import Link from 'next/link';

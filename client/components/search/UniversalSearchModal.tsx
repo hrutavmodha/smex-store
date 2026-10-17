@@ -4,55 +4,11 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation';
 import { Search, X, Trophy, Shield, User, ShoppingBag, ArrowRight } from 'lucide-react';
 
-export type SearchCategory = 'all' | 'tournaments' | 'teams' | 'players' | 'marketplace';
-
-export interface SearchResultItem {
-  id: string;
-  category: 'tournaments' | 'teams' | 'players' | 'marketplace';
-  title: string;
-  subtitle?: string;
-  badge?: string;
-  url: string;
-}
-
-export interface SearchTournamentItem {
-  id: string;
-  title: string;
-  gameSlug?: string;
-  status?: string;
-  url?: string;
-}
-
-export interface SearchTeamItem {
-  id: string;
-  name: string;
-  tag?: string;
-  gameSlug?: string;
-  url?: string;
-}
-
-export interface SearchPlayerItem {
-  id: string;
-  username: string;
-  ign?: string;
-  role?: string;
-  url?: string;
-}
-
-export interface SearchMarketplaceItem {
-  id: string;
-  title: string;
-  rankTier?: string;
-  priceInr?: number;
-  url?: string;
-}
-
-export interface SearchResultData {
-  tournaments?: SearchTournamentItem[];
-  teams?: SearchTeamItem[];
-  players?: SearchPlayerItem[];
-  marketplace?: SearchMarketplaceItem[];
-}
+import type {
+  SearchCategory,
+  SearchResultItem,
+  SearchResultsByCategory as SearchResultData,
+} from '@smex/shared';
 
 export interface UniversalSearchModalProps {
   isOpen: boolean;

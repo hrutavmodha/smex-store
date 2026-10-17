@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { X, MessageCircle, ExternalLink, ShieldCheck } from 'lucide-react';
-import { type MarketplaceListingItem } from '../../lib/marketplace/api';
+import type { MarketplaceListingItem } from '@smex/shared';
 
 function InstagramIcon({ className }: { className?: string }) {
   return (

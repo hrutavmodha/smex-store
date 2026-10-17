@@ -209,6 +209,9 @@ importers:
 
   client:
     dependencies:
+      '@smex/shared':
+        specifier: workspace:*
+        version: link:../shared
       '@tanstack/react-query':
         specifier: ^5.104.1
         version: 5.104.1(react@19.3.0)
@@ -297,6 +300,9 @@ importers:
       '@fastify/websocket':
         specifier: ^11.3.3
         version: 11.3.3
+      '@smex/shared':
+        specifier: workspace:*
+        version: link:../shared
       argon2:
         specifier: ^0.45.1
         version: 0.45.1
@@ -364,6 +370,12 @@ importers:
       typescript-eslint:
         specifier: ^8.71.1
         version: 8.71.1(eslint@10.12.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)
+
+  shared:
+    devDependencies:
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
 packages:
 

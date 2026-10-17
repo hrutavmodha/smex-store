@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Search, Plus, Shield, Users, AlertCircle, X } from 'lucide-react';
-import { TeamCard, type TeamCardData } from '../../components/teams/TeamCard';
+import { TeamCard } from '../../components/teams/TeamCard';
+import type { TeamCardData } from '@smex/shared';
 import { TeamDetailModal, type RosterMember, type JoinRequestItem } from '../../components/teams/TeamDetailModal';
 import { fetchWithAuth } from '../../lib/api';
 
@@ -94,7 +95,7 @@ export default function TeamsPage() {
         setSelectedMembers(data.team.members || []);
         if (data.team) {
           teamData = { ...team, ...data.team };
-          setSelectedTeam((prev) => ({
+          setSelectedTeam((prev: TeamCardData | null) => ({
             ...(prev || team),
             ...data.team,
           }));

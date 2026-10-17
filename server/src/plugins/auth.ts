@@ -42,7 +42,21 @@ const authPlugin: FastifyPluginAsync = async (fastify) => {
 
   const authenticate = async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const payload = await request.jwtVerify<AccessTokenPayload>();
+      const cookieToken =
+        request.cookies?.['smex_access_token'] ||
+        (request.headers.cookie &&
+          request.headers.cookie
+            .split(';')
+            .map((c) => c.trim())
+            .find((c) => c.startsWith('smex_access_token='))
+            ?.split('=')[1]);
+
+      let payload: AccessTokenPayload;
+      if (cookieToken) {
+        payload = fastify.jwt.verify<AccessTokenPayload>(cookieToken);
+      } else {
+        payload = await request.jwtVerify<AccessTokenPayload>();
+      }
 
       if (!payload.sessionId || !payload.sub) {
         return reply.code(401).send({

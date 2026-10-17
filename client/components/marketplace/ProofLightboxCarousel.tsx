@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 import { ChevronLeft, ChevronRight, Image as ImageIcon } from 'lucide-react';
-import { type ProofImageItem } from '../../lib/marketplace/api';
+import type { ProofImageItem } from '@smex/shared';
 
 export interface ProofLightboxCarouselProps {
   proofImages: ProofImageItem[];

@@ -1,12 +1,12 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
-import {
-  calculateBoostingPrice,
-  type BoostingAddons,
-  type BoostingRateRow,
-  type BoostingSurchargeConfig,
-} from '../../lib/boosting/calculator';
+import { calculateBoostingPrice } from '../../lib/boosting/calculator';
+import type {
+  BoostingAddons,
+  BoostingRateRow,
+  BoostingSurchargeConfig,
+} from '@smex/shared';
 import {
   generateOrderRef,
   resolveWhatsAppHandoff,
