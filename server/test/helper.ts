@@ -29,11 +29,15 @@ async function build(
   }
   await app.ready();
 
-  // Clear any residual rate-limit keys from prior runs to ensure test determinism
+  // Clear any residual rate-limit or search cache keys from prior runs to ensure test determinism
   if (app.redis) {
     const rlKeys = await app.redis.keys('fastify-rate-limit-*');
     if (rlKeys.length > 0) {
       await app.redis.del(...rlKeys);
+    }
+    const searchKeys = await app.redis.keys('search:*');
+    if (searchKeys.length > 0) {
+      await app.redis.del(...searchKeys);
     }
   }
 

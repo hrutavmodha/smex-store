@@ -1,5 +1,28 @@
 import type { Redis } from 'ioredis';
+import { eq, and, desc, count } from 'drizzle-orm';
 import type { WsGatewayDecorator } from '../plugins/websocket.js';
+import type { SmexDatabase } from '../db/index.js';
+import { notifications } from '../db/schema/notifications.js';
+
+export type NotificationType = 'request' | 'update' | 'system';
+
+export interface NotificationPayload {
+  actionUrl?: string; // In-app destination route (e.g. "/teams/squad-123")
+  entityType?: 'team' | 'tournament' | 'marketplace' | 'boosting' | 'user';
+  entityId?: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface NotificationEnvelope {
+  id: string;
+  recipientId: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  payload: NotificationPayload;
+  isRead: boolean;
+  createdAt: string;
+}
 
 export interface BaseNotificationEnvelope<T = unknown> {
   event: string;
@@ -23,7 +46,265 @@ export interface RequestStatusNotificationData {
   status: 'accepted' | 'rejected' | 'cancelled';
 }
 
+export interface PaginatedNotificationsResult {
+  unreadCount: number;
+  notifications: NotificationEnvelope[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+  };
+}
+
 export class NotificationService {
+  /**
+   * Durable persistence and real-time dispatch of notifications
+   */
+  static async dispatchNotification(
+    recipientId: string,
+    type: NotificationType,
+    title: string,
+    message: string,
+    payload: NotificationPayload = {},
+    db: SmexDatabase,
+    redis?: Redis,
+    wsGateway?: WsGatewayDecorator
+  ): Promise<{ notification: NotificationEnvelope; unreadCount: number }> {
+    const [record] = await db
+      .insert(notifications)
+      .values({
+        recipientId,
+        type,
+        title,
+        message,
+        entityType: payload.entityType ?? null,
+        entityId: payload.entityId ?? null,
+        payload,
+        isRead: false,
+      })
+      .returning();
+
+    const [unreadRow] = await db
+      .select({ count: count() })
+      .from(notifications)
+      .where(
+        and(
+          eq(notifications.recipientId, recipientId),
+          eq(notifications.isRead, false)
+        )
+      );
+    const unreadCount = Number(unreadRow?.count ?? 0);
+
+    const envelope: NotificationEnvelope = {
+      id: record.id,
+      recipientId: record.recipientId,
+      type: record.type,
+      title: record.title,
+      message: record.message,
+      payload: (record.payload ?? {}) as NotificationPayload,
+      isRead: record.isRead,
+      createdAt:
+        record.createdAt instanceof Date
+          ? record.createdAt.toISOString()
+          : String(record.createdAt),
+    };
+
+    const channel = `user:${recipientId}`;
+    const wsFrame = {
+      event: 'notification:new',
+      channel,
+      timestamp: Date.now(),
+      data: envelope,
+      unreadCount,
+      ...envelope,
+    };
+
+    if (redis) {
+      await redis.publish(channel, JSON.stringify(wsFrame));
+    }
+
+    if (wsGateway) {
+      wsGateway.broadcastToChannel(channel, wsFrame);
+    }
+
+    return {
+      notification: envelope,
+      unreadCount,
+    };
+  }
+
+  /**
+   * Retrieves paginated user notifications with unread count
+   */
+  static async getNotifications(
+    recipientId: string,
+    options?: { page?: number; limit?: number },
+    db?: SmexDatabase
+  ): Promise<PaginatedNotificationsResult> {
+    if (!db) {
+      throw new Error('Database client is required to fetch notifications');
+    }
+    const page = Math.max(1, options?.page ?? 1);
+    const limit = Math.max(1, Math.min(100, options?.limit ?? 20));
+    const offset = (page - 1) * limit;
+
+    const [unreadRow] = await db
+      .select({ count: count() })
+      .from(notifications)
+      .where(
+        and(
+          eq(notifications.recipientId, recipientId),
+          eq(notifications.isRead, false)
+        )
+      );
+    const unreadCount = Number(unreadRow?.count ?? 0);
+
+    const [totalRow] = await db
+      .select({ count: count() })
+      .from(notifications)
+      .where(eq(notifications.recipientId, recipientId));
+    const total = Number(totalRow?.count ?? 0);
+
+    const rows = await db
+      .select()
+      .from(notifications)
+      .where(eq(notifications.recipientId, recipientId))
+      .orderBy(desc(notifications.createdAt))
+      .limit(limit)
+      .offset(offset);
+
+    const mapped: NotificationEnvelope[] = rows.map((r) => ({
+      id: r.id,
+      recipientId: r.recipientId,
+      type: r.type,
+      title: r.title,
+      message: r.message,
+      payload: (r.payload ?? {}) as NotificationPayload,
+      isRead: r.isRead,
+      createdAt:
+        r.createdAt instanceof Date
+          ? r.createdAt.toISOString()
+          : String(r.createdAt),
+    }));
+
+    return {
+      unreadCount,
+      notifications: mapped,
+      pagination: {
+        page,
+        limit,
+        total,
+      },
+    };
+  }
+
+  /**
+   * Marks a single notification as read for the authenticated recipient
+   */
+  static async markAsRead(
+    notificationId: string,
+    userId: string,
+    db: SmexDatabase
+  ): Promise<{ notification: NotificationEnvelope; unreadCount: number } | null> {
+    const [existing] = await db
+      .select()
+      .from(notifications)
+      .where(
+        and(
+          eq(notifications.id, notificationId),
+          eq(notifications.recipientId, userId)
+        )
+      );
+
+    if (!existing) {
+      return null;
+    }
+
+    const [updated] = await db
+      .update(notifications)
+      .set({ isRead: true })
+      .where(
+        and(
+          eq(notifications.id, notificationId),
+          eq(notifications.recipientId, userId)
+        )
+      )
+      .returning();
+
+    const [unreadRow] = await db
+      .select({ count: count() })
+      .from(notifications)
+      .where(
+        and(
+          eq(notifications.recipientId, userId),
+          eq(notifications.isRead, false)
+        )
+      );
+    const unreadCount = Number(unreadRow?.count ?? 0);
+
+    return {
+      notification: {
+        id: updated.id,
+        recipientId: updated.recipientId,
+        type: updated.type,
+        title: updated.title,
+        message: updated.message,
+        payload: (updated.payload ?? {}) as NotificationPayload,
+        isRead: updated.isRead,
+        createdAt:
+          updated.createdAt instanceof Date
+            ? updated.createdAt.toISOString()
+            : String(updated.createdAt),
+      },
+      unreadCount,
+    };
+  }
+
+  /**
+   * Marks all unread notifications for a user as read
+   */
+  static async markAllAsRead(
+    userId: string,
+    db: SmexDatabase
+  ): Promise<{ updatedCount: number; unreadCount: number }> {
+    const updated = await db
+      .update(notifications)
+      .set({ isRead: true })
+      .where(
+        and(
+          eq(notifications.recipientId, userId),
+          eq(notifications.isRead, false)
+        )
+      )
+      .returning();
+
+    return {
+      updatedCount: updated.length,
+      unreadCount: 0,
+    };
+  }
+
+  /**
+   * Deletes an individual notification belonging to the user
+   */
+  static async deleteNotification(
+    notificationId: string,
+    userId: string,
+    db: SmexDatabase
+  ): Promise<boolean> {
+    const [deleted] = await db
+      .delete(notifications)
+      .where(
+        and(
+          eq(notifications.id, notificationId),
+          eq(notifications.recipientId, userId)
+        )
+      )
+      .returning();
+
+    return !!deleted;
+  }
+
   /**
    * Dispatches real-time event when a player submits a squad join request
    */
@@ -31,7 +312,8 @@ export class NotificationService {
     captainId: string,
     data: JoinRequestNotificationData,
     redis?: Redis,
-    wsGateway?: WsGatewayDecorator
+    wsGateway?: WsGatewayDecorator,
+    db?: SmexDatabase
   ): Promise<BaseNotificationEnvelope<JoinRequestNotificationData>> {
     const channel = `user:${captainId}`;
     const envelope: BaseNotificationEnvelope<JoinRequestNotificationData> = {
@@ -49,6 +331,33 @@ export class NotificationService {
       wsGateway.broadcastToChannel(channel, envelope);
     }
 
+    if (db) {
+      try {
+        await this.dispatchNotification(
+          captainId,
+          'request',
+          'New Squad Join Request',
+          `Player '${data.playerIgn}' requested to join squad '${data.teamName}'.`,
+          {
+            actionUrl: `/teams/${data.teamId}`,
+            entityType: 'team',
+            entityId: data.teamId,
+            metadata: {
+              requestId: data.requestId,
+              applicantId: data.applicantId,
+              playerIgn: data.playerIgn,
+              playerRole: data.playerRole,
+            },
+          },
+          db,
+          redis,
+          wsGateway
+        );
+      } catch {
+        // Notification persistence side-effect failure should not throw
+      }
+    }
+
     return envelope;
   }
 
@@ -59,7 +368,8 @@ export class NotificationService {
     applicantId: string,
     data: RequestStatusNotificationData,
     redis?: Redis,
-    wsGateway?: WsGatewayDecorator
+    wsGateway?: WsGatewayDecorator,
+    db?: SmexDatabase
   ): Promise<BaseNotificationEnvelope<RequestStatusNotificationData>> {
     const channel = `user:${applicantId}`;
     const envelope: BaseNotificationEnvelope<RequestStatusNotificationData> = {
@@ -75,6 +385,30 @@ export class NotificationService {
 
     if (wsGateway) {
       wsGateway.broadcastToChannel(channel, envelope);
+    }
+
+    if (db) {
+      try {
+        await this.dispatchNotification(
+          applicantId,
+          'update',
+          'Squad Join Request Updated',
+          `Your request to join squad '${data.teamName}' was ${data.status}.`,
+          {
+            actionUrl: `/teams/${data.teamId}`,
+            entityType: 'team',
+            entityId: data.teamId,
+            metadata: {
+              status: data.status,
+            },
+          },
+          db,
+          redis,
+          wsGateway
+        );
+      } catch {
+        // Persistence side-effect failure should not throw
+      }
     }
 
     return envelope;

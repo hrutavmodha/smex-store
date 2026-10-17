@@ -59,7 +59,7 @@ const websocketPlugin: FastifyPluginAsync = async (fastify) => {
       try {
         socket.close(1001, 'Server shutting down');
       } catch {
-        socket.terminate();
+        socket.terminate?.();
       }
     }
     clients.clear();
@@ -71,7 +71,8 @@ const websocketPlugin: FastifyPluginAsync = async (fastify) => {
     broadcastToChannel: (channel: string, message: unknown) => {
       const payload = typeof message === 'string' ? message : JSON.stringify(message);
       for (const [socket, meta] of clients.entries()) {
-        if (meta.subscriptions.has(channel) && socket.readyState === socket.OPEN) {
+        const isOpen = socket.readyState === 1;
+        if (meta.subscriptions.has(channel) && isOpen) {
           socket.send(payload);
         }
       }
@@ -83,7 +84,7 @@ const websocketPlugin: FastifyPluginAsync = async (fastify) => {
           try {
             socket.close(4401, 'Session revoked');
           } catch {
-            socket.terminate();
+            socket.terminate?.();
           }
           clients.delete(socket);
         }
@@ -96,9 +97,9 @@ const websocketPlugin: FastifyPluginAsync = async (fastify) => {
   // Redis Pub/Sub Subscriber for horizontal multi-instance synchronization
   if (fastify.redis) {
     const redisSubscriber = fastify.redis.duplicate();
-    redisSubscriber.psubscribe('tournament:*', (err) => {
+    redisSubscriber.psubscribe('tournament:*', 'user:*', (err) => {
       if (err) {
-        fastify.log.error({ err }, 'Failed to psubscribe to tournament:* channel pattern');
+        fastify.log.error({ err }, 'Failed to psubscribe to tournament:* and user:* channel patterns');
       }
     });
 
@@ -186,6 +187,10 @@ export function registerSocket(
     lastPongAt: Date.now(),
     subscriptions: new Set<string>(),
   };
+
+  if (userId) {
+    meta.subscriptions.add(`user:${userId}`);
+  }
 
   clients.set(socket, meta);
 

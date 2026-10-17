@@ -82,6 +82,17 @@ export const presignedUploadRateLimitConfig: RateLimitOptions = {
   errorResponseBuilder,
 };
 
+export const searchRateLimitConfig: RateLimitOptions = {
+  hook: 'onRequest',
+  max: 60,
+  timeWindow: 60 * 1000, // 60 seconds
+  keyGenerator: (req) => {
+    const user = (req as FastifyRequest & { user?: { sub?: string } }).user;
+    return `rl:search:${user?.sub || req.ip}`;
+  },
+  errorResponseBuilder,
+};
+
 
 const rateLimitPlugin: FastifyPluginAsync = async (fastify) => {
   await fastify.register(fastifyRateLimit, {

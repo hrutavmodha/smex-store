@@ -19,6 +19,8 @@ import boostingRoutes from './routes/boosting.js'
 import adminBoostingRoutes from './routes/admin/boosting.js'
 import marketplaceRoutes from './routes/marketplace/index.js'
 import marketplaceUploadsRoutes from './routes/marketplace/uploads.js'
+import notificationsRoutes from './routes/notifications.js'
+import searchRoutes from './routes/search.js'
 
 
 export type AppOptions = {
@@ -56,6 +58,8 @@ const app: FastifyPluginAsync<AppOptions> = async (
   await fastify.register(adminBoostingRoutes)
   await fastify.register(marketplaceRoutes)
   await fastify.register(marketplaceUploadsRoutes)
+  await fastify.register(notificationsRoutes)
+  await fastify.register(searchRoutes)
   await fastify.register(exampleRoutes, { prefix: '/example' })
 }
 

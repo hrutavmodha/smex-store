@@ -19,6 +19,8 @@ import {
   Laptop,
 } from 'lucide-react';
 import { fetchWithAuth } from '../../lib/api';
+import { NotificationCenter } from '../notifications/NotificationCenter';
+import { UniversalSearchModal } from '../search/UniversalSearchModal';
 
 export const NAV_LINKS = [
   { href: '/tournaments', label: 'Tournaments' },
@@ -56,6 +58,18 @@ export function Navbar({ user, onLogout, onOpenAuthModal }: NavbarProps) {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+
+  useEffect(() => {
+    function handleGlobalKeyDown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsSearchOpen((prev) => !prev);
+      }
+    }
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, []);
 
   const theme = useSyncExternalStore<ThemeMode>(
     subscribeStorage,
@@ -193,6 +207,7 @@ export function Navbar({ user, onLogout, onOpenAuthModal }: NavbarProps) {
           {/* Universal Search Shortcut */}
           <button
             type="button"
+            onClick={() => setIsSearchOpen(true)}
             className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-text-secondary bg-bg-canvas border border-border-subtle rounded-lg hover:border-border-prominent hover:text-text-primary transition-colors duration-[120ms] min-h-[36px]"
             aria-label="Search (Cmd+K)"
           >
@@ -202,6 +217,9 @@ export function Navbar({ user, onLogout, onOpenAuthModal }: NavbarProps) {
               ⌘K
             </kbd>
           </button>
+
+          {/* Real-time Notification Center */}
+          <NotificationCenter user={user} />
 
           {/* Theme Toggle (Dark -> AMOLED -> Light) */}
           <button
@@ -475,6 +493,9 @@ export function Navbar({ user, onLogout, onOpenAuthModal }: NavbarProps) {
           )}
         </div>
       </div>
+
+      {/* Universal Search Modal */}
+      <UniversalSearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
     </header>
   );
 }

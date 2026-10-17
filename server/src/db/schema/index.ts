@@ -6,3 +6,4 @@ export * from './boosting.js';
 export * from './marketplace.js';
 export * from './reviews.js';
 export * from './activity.js';
+export * from './notifications.js';

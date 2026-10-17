@@ -175,16 +175,16 @@ flowchart TD
 
 ### Milestone 8: Real-Time Notifications and Universal Search
 
-* [ ] **8.1 Notification Dispatcher**:
+* [X] **8.1 Notification Dispatcher**:
   * In-memory WebSocket pub/sub and database persistence for unread notification center.
   * Notification types: Squad join requests, tournament schedule alerts, order status updates.
-* [ ] **8.2 Cross-Entity Universal Search**:
+* [X] **8.2 Cross-Entity Universal Search**:
   * Fast SQL search index with trigram matching across Tournaments, Teams, and Players.
   * Debounced client-side search autocomplete.
-* [ ] **8.3 Client Notifications and Search UI**:
+* [X] **8.3 Client Notifications and Search UI**:
   * Build unread notification bell icon in navigation bar with live badge count and dropdown center.
   * Build global search modal with keyboard shortcut trigger (`Cmd+K` / `Ctrl+K`) and debounced autocomplete results across tournaments, teams, and players.
-* [ ] **8.4 Automated Notification and Search Testing**: Execute test suite validating WebSocket notification dispatch, unread count tracking, SQL trigram search precision, and client search autocomplete UI.
+* [X] **8.4 Automated Notification and Search Testing**: Execute test suite validating WebSocket notification dispatch, unread count tracking, SQL trigram search precision, and client search autocomplete UI (19 server tests passing, 6 client browser tests passing across 3 browsers; 25/25 total).
 
 ---
 
