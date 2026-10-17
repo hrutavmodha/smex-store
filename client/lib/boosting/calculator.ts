@@ -1,7 +1,10 @@
 import {
-  type BoostingPricingMode,
-  type BoostingAddons,
   type BoostingSurchargeConfig,
+  type BoostingRateRow,
+  type CalculateBoostingParams,
+  type PriceBreakdownItem,
+  type SurchargeItem,
+  type CalculateBoostingResult,
   DEFAULT_SURCHARGES,
 } from '@smex/shared';
 
@@ -18,54 +21,6 @@ export class ValidationError extends Error {
 }
 
 export const BoostingCalcError = ValidationError;
-
-export interface BoostingRateRow {
-  id?: string;
-  gameSlug?: string;
-  pricingMode: string;
-  fromTier?: string | null;
-  toTier?: string | null;
-  starTier?: string | null;
-  minStars?: number | null;
-  maxStars?: number | null;
-  priceInr: string | number;
-  isActive?: boolean;
-}
-
-export interface CalculateBoostingParams {
-  pricingMode?: string;
-  startingRank?: string;
-  targetRank?: string;
-  fromTier?: string;
-  toTier?: string;
-  startingStars?: number;
-  targetStars?: number;
-  addons?: BoostingAddons;
-  rates?: BoostingRateRow[];
-  surcharges?: Partial<BoostingSurchargeConfig>;
-}
-
-export interface PriceBreakdownItem {
-  tier: string;
-  stars?: number;
-  rate: string;
-  subtotal: string;
-}
-
-export interface SurchargeItem {
-  name: string;
-  type: 'percentage' | 'flat';
-  rate: string;
-  amount: string;
-}
-
-export interface CalculateBoostingResult {
-  basePriceInr: string;
-  discountInr: string;
-  breakdown: PriceBreakdownItem[];
-  surcharges: SurchargeItem[];
-  totalPriceInr: string;
-}
 
 // Ladder order for MLBB divisions
 const RANK_ORDER: Record<string, number> = {

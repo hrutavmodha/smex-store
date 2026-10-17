@@ -15,3 +15,37 @@ export interface TournamentCardData {
   registeredTeams?: number;
   winnerTeamId?: string | null;
 }
+
+export interface MatchNodeData {
+  id: string;
+  roundNumber: number;
+  matchOrder: number;
+  bracketType?: 'upper' | 'lower' | 'grand_final' | string;
+  teamAId: string | null;
+  teamBId: string | null;
+  teamAName?: string | null;
+  teamBName?: string | null;
+  teamAScore: number;
+  teamBScore: number;
+  winnerId: string | null;
+  status: MatchStatus;
+}
+
+export interface BracketUpdatePayload {
+  matchId: string;
+  roundNumber?: number;
+  matchOrder?: number;
+  teamAScore?: number;
+  teamBScore?: number;
+  winnerId?: string | null;
+  status?: MatchStatus;
+  nextMatchId?: string | null;
+}
+
+export interface ParticipantItem {
+  id: string;
+  teamId: string;
+  teamName?: string;
+  teamTag?: string;
+  seed?: number;
+}

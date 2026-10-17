@@ -5,7 +5,7 @@ import { X } from 'lucide-react';
 import { LoginForm } from './LoginForm';
 import { RegisterForm } from './RegisterForm';
 import { ForgotPasswordForm } from './ForgotPasswordForm';
-import type { UserProfile } from '../shell/Navbar';
+import type { UserProfile } from '@smex/shared';
 
 export type AuthView = 'login' | 'register' | 'forgot-password';
 

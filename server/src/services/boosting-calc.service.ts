@@ -1,22 +1,12 @@
-export type BoostingPricingMode = 'fixed_tier' | 'per_star' | 'composite';
-
-export interface BoostingAddons {
-  rolePriority?: 'Jungle' | 'Gold' | 'Mid' | 'Roam' | 'EXP' | string;
-  restrictedHeroPool?: string[];
-  duoPlayWithBooster?: boolean;
-}
-
-export interface BoostingSurchargeConfig {
-  rolePriorityPercent: number; // Default: 0.15 (15%)
-  heroPoolFlatInr: number; // Default: 150.00
-  duoPartyPercent: number; // Default: 0.25 (25%)
-}
-
-export const DEFAULT_SURCHARGES: BoostingSurchargeConfig = {
-  rolePriorityPercent: 0.15,
-  heroPoolFlatInr: 150.00,
-  duoPartyPercent: 0.25,
-};
+import {
+  type BoostingSurchargeConfig,
+  type BoostingRateRow,
+  type CalculateBoostingParams,
+  type PriceBreakdownItem,
+  type SurchargeItem,
+  type CalculateBoostingResult,
+  DEFAULT_SURCHARGES,
+} from '@smex/shared';
 
 export class ValidationError extends Error {
   code: string;
@@ -31,54 +21,6 @@ export class ValidationError extends Error {
 }
 
 export const BoostingCalcError = ValidationError;
-
-export interface BoostingRateRow {
-  id?: string;
-  gameSlug?: string;
-  pricingMode: string;
-  fromTier?: string | null;
-  toTier?: string | null;
-  starTier?: string | null;
-  minStars?: number | null;
-  maxStars?: number | null;
-  priceInr: string | number;
-  isActive?: boolean;
-}
-
-export interface CalculateBoostingParams {
-  pricingMode?: string;
-  startingRank?: string;
-  targetRank?: string;
-  fromTier?: string;
-  toTier?: string;
-  startingStars?: number;
-  targetStars?: number;
-  addons?: BoostingAddons;
-  rates?: BoostingRateRow[];
-  surcharges?: Partial<BoostingSurchargeConfig>;
-}
-
-export interface PriceBreakdownItem {
-  tier: string;
-  stars?: number;
-  rate: string;
-  subtotal: string;
-}
-
-export interface SurchargeItem {
-  name: string;
-  type: 'percentage' | 'flat';
-  rate: string;
-  amount: string;
-}
-
-export interface CalculateBoostingResult {
-  basePriceInr: string;
-  discountInr: string;
-  breakdown: PriceBreakdownItem[];
-  surcharges: SurchargeItem[];
-  totalPriceInr: string;
-}
 
 // Ladder order for MLBB divisions
 const RANK_ORDER: Record<string, number> = {

@@ -17,7 +17,8 @@
     "clean": "pnpm --recursive exec rm -rf node_modules dist .next .turbo",
     "cloc": "./scripts/cloc.js",
     "commit": "./scripts/stage-commit-push.js",
-    "db": "./scripts/run-db.sh"
+    "db": "./scripts/run-db.sh",
+    "bundle:log": "./scripts/bundle-logger.js"
   },
   "devDependencies": {
     "@vitest/browser": "^5.0.3",

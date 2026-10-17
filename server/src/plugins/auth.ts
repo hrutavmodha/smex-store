@@ -3,16 +3,9 @@ import fp from 'fastify-plugin';
 import fastifyJwt from '@fastify/jwt';
 import fastifyCookie from '@fastify/cookie';
 import { eq } from 'drizzle-orm';
+import { type AccessTokenPayload } from '@smex/shared';
 import { users } from '../db/schema/users.js';
 import { loadEnv } from '../config/env.js';
-
-export interface AccessTokenPayload {
-  sub: string;
-  role: 'user' | 'admin';
-  sessionId: string;
-  iat?: number;
-  exp?: number;
-}
 
 declare module 'fastify' {
   interface FastifyInstance {

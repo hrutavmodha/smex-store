@@ -1,31 +1,13 @@
-export interface BoostingDispatchConfig {
-  whatsappChannelUrl: string;
-  instagramUrl: string;
-  whatsappDirectPhone?: string;
-}
+import {
+  type BoostingDispatchConfig,
+  type BoostingOrderDispatchInput,
+} from '@smex/shared';
 
 export function getDispatchConfig(): BoostingDispatchConfig {
   return {
     whatsappChannelUrl: process.env.NEXT_PUBLIC_SOCIAL_WHATSAPP_CHANNEL || '',
     instagramUrl: process.env.NEXT_PUBLIC_SOCIAL_INSTAGRAM || '',
     whatsappDirectPhone: process.env.NEXT_PUBLIC_BOOSTING_WHATSAPP_PHONE,
-  };
-}
-
-export interface BoostingOrderDispatchInput {
-  orderRef: string;
-  customerIgn: string;
-  serverId?: string | null;
-  startingRank: string;
-  targetRank: string;
-  startingStars?: number;
-  targetStars?: number;
-  pricingMode?: string;
-  totalPriceInr: string | number;
-  addons?: {
-    rolePriority?: string;
-    restrictedHeroPool?: string[];
-    duoPlayWithBooster?: boolean;
   };
 }
 

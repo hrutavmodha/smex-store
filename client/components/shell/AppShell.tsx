@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Navbar, type UserProfile } from './Navbar';
+import React, { useState, useEffect, Suspense } from 'react';
+import { Navbar } from './Navbar';
+import { type UserProfile } from '@smex/shared';
 import { Footer } from './Footer';
 import { CookieConsentBanner } from './CookieConsentBanner';
 import { AuthModal, type AuthView } from '../auth/AuthModal';
@@ -87,11 +88,13 @@ export function AppShell({ children }: AppShellProps) {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <Navbar
-        user={user}
-        onLogout={handleLogout}
-        onOpenAuthModal={(view) => handleOpenAuth(view || 'login')}
-      />
+      <Suspense fallback={<div className="h-16 w-full bg-bg-surface" />}>
+        <Navbar
+          user={user}
+          onLogout={handleLogout}
+          onOpenAuthModal={(view) => handleOpenAuth(view || 'login')}
+        />
+      </Suspense>
       <main className="flex-1">
         {children}
       </main>

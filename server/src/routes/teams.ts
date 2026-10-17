@@ -1,8 +1,11 @@
 import { type FastifyPluginAsync, type FastifyReply } from 'fastify';
 import { z } from 'zod';
+import {
+  type AccessTokenPayload,
+  STANDARDIZED_ROLES,
+} from '@smex/shared';
 import { TeamService } from '../services/team.service.js';
 import { TeamJoinService } from '../services/team-join.service.js';
-import { type AccessTokenPayload } from '../plugins/auth.js';
 
 const createTeamSchema = z.object({
   name: z.string().trim().min(2, 'Name must be at least 2 characters').max(50, 'Name cannot exceed 50 characters'),
@@ -19,9 +22,6 @@ const updateTeamSchema = z.object({
   status: z.enum(['open', 'closed']).optional(),
   description: z.string().trim().max(1000).optional(),
 });
-
-export const STANDARDIZED_ROLES = ['Roam', 'Hyper', 'Exp', 'Gold', 'Mid'] as const;
-export type StandardizedRole = (typeof STANDARDIZED_ROLES)[number];
 
 const joinRequestSchema = z.object({
   playerIgn: z.string().trim().min(1, 'In-game name is required').max(50),

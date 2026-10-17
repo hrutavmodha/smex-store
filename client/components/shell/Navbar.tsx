@@ -21,6 +21,7 @@ import {
 import { fetchWithAuth } from '../../lib/api';
 import { NotificationCenter } from '../notifications/NotificationCenter';
 import { UniversalSearchModal } from '../search/UniversalSearchModal';
+import { type UserProfile } from '@smex/shared';
 
 export const NAV_LINKS = [
   { href: '/tournaments', label: 'Tournaments' },
@@ -33,15 +34,6 @@ export const NAV_LINKS = [
 
 export type ThemeMode = 'dark' | 'amoled' | 'light';
 export type DensityMode = 'compact' | 'comfortable' | 'spacious';
-
-export interface UserProfile {
-  uid: string;
-  email: string;
-  ign: string;
-  avatarPreset?: string;
-  emailVerified: boolean;
-  role?: string;
-}
 
 export interface NavbarProps {
   user?: UserProfile | null;

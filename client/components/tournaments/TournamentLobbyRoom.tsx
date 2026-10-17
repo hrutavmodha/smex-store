@@ -2,16 +2,8 @@
 
 import React, { useState } from 'react';
 import { Trophy, Users, ShieldAlert, CheckCircle2 } from 'lucide-react';
-import { type MatchNodeData } from './BracketVisualizer';
+import { type MatchNodeData, type ParticipantItem } from '@smex/shared';
 import { fetchWithAuth } from '../../lib/api';
-
-export interface ParticipantItem {
-  id: string;
-  teamId: string;
-  teamName?: string;
-  teamTag?: string;
-  seed?: number;
-}
 
 export interface TournamentLobbyRoomProps {
   tournamentId: string;

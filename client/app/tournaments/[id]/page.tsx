@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Trophy, Swords, ArrowLeft, Users, Calendar, IndianRupee } from 'lucide-react';
-import { BracketVisualizer, type MatchNodeData } from '../../../components/tournaments/BracketVisualizer';
-import { TournamentLobbyRoom, type ParticipantItem } from '../../../components/tournaments/TournamentLobbyRoom';
+import { type MatchNodeData, type ParticipantItem } from '@smex/shared';
+import { BracketVisualizer } from '../../../components/tournaments/BracketVisualizer';
+import { TournamentLobbyRoom } from '../../../components/tournaments/TournamentLobbyRoom';
 import { fetchWithAuth, getStoredToken } from '../../../lib/api';
 
 export interface TournamentDetailData {
@@ -22,7 +23,7 @@ export interface TournamentDetailData {
   participants?: ParticipantItem[];
 }
 
-export default function TournamentDetailPage() {
+function TournamentDetailContent() {
   const params = useParams();
   const id = params?.id as string;
 
@@ -214,3 +215,18 @@ export default function TournamentDetailPage() {
     </div>
   );
 }
+
+export default function TournamentDetailPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#07090E] p-6 text-sm text-[#8FA39C] flex items-center justify-center">
+          Loading tournament...
+        </div>
+      }
+    >
+      <TournamentDetailContent />
+    </Suspense>
+  );
+}
+

@@ -2,7 +2,8 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import React from 'react';
 import { render, fireEvent, waitFor, cleanup, act } from '@testing-library/react';
 import TournamentsPage from '../app/tournaments/page';
-import { BracketVisualizer, type MatchNodeData } from '../components/tournaments/BracketVisualizer';
+import { type MatchNodeData } from '@smex/shared';
+import { BracketVisualizer } from '../components/tournaments/BracketVisualizer';
 import { TournamentLobbyRoom } from '../components/tournaments/TournamentLobbyRoom';
 
 import tournamentsPageSource from '../app/tournaments/page.tsx?raw';

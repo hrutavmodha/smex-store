@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import { useParams } from 'next/navigation';
 import { fetchMarketplaceListingById } from '../../../lib/marketplace/api';
 import type { MarketplaceListingItem } from '@smex/shared';
@@ -8,7 +8,7 @@ import { ListingDetailView } from '../../../components/marketplace/ListingDetail
 import { Loader2, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 
-export default function MarketplaceDetailPage() {
+function MarketplaceDetailContent() {
   const params = useParams();
   const id = params?.id as string;
 
@@ -73,5 +73,25 @@ export default function MarketplaceDetailPage() {
         )}
       </div>
     </main>
+  );
+}
+
+export default function MarketplaceDetailPage() {
+  return (
+    <Suspense
+      fallback={
+        <main
+          className="min-h-screen py-10 px-4 sm:px-6 lg:px-8 flex items-center justify-center"
+          style={{ backgroundColor: '#000000' }}
+        >
+          <div className="py-24 flex flex-col items-center justify-center gap-3 text-[#8FA39C]">
+            <Loader2 className="w-8 h-8 animate-spin text-[#1FAE7A]" />
+            <span className="text-sm">Loading listing details...</span>
+          </div>
+        </main>
+      }
+    >
+      <MarketplaceDetailContent />
+    </Suspense>
   );
 }

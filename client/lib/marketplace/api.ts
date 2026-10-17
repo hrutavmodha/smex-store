@@ -3,22 +3,24 @@ import type {
   MarketplaceListingItem,
   GetListingsParams,
   GetListingsResponse,
+  CreateListingPayload,
 } from '@smex/shared';
 
 export async function fetchMarketplaceListings(
   params: GetListingsParams = {},
   apiBaseUrl: string = ''
 ): Promise<GetListingsResponse> {
+  const { q, gameSlug, rankTier, minPrice, maxPrice, badgeType, sortBy, page, limit } = params;
   const query = new URLSearchParams();
-  if (params.q) query.set('q', params.q);
-  if (params.gameSlug) query.set('gameSlug', params.gameSlug);
-  if (params.rankTier) query.set('rankTier', params.rankTier);
-  if (params.minPrice !== undefined) query.set('minPrice', params.minPrice.toString());
-  if (params.maxPrice !== undefined) query.set('maxPrice', params.maxPrice.toString());
-  if (params.badgeType) query.set('badgeType', params.badgeType);
-  if (params.sortBy) query.set('sortBy', params.sortBy);
-  if (params.page) query.set('page', params.page.toString());
-  if (params.limit) query.set('limit', params.limit.toString());
+  if (q) query.set('q', q);
+  if (gameSlug) query.set('gameSlug', gameSlug);
+  if (rankTier) query.set('rankTier', rankTier);
+  if (minPrice !== undefined) query.set('minPrice', minPrice.toString());
+  if (maxPrice !== undefined) query.set('maxPrice', maxPrice.toString());
+  if (badgeType) query.set('badgeType', badgeType);
+  if (sortBy) query.set('sortBy', sortBy);
+  if (page) query.set('page', page.toString());
+  if (limit) query.set('limit', limit.toString());
 
   const res = await fetch(`${apiBaseUrl}/api/v1/marketplace/listings?${query.toString()}`);
   if (!res.ok) {
@@ -36,16 +38,6 @@ export async function fetchMarketplaceListingById(
     throw new Error('Failed to load listing details.');
   }
   return res.json();
-}
-
-export interface CreateListingPayload {
-  title: string;
-  gameSlug?: string;
-  rankTier: string;
-  priceInr: number;
-  contactChannel: 'whatsapp' | 'instagram';
-  contactHandle: string;
-  proofImages?: { s3Key: string; cdnUrl: string; displayOrder?: number }[];
 }
 
 export async function createMarketplaceListing(

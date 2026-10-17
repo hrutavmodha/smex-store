@@ -2,8 +2,8 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import React from 'react';
 import { render, fireEvent, waitFor, cleanup } from '@testing-library/react';
 import { TeamCard } from '../components/teams/TeamCard';
-import type { TeamCardData } from '@smex/shared';
-import { TeamDetailModal, type RosterMember, type JoinRequestItem } from '../components/teams/TeamDetailModal';
+import type { TeamCardData, RosterMember, JoinRequestItem } from '@smex/shared';
+import { TeamDetailModal } from '../components/teams/TeamDetailModal';
 import TeamsPage from '../app/teams/page';
 
 import teamCardSource from '../components/teams/TeamCard.tsx?raw';

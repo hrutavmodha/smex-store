@@ -3,8 +3,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Search, Plus, Shield, Users, AlertCircle, X } from 'lucide-react';
 import { TeamCard } from '../../components/teams/TeamCard';
-import type { TeamCardData } from '@smex/shared';
-import { TeamDetailModal, type RosterMember, type JoinRequestItem } from '../../components/teams/TeamDetailModal';
+import type { TeamCardData, RosterMember, JoinRequestItem } from '@smex/shared';
+import { TeamDetailModal } from '../../components/teams/TeamDetailModal';
 import { fetchWithAuth } from '../../lib/api';
 
 export default function TeamsPage() {

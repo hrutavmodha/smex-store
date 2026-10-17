@@ -4,13 +4,12 @@ import { BoostingRateService } from '../services/boosting-rate.service.js';
 import {
   calculateBoostingPrice,
   ValidationError,
-  DEFAULT_SURCHARGES,
 } from '../services/boosting-calc.service.js';
 import {
   BoostingDispatchService,
   generateOrderRef,
 } from '../services/boosting-dispatch.service.js';
-import { type AccessTokenPayload } from '../plugins/auth.js';
+import { type AccessTokenPayload, DEFAULT_SURCHARGES } from '@smex/shared';
 
 const calculateSchema = z.object({
   pricingMode: z.enum(['fixed_tier', 'per_star', 'composite']).optional().default('per_star'),

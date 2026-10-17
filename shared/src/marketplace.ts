@@ -57,3 +57,13 @@ export interface GetListingsResponse {
   limit: number;
   totalPages: number;
 }
+
+export interface CreateListingPayload {
+  title: string;
+  gameSlug?: string;
+  rankTier: string;
+  priceInr: number;
+  contactChannel: ContactChannel;
+  contactHandle: string;
+  proofImages?: ProofImageItem[];
+}

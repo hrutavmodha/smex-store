@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { eq, and } from 'drizzle-orm';
 import { users, profiles } from '../db/schema/users.js';
 import { sessions } from '../db/schema/sessions.js';
-import { type AccessTokenPayload } from '../plugins/auth.js';
+import { type AccessTokenPayload } from '@smex/shared';
 import { hashPassword, verifyPassword, passwordSchema } from '../utils/crypto.js';
 import { parseDeviceMetadata } from '../utils/fingerprint.js';
 import { SessionService } from '../services/session.service.js';

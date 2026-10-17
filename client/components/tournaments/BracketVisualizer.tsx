@@ -3,36 +3,16 @@
 import React, { useState, useEffect } from 'react';
 import { Trophy, ShieldAlert, Crown } from 'lucide-react';
 
-export interface MatchNodeData {
-  id: string;
-  roundNumber: number;
-  matchOrder: number;
-  bracketType?: 'upper' | 'lower' | 'grand_final' | string;
-  teamAId: string | null;
-  teamBId: string | null;
-  teamAName?: string | null;
-  teamBName?: string | null;
-  teamAScore: number;
-  teamBScore: number;
-  winnerId: string | null;
-  status: 'scheduled' | 'live' | 'completed' | 'bye';
-}
-
-export interface BracketUpdatePayload {
-  matchId: string;
-  roundNumber?: number;
-  matchOrder?: number;
-  teamAScore?: number;
-  teamBScore?: number;
-  winnerId?: string | null;
-  status?: 'scheduled' | 'live' | 'completed' | 'bye';
-  nextMatchId?: string | null;
-}
+import {
+  type MatchNodeData,
+  type BracketUpdatePayload,
+  type TournamentFormat,
+} from '@smex/shared';
 
 export interface BracketVisualizerProps {
   tournamentId: string;
   initialMatches: MatchNodeData[];
-  format?: 'single_elimination' | 'double_elimination' | 'round_robin';
+  format?: TournamentFormat;
   onMatchSelect?: (match: MatchNodeData) => void;
 }
 

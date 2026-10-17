@@ -28,7 +28,7 @@ export interface DeviceSession {
   lastActiveAt?: string;
 }
 
-export function DeviceManagementDashboard() {
+export default function DeviceManagementDashboard() {
   const [sessions, setSessions] = useState<DeviceSession[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -276,5 +276,3 @@ export function DeviceManagementDashboard() {
     </div>
   );
 }
-
-export default DeviceManagementDashboard;

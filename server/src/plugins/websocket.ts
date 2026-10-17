@@ -2,7 +2,7 @@ import { type FastifyPluginAsync, type FastifyBaseLogger } from 'fastify';
 import fp from 'fastify-plugin';
 import fastifyWebsocket, { type WebSocket } from '@fastify/websocket';
 import crypto from 'node:crypto';
-import { type AccessTokenPayload } from './auth.js';
+import { type AccessTokenPayload } from '@smex/shared';
 
 export interface WebSocketClientMeta {
   id: string;

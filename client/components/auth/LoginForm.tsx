@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react';
 import { setStoredToken } from '../../lib/api';
-import type { UserProfile } from '../shell/Navbar';
+import type { UserProfile } from '@smex/shared';
 
 export interface LoginFormProps {
   onSuccess?: (user?: UserProfile) => void;

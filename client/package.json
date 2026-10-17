@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run --config ../vitest.config.ts --project client"
+    "test": "vitest run --config ../vitest.config.ts --project client",
+    "bundle:log": "node ../scripts/bundle-logger.js"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.104.1",

@@ -1,6 +1,7 @@
 import { type FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
-import { SearchService, type SearchCategory } from '../services/search.service.js';
+import { SearchService } from '../services/search.service.js';
+import { type SearchCategory } from '@smex/shared';
 import { searchRateLimitConfig } from '../plugins/rate-limit.js';
 
 function formatRfc7807(
