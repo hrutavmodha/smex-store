@@ -32,37 +32,47 @@ describe('Milestone 9: Boosting Rate Overrides & Announcements (LLT 2.5 Tests 17
 
     assert.ok(rateRow, 'Must have at least one per_star rate row');
 
-    // Seed Redis cache
-    await app.redis.set(REDIS_BOOSTING_RATES_KEY, JSON.stringify([rateRow]));
-    const cacheBefore = await app.redis.get(REDIS_BOOSTING_RATES_KEY);
-    assert.ok(cacheBefore, 'Cache must be populated before update');
+    const originalPrice = rateRow.priceInr;
 
-    // Admin updates rate to 28.00
-    const res = await app.inject({
-      method: 'PATCH',
-      url: `/api/v1/admin/boosting/rates/${rateRow.id}`,
-      headers: {
-        authorization: `Bearer ${adminToken}`,
-      },
-      payload: {
-        priceInr: 28.0,
-      },
-    });
+    try {
+      // Seed Redis cache
+      await app.redis.set(REDIS_BOOSTING_RATES_KEY, JSON.stringify([rateRow]));
+      const cacheBefore = await app.redis.get(REDIS_BOOSTING_RATES_KEY);
+      assert.ok(cacheBefore, 'Cache must be populated before update');
 
-    assert.equal(res.statusCode, 200);
-    const body = JSON.parse(res.payload);
-    assert.equal(Number(body.priceInr), 28.0);
+      // Admin updates rate to 28.00
+      const res = await app.inject({
+        method: 'PATCH',
+        url: `/api/v1/admin/boosting/rates/${rateRow.id}`,
+        headers: {
+          authorization: `Bearer ${adminToken}`,
+        },
+        payload: {
+          priceInr: 28.0,
+        },
+      });
 
-    // Verify rate updated in DB
-    const [dbRow] = await app.db
-      .select()
-      .from(boostingRates)
-      .where(eq(boostingRates.id, rateRow.id));
-    assert.equal(Number(dbRow.priceInr), 28.0);
+      assert.equal(res.statusCode, 200);
+      const body = JSON.parse(res.payload);
+      assert.equal(Number(body.priceInr), 28.0);
 
-    // Verify Redis cache key was invalidated
-    const cacheAfter = await app.redis.get(REDIS_BOOSTING_RATES_KEY);
-    assert.equal(cacheAfter, null, 'Active rates cache must be cleared upon update');
+      // Verify rate updated in DB
+      const [dbRow] = await app.db
+        .select()
+        .from(boostingRates)
+        .where(eq(boostingRates.id, rateRow.id));
+      assert.equal(Number(dbRow.priceInr), 28.0);
+
+      // Verify Redis cache key was invalidated
+      const cacheAfter = await app.redis.get(REDIS_BOOSTING_RATES_KEY);
+      assert.equal(cacheAfter, null, 'Active rates cache must be cleared upon update');
+    } finally {
+      await app.db
+        .update(boostingRates)
+        .set({ priceInr: originalPrice })
+        .where(eq(boostingRates.id, rateRow.id));
+      await app.redis.del(REDIS_BOOSTING_RATES_KEY);
+    }
   });
 
   it('Test 18: Rate override non-positive price rejection', async (t) => {
@@ -107,35 +117,45 @@ describe('Milestone 9: Boosting Rate Overrides & Announcements (LLT 2.5 Tests 17
       .limit(1);
 
     assert.ok(mythicRate);
+    const originalPrice = mythicRate.priceInr;
 
-    // Update Mythic rate to ₹50.00 / star
-    await app.inject({
-      method: 'PATCH',
-      url: `/api/v1/admin/boosting/rates/${mythicRate.id}`,
-      headers: {
-        authorization: `Bearer ${adminToken}`,
-      },
-      payload: {
-        priceInr: 50.0,
-      },
-    });
+    try {
+      // Update Mythic rate to ₹50.00 / star
+      await app.inject({
+        method: 'PATCH',
+        url: `/api/v1/admin/boosting/rates/${mythicRate.id}`,
+        headers: {
+          authorization: `Bearer ${adminToken}`,
+        },
+        payload: {
+          priceInr: 50.0,
+        },
+      });
 
-    // Public calculate request: Mythic 0 to 5 stars (5 stars @ 50 = 250)
-    const calcRes = await app.inject({
-      method: 'POST',
-      url: '/api/v1/boosting/calculate',
-      payload: {
-        pricingMode: 'per_star',
-        startingRank: 'Mythic',
-        targetRank: 'Mythic',
-        startingStars: 0,
-        targetStars: 5,
-      },
-    });
+      // Public calculate request: Mythic 0 to 5 stars (5 stars @ 50 = 250)
+      const calcRes = await app.inject({
+        method: 'POST',
+        url: '/api/v1/boosting/calculate',
+        payload: {
+          pricingMode: 'per_star',
+          startingRank: 'Mythic',
+          targetRank: 'Mythic',
+          startingStars: 0,
+          targetStars: 5,
+        },
+      });
 
-    assert.equal(calcRes.statusCode, 200);
-    const calcBody = JSON.parse(calcRes.payload);
-    assert.equal(Number(calcBody.totalPriceInr), 250.0);
+      assert.equal(calcRes.statusCode, 200);
+      const calcBody = JSON.parse(calcRes.payload);
+      assert.equal(Number(calcBody.totalPriceInr), 250.0);
+    } finally {
+      // Restore original rate for test hygiene
+      await app.db
+        .update(boostingRates)
+        .set({ priceInr: originalPrice })
+        .where(eq(boostingRates.id, mythicRate.id));
+      await app.redis.del(REDIS_BOOSTING_RATES_KEY);
+    }
   });
 
   it('Test 20: System announcement persistence in Redis', async (t) => {

@@ -44,7 +44,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 
-COPY --from=builder /app/client/public ./public 2>/dev/null || true
+COPY --from=builder --chown=nextjs:nodejs /app/client/public ./client/public
 
 # Automatically leverage output traces to reduce image size
 COPY --from=builder --chown=nextjs:nodejs /app/client/.next/standalone ./
