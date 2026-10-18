@@ -200,26 +200,36 @@ export class TournamentParticipantService {
         );
 
       // 5. Re-compact seeds of remaining participants sequentially (BUG-M5-003)
-      const remaining = await tx
-        .select()
-        .from(tournamentParticipants)
-        .where(eq(tournamentParticipants.tournamentId, tournamentId))
-        .orderBy(tournamentParticipants.seed, tournamentParticipants.registeredAt);
-
-      for (let i = 0; i < remaining.length; i++) {
-        const newSeed = i + 1;
-        if (remaining[i].seed !== newSeed) {
-          await tx
-            .update(tournamentParticipants)
-            .set({ seed: newSeed })
-            .where(
-              and(
-                eq(tournamentParticipants.tournamentId, tournamentId),
-                eq(tournamentParticipants.teamId, remaining[i].teamId)
-              )
-            );
-        }
-      }
+      await TournamentParticipantService.recompactSeeds(tournamentId, tx);
     });
+  }
+
+  /**
+   * Re-compacts seeds of remaining participants sequentially (1 to N).
+   */
+  static async recompactSeeds(
+    tournamentId: string,
+    db: SmexDatabase | Parameters<Parameters<SmexDatabase['transaction']>[0]>[0]
+  ): Promise<void> {
+    const remaining = await db
+      .select()
+      .from(tournamentParticipants)
+      .where(eq(tournamentParticipants.tournamentId, tournamentId))
+      .orderBy(tournamentParticipants.seed, tournamentParticipants.registeredAt);
+
+    for (let i = 0; i < remaining.length; i++) {
+      const newSeed = i + 1;
+      if (remaining[i].seed !== newSeed) {
+        await db
+          .update(tournamentParticipants)
+          .set({ seed: newSeed })
+          .where(
+            and(
+              eq(tournamentParticipants.tournamentId, tournamentId),
+              eq(tournamentParticipants.teamId, remaining[i].teamId)
+            )
+          );
+      }
+    }
   }
 }

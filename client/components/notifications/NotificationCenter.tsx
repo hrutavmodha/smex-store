@@ -3,12 +3,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Bell, CheckCheck, Inbox, ExternalLink } from 'lucide-react';
-import { fetchWithAuth, getStoredToken } from '../../lib/api';
+import { fetchWithAuth } from '../../lib/api';
 import type { NotificationEnvelope } from '@smex/shared';
 
 export interface NotificationCenterProps {
   user?: {
-    uid: string;
+    uid?: string;
+    id?: string;
     email: string;
     ign?: string;
   } | null;
@@ -20,10 +21,11 @@ export function NotificationCenter({ user }: NotificationCenterProps) {
   const [notifications, setNotifications] = useState<NotificationEnvelope[]>([]);
   const [unreadCount, setUnreadCount] = useState<number>(0);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const accountId = (user as any)?.id || user?.uid;
 
   // Fetch notifications on mount if user is present
   useEffect(() => {
-    if (!user?.uid) return;
+    if (!accountId) return;
 
     let isMounted = true;
     async function loadNotifications() {
@@ -46,15 +48,14 @@ export function NotificationCenter({ user }: NotificationCenterProps) {
     return () => {
       isMounted = false;
     };
-  }, [user?.uid]);
+  }, [accountId]);
 
   // Real-time WebSocket Gateway listener
   useEffect(() => {
-    if (!user?.uid) return;
+    if (!accountId) return;
 
     const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:3001';
-    const token = getStoredToken();
-    const targetUrl = token ? `${wsUrl}/ws?token=${token}` : `${wsUrl}/ws`;
+    const targetUrl = `${wsUrl}/ws`;
 
     let socket: WebSocket | null = null;
     try {
@@ -63,7 +64,7 @@ export function NotificationCenter({ user }: NotificationCenterProps) {
         socket?.send(
           JSON.stringify({
             action: 'subscribe',
-            channel: `user:${user.uid}`,
+            channel: `user:${accountId}`,
           })
         );
       };
@@ -82,7 +83,7 @@ export function NotificationCenter({ user }: NotificationCenterProps) {
             const rawItem = frame.data || frame;
             const newRecord: NotificationEnvelope = {
               id: rawItem.id || `notif-${Date.now()}`,
-              recipientId: rawItem.recipientId || user.uid,
+              recipientId: rawItem.recipientId || accountId,
               type: rawItem.type || 'system',
               title: rawItem.title || 'New Notification',
               message: rawItem.message || '',
@@ -106,7 +107,7 @@ export function NotificationCenter({ user }: NotificationCenterProps) {
         socket.close();
       }
     };
-  }, [user?.uid]);
+  }, [accountId]);
 
   // Click outside to close dropdown
   useEffect(() => {

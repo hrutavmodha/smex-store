@@ -57,12 +57,8 @@ export function Navbar({ user, onLogout, onOpenAuthModal }: NavbarProps) {
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
   }, []);
 
-  const handleLogout = async () => {
-    try {
-      await fetchWithAuth('/api/v1/auth/logout', { method: 'POST' });
-    } catch {
-      // Ignore network errors on logout dispatch
-    }
+  const handleLogout = () => {
+    void fetchWithAuth('/api/v1/auth/logout', { method: 'POST' }).catch(() => {});
     if (onLogout) {
       onLogout();
     }

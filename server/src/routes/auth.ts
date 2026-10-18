@@ -128,7 +128,9 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
 
       return reply.code(201).send({
         id: newUser.id,
-        uid: inGameId || null,
+        uid: newUser.id,
+        ign: username,
+        avatarPreset: 'preset_default_01',
         email: newUser.email,
         emailVerified: newUser.emailVerified,
         profile: {
@@ -238,7 +240,9 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
         expiresIn: 900,
         user: {
           id: userRecord.id,
-          uid: profileRecord?.inGameId || null,
+          uid: userRecord.id,
+          ign: profileRecord?.username || userRecord.email,
+          avatarPreset: profileRecord?.avatarPreset || 'preset_default_01',
           email: userRecord.email,
           role: userRecord.role,
           emailVerified: userRecord.emailVerified,
@@ -252,10 +256,21 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.post('/api/v1/auth/logout', async (request, reply) => {
     const sessionsToRevoke: Array<{ userId: string; sessionId: string }> = [];
 
-    // 1. Extract from Authorization header (accept expired JWT for logout)
+    // 1. Extract from Authorization header or smex_access_token cookie (accept expired JWT for logout)
     const authHeader = request.headers.authorization;
+    let token: string | undefined;
     if (authHeader?.startsWith('Bearer ')) {
-      const token = authHeader.slice(7);
+      token = authHeader.slice(7);
+    } else if (request.cookies?.['smex_access_token']) {
+      token = request.cookies['smex_access_token'];
+    } else if (request.headers.cookie) {
+      token = request.headers.cookie
+        .split(';')
+        .find((c) => c.trim().startsWith('smex_access_token='))
+        ?.split('=')[1];
+    }
+
+    if (token) {
       try {
         const payload = fastify.jwt.verify<AccessTokenPayload>(token, {
           ignoreExpiration: true,
@@ -424,7 +439,9 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
 
       return reply.code(200).send({
         id: userRecord.id,
-        uid: profileRecord?.inGameId || null,
+        uid: userRecord.id,
+        ign: profileRecord?.username || userRecord.email,
+        avatarPreset: profileRecord?.avatarPreset || 'preset_default_01',
         email: userRecord.email,
         role: userRecord.role,
         emailVerified: userRecord.emailVerified,

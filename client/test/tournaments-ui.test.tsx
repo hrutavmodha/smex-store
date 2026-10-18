@@ -463,26 +463,18 @@ describe('Milestone 5: Client Presentation Tier & Bracket UI Suite (LLT Tests 22
     });
   });
 
-  // Test 26b: TournamentLobbyRoom dispatches authenticated PATCH using smex_auth_token (BUG-M5-005)
-  it('Test 26b: TournamentLobbyRoom dispatches authenticated PATCH using smex_auth_token (BUG-M5-005)', async () => {
-    localStorage.setItem('smex_auth_token', 'test_admin_jwt_999');
-
+  // Test 26b: TournamentLobbyRoom dispatches authenticated PATCH using credentials: include (BUG-M5-005)
+  it('Test 26b: TournamentLobbyRoom dispatches authenticated PATCH using credentials: include (BUG-M5-005)', async () => {
     let capturedUrl = '';
     let capturedMethod = '';
-    let capturedHeaders: Record<string, string> = {};
+    let capturedCredentials: any = null;
     let capturedBody: any = null;
 
     global.fetch = vi.fn().mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
       const urlStr = typeof input === 'string' ? input : input.toString();
       capturedUrl = urlStr;
       capturedMethod = init?.method || 'GET';
-      if (init?.headers) {
-        if (init.headers instanceof Headers) {
-          capturedHeaders = Object.fromEntries(Array.from(init.headers.entries()));
-        } else {
-          capturedHeaders = init.headers as Record<string, string>;
-        }
-      }
+      capturedCredentials = init?.credentials;
       if (init?.body) {
         try {
           capturedBody = JSON.parse(init.body as string);
@@ -518,15 +510,12 @@ describe('Milestone 5: Client Presentation Tier & Bracket UI Suite (LLT Tests 22
 
     expect(capturedUrl).toContain('/api/v1/tournaments/test-tourney/matches/m1-1');
     expect(capturedMethod).toBe('PATCH');
-    const authHeader = capturedHeaders['authorization'] || capturedHeaders['Authorization'];
-    expect(authHeader).toBe('Bearer test_admin_jwt_999');
+    expect(capturedCredentials).toBe('include');
     expect(capturedBody).toEqual({
       teamAScore: 2,
       teamBScore: 0,
       winnerId: 'team-1',
     });
-
-    localStorage.removeItem('smex_auth_token');
   });
 
   // Test 26c: TournamentLobbyRoom preserves selected match operator focus during matches list updates (BUG-M5-009)

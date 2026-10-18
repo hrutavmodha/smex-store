@@ -6,7 +6,7 @@ import { type UserProfile } from '@smex/shared';
 import { Footer } from './Footer';
 import { CookieConsentBanner } from './CookieConsentBanner';
 import { AuthModal, type AuthView } from '../auth/AuthModal';
-import { getStoredToken, setStoredToken, fetchWithAuth } from '../../lib/api';
+import { fetchWithAuth } from '../../lib/api';
 
 export interface AppShellProps {
   children: React.ReactNode;
@@ -20,9 +20,6 @@ export function AppShell({ children }: AppShellProps) {
   useEffect(() => {
     let isMounted = true;
     const bootstrapSession = async () => {
-      const token = getStoredToken();
-      if (!token) return;
-
       try {
         const response = await fetchWithAuth('/api/v1/auth/me');
         if (!isMounted) return;
@@ -31,13 +28,12 @@ export function AppShell({ children }: AppShellProps) {
           setUser({
             uid: data.id || data.uid,
             email: data.email,
-            ign: data.profile?.username || data.username || '',
-            avatarPreset: data.profile?.avatarPreset || 'preset_default_01',
+            ign: data.ign || data.profile?.username || data.username || '',
+            avatarPreset: data.avatarPreset || data.profile?.avatarPreset || 'preset_default_01',
             emailVerified: Boolean(data.emailVerified),
             role: data.role,
           });
         } else if (response.status === 401) {
-          setStoredToken(null);
           setUser(null);
         }
       } catch {
@@ -57,8 +53,8 @@ export function AppShell({ children }: AppShellProps) {
   };
 
   const handleLogout = () => {
+    void fetchWithAuth('/api/v1/auth/logout', { method: 'POST' }).catch(() => {});
     setUser(null);
-    setStoredToken(null);
   };
 
   const handleAuthSuccess = (loggedInUser?: UserProfile) => {
@@ -66,24 +62,21 @@ export function AppShell({ children }: AppShellProps) {
       setUser(loggedInUser);
     }
 
-    const token = getStoredToken();
-    if (token) {
-      void fetchWithAuth('/api/v1/auth/me')
-        .then((res) => (res.ok ? res.json() : null))
-        .then((data) => {
-          if (data) {
-            setUser({
-              uid: data.uid,
-              email: data.email,
-              ign: data.profile.username,
-              avatarPreset: data.profile.avatarPreset,
-              emailVerified: data.emailVerified,
-              role: data.role,
-            });
-          }
-        })
-        .catch(() => {});
-    }
+    void fetchWithAuth('/api/v1/auth/me')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data) {
+          setUser({
+            uid: data.id || data.uid,
+            email: data.email,
+            ign: data.ign || data.profile?.username || data.username || '',
+            avatarPreset: data.avatarPreset || data.profile?.avatarPreset || 'preset_default_01',
+            emailVerified: Boolean(data.emailVerified),
+            role: data.role,
+          });
+        }
+      })
+      .catch(() => {});
   };
 
   return (

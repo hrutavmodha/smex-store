@@ -4,7 +4,6 @@ import { render, fireEvent, waitFor, cleanup } from '@testing-library/react';
 import AdminLayout from '../../app/admin/layout';
 import AdminDashboardPage from '../../app/admin/page';
 import AdminRatesPage from '../../app/admin/rates/page';
-import { TOKEN_STORAGE_KEY } from '../../lib/api';
 import { mockRouter } from '../mocks/navigation';
 
 describe('Milestone 9: Client Presentation UI & Admin Guard (LLT 2.6 Tests 22-25)', () => {
@@ -24,8 +23,18 @@ describe('Milestone 9: Client Presentation UI & Admin Guard (LLT 2.6 Tests 22-25
   });
 
   it('Test 22: Unauthenticated client route guard redirect', async () => {
-    // Explicitly unauthenticated: no token in localStorage
-    localStorage.removeItem(TOKEN_STORAGE_KEY);
+    // Explicitly unauthenticated: /api/v1/auth/me returns 401
+    global.fetch = vi.fn().mockImplementation((input: any) => {
+      const url = typeof input === 'string' ? input : input.toString();
+      if (url.includes('/api/v1/auth/me')) {
+        return Promise.resolve({
+          ok: false,
+          status: 401,
+          json: () => Promise.resolve({ error: 'Unauthorized' }),
+        });
+      }
+      return Promise.resolve({ ok: false, status: 404 });
+    });
 
     render(
       <AdminLayout>
@@ -39,7 +48,6 @@ describe('Milestone 9: Client Presentation UI & Admin Guard (LLT 2.6 Tests 22-25
   });
 
   it('Test 23: Non-admin client route guard 403 screen', async () => {
-    localStorage.setItem(TOKEN_STORAGE_KEY, 'regular_user_jwt');
 
     global.fetch = vi.fn().mockImplementation((input: any) => {
       const url = typeof input === 'string' ? input : input.toString();
@@ -117,8 +125,6 @@ describe('Milestone 9: Client Presentation UI & Admin Guard (LLT 2.6 Tests 22-25
   });
 
   it('Test 25: AMOLED #000000 surface and motion physics compliance', async () => {
-    localStorage.setItem(TOKEN_STORAGE_KEY, 'admin_jwt');
-
     global.fetch = vi.fn().mockImplementation((input: any) => {
       const url = typeof input === 'string' ? input : input.toString();
       if (url.includes('/api/v1/auth/me')) {

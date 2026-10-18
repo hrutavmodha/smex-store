@@ -117,6 +117,34 @@ describe('Milestone 8: Client Notifications and Search UI Suite (LLT Tests 20-25
     });
   });
 
+  it('Test 20b: NotificationCenter subscribes to user private channel using primary id or uid (Bug 2)', async () => {
+    global.fetch = vi.fn().mockImplementation((url: string) => {
+      if (url.includes('/api/v1/notifications')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve({ unreadCount: 0, notifications: [] }),
+        });
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
+    });
+
+    render(
+      <NotificationCenter user={{ id: 'user-uuid-999', email: 'account@smexstore.com' } as any} />
+    );
+
+    await waitFor(() => {
+      const ws = MockWebSocket.instances[0];
+      expect(ws).toBeDefined();
+      expect(ws.send).toHaveBeenCalledWith(
+        JSON.stringify({
+          action: 'subscribe',
+          channel: 'user:user-uuid-999',
+        })
+      );
+    });
+  });
+
   it('Test 21: Notification center empty state illustration renders when count is 0', async () => {
     global.fetch = vi.fn().mockImplementation((url: string) => {
       if (url.includes('/api/v1/notifications')) {

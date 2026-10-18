@@ -7,6 +7,7 @@ import { tournamentParticipants, tournaments } from '../db/schema/tournaments.js
 import { activityLogs } from '../db/schema/activity.js';
 import { SessionService } from './session.service.js';
 import { NotificationService } from './notification.service.js';
+import { TournamentParticipantService } from './tournament-participant.service.js';
 import type { WsGatewayDecorator } from '../plugins/websocket.js';
 
 export interface UserModerationErrorOptions {
@@ -259,12 +260,19 @@ export class UserModerationService {
         )
       );
 
+    const affectedTournamentIds = new Set<string>();
     let withdrawnCount = 0;
     for (const p of participants) {
       await db
         .delete(tournamentParticipants)
         .where(eq(tournamentParticipants.id, p.participantId));
       withdrawnCount++;
+      affectedTournamentIds.add(p.tournamentId);
+    }
+
+    // Re-compact seeds sequentially for all affected tournaments (Bug 5)
+    for (const tourneyId of affectedTournamentIds) {
+      await TournamentParticipantService.recompactSeeds(tourneyId, db);
     }
 
     // 3. Fetch all team members to deliver disbandment notification
@@ -295,7 +303,10 @@ export class UserModerationService {
       );
     }
 
-    // 4. Record administrative intervention in activity_logs
+    // 4. Purge roster records from team_members for disbanded squad
+    await db.delete(teamMembers).where(eq(teamMembers.teamId, teamId));
+
+    // 5. Record administrative intervention in activity_logs
     await db.insert(activityLogs).values({
       userId: adminId,
       actionType: 'admin_team_disband',

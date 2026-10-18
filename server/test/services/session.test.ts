@@ -101,6 +101,9 @@ describe('Dual-Token Session Pipeline & RFC 6265bis Compliance (LLT 2.2)', () =>
     assert.equal(res.statusCode, 200);
     const body = JSON.parse(res.body);
     assert.equal(body.id, registeredUserId);
+    assert.equal(body.uid, registeredUserId);
+    assert.equal(body.ign, testUser.username);
+    assert.equal(body.avatarPreset, 'preset_default_01');
     assert.equal(body.email, testUser.email.toLowerCase());
     assert.equal(body.sessionId, sessionId);
     assert.equal(body.profile.username, testUser.username);

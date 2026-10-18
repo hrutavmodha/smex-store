@@ -147,9 +147,20 @@ const websocketPlugin: FastifyPluginAsync = async (fastify) => {
     let userId: string | null = null;
     let sessionId: string | null = null;
 
-    if (query.token && fastify.jwt) {
+    const cookieToken =
+      req.cookies?.['smex_access_token'] ||
+      (req.headers.cookie &&
+        req.headers.cookie
+          .split(';')
+          .map((c) => c.trim())
+          .find((c) => c.startsWith('smex_access_token='))
+          ?.split('=')[1]);
+
+    const token = query.token || cookieToken;
+
+    if (token && fastify.jwt) {
       try {
-        const decoded = fastify.jwt.verify<AccessTokenPayload>(query.token);
+        const decoded = fastify.jwt.verify<AccessTokenPayload>(token);
         userId = decoded.sub;
         sessionId = decoded.sessionId;
       } catch {

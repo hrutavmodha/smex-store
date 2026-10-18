@@ -401,14 +401,14 @@ const tournamentsRoutes: FastifyPluginAsync = async (fastify) => {
             .send(formatRfc7807(404, 'TOURNAMENT_NOT_FOUND', 'Not Found', 'Tournament not found'));
         }
 
-        // BUG-M5-006: Guard against bracket generation on ongoing or completed tournaments
-        if (tourney.status !== 'registration_open' && tourney.status !== 'upcoming') {
+        // Guard against bracket generation on invalid tournament state (Bug 6)
+        if (tourney.status !== 'registration_open') {
           return reply.code(400).send(
             formatRfc7807(
               400,
               'INVALID_TOURNAMENT_STATE',
               'Bad Request',
-              `Cannot generate brackets for tournament in '${tourney.status}' state`
+              `Cannot generate brackets for tournament in '${tourney.status}' state. Status must be 'registration_open'.`
             )
           );
         }
@@ -450,15 +450,13 @@ const tournamentsRoutes: FastifyPluginAsync = async (fastify) => {
           fastify.db
         );
 
-        // Transition tournament status to ongoing if it was registration_open
-        if (tourney.status === 'registration_open') {
-          await TournamentLifecycleService.transitionStatus(
-            id,
-            'ongoing',
-            fastify.db,
-            fastify.redis
-          );
-        }
+        // Transition tournament status to ongoing
+        await TournamentLifecycleService.transitionStatus(
+          id,
+          'ongoing',
+          fastify.db,
+          fastify.redis
+        );
 
         return reply.code(200).send({
           tournamentId: id,

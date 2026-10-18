@@ -391,4 +391,82 @@ describe('Join Request Submission Suite (LLT 2.3)', () => {
     const joinBody = JSON.parse(joinRes.body);
     assert.equal(joinBody.code, 'TEAM_CLOSED');
   });
+
+  test('Test 17: Non-pending join request resolution on full roster returns 400 REQUEST_ALREADY_RESOLVED without state override (Bug 4)', async (t) => {
+    const app = await build(t);
+    const { user: captain, token: captToken } = await createVerifiedUser(app, 'b4_capt');
+    const { user: applicant1, token: app1Token } = await createVerifiedUser(app, 'b4_app1');
+    const { user: applicant2, token: app2Token } = await createVerifiedUser(app, 'b4_app2');
+
+    // 1. Captain creates team with memberCap: 2 (captain takes 1 slot, 1 remaining)
+    const createRes = await app.inject({
+      method: 'POST',
+      url: '/api/v1/teams',
+      headers: { authorization: `Bearer ${captToken}` },
+      payload: {
+        name: `Cap2Squad_${Date.now()}`,
+        tag: 'CAP2',
+        memberCap: 2,
+      },
+    });
+    assert.equal(createRes.statusCode, 201);
+    const team = JSON.parse(createRes.body).team;
+
+    // 2. Applicant 1 submits join request
+    const join1Res = await app.inject({
+      method: 'POST',
+      url: `/api/v1/teams/${team.id}/join-requests`,
+      headers: { authorization: `Bearer ${app1Token}` },
+      payload: { playerIgn: 'App1IGN', playerRole: 'Mid' },
+    });
+    assert.equal(join1Res.statusCode, 201);
+    const req1 = JSON.parse(join1Res.body).joinRequest;
+
+    // 3. Applicant 1 cancels their join request (status -> 'cancelled')
+    const cancelRes = await app.inject({
+      method: 'DELETE',
+      url: `/api/v1/teams/${team.id}/join-requests/${req1.id}`,
+      headers: { authorization: `Bearer ${app1Token}` },
+    });
+    assert.equal(cancelRes.statusCode, 200);
+
+    // 4. Applicant 2 submits join request and captain accepts it, filling the roster (2/2)
+    const join2Res = await app.inject({
+      method: 'POST',
+      url: `/api/v1/teams/${team.id}/join-requests`,
+      headers: { authorization: `Bearer ${app2Token}` },
+      payload: { playerIgn: 'App2IGN', playerRole: 'Gold' },
+    });
+    assert.equal(join2Res.statusCode, 201);
+    const req2 = JSON.parse(join2Res.body).joinRequest;
+
+    const accept2Res = await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/teams/${team.id}/join-requests/${req2.id}`,
+      headers: { authorization: `Bearer ${captToken}` },
+      payload: { action: 'accept' },
+    });
+    assert.equal(accept2Res.statusCode, 200);
+
+    // 5. Captain attempts to accept the already-cancelled join request from Applicant 1 on full squad
+    const resolveCancelledRes = await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/teams/${team.id}/join-requests/${req1.id}`,
+      headers: { authorization: `Bearer ${captToken}` },
+      payload: { action: 'accept' },
+    });
+
+    // Must return 400 REQUEST_ALREADY_RESOLVED, NOT 409 TEAM_ROSTER_FULL
+    assert.equal(resolveCancelledRes.statusCode, 400);
+    const resolveBody = JSON.parse(resolveCancelledRes.body);
+    assert.equal(resolveBody.code, 'REQUEST_ALREADY_RESOLVED');
+
+    // 6. Verify in DB that request 1 remains 'cancelled' and was NOT overwritten to 'rejected'
+    const [dbReq1] = await app.db
+      .select()
+      .from(teamJoinRequests)
+      .where(eq(teamJoinRequests.id, req1.id));
+    assert.ok(dbReq1);
+    assert.equal(dbReq1.status, 'cancelled');
+  });
 });

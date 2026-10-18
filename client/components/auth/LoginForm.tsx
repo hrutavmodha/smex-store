@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import { Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react';
-import { setStoredToken } from '../../lib/api';
 import type { UserProfile } from '@smex/shared';
 
 export interface LoginFormProps {
@@ -64,9 +63,6 @@ export function LoginForm({
       }
 
       const data = await response.json().catch(() => ({}));
-      if (data.accessToken) {
-        setStoredToken(data.accessToken);
-      }
 
       if (onSuccess) {
         onSuccess(data.user);

@@ -444,4 +444,64 @@ describe('Participant Registration and Capacity Suite (LLT 2.2)', () => {
     const body3 = JSON.parse(gen3.body);
     assert.equal(body3.code, 'INVALID_TOURNAMENT_STATE');
   });
+
+  // Test 8d: Bracket generation rejected on upcoming tournaments with 400 INVALID_TOURNAMENT_STATE (Bug 6)
+  test('Test 8d: Bracket generation rejected on upcoming tournaments with 400 INVALID_TOURNAMENT_STATE (Bug 6)', async (t) => {
+    const app = await build(t);
+    const { user: admin } = await createVerifiedUser(app, 'tr_admin8d');
+    const adminToken = createAdminToken(app, admin.id);
+
+    // Create tournament in default 'upcoming' state
+    const createRes = await app.inject({
+      method: 'POST',
+      url: '/api/v1/tournaments',
+      headers: { authorization: `Bearer ${adminToken}` },
+      payload: {
+        title: `UpcomingBracketTourney_${Date.now()}`,
+        maxTeams: 4,
+        format: 'single_elimination',
+        startTime: new Date(Date.now() + 86400000).toISOString(),
+      },
+    });
+    assert.equal(createRes.statusCode, 201);
+    const tournament = JSON.parse(createRes.body);
+    assert.equal(tournament.status, 'upcoming');
+
+    // Register 2 teams directly into participants table
+    for (let i = 1; i <= 2; i++) {
+      const { user: cap } = await createVerifiedUser(app, `tr_cap8d_${i}`);
+      const { team } = await TeamService.createTeam(
+        cap.id,
+        { name: `Squad_8d_${i}_${Date.now()}`, tag: `S8D${i}` },
+        app.db
+      );
+      await app.db.insert(tournamentParticipants).values({
+        tournamentId: tournament.id,
+        teamId: team.id,
+        seed: i,
+      });
+    }
+
+    // Attempting bracket generation on upcoming tournament must be rejected with 400 INVALID_TOURNAMENT_STATE
+    const genRes = await app.inject({
+      method: 'POST',
+      url: `/api/v1/tournaments/${tournament.id}/bracket/generate`,
+      headers: { authorization: `Bearer ${adminToken}` },
+    });
+
+    assert.equal(genRes.statusCode, 400);
+    const genBody = JSON.parse(genRes.body);
+    assert.equal(genBody.code, 'INVALID_TOURNAMENT_STATE');
+    assert.ok(
+      genBody.detail.includes('Status must be \'registration_open\'') ||
+      genBody.detail.includes('Cannot generate brackets for tournament in \'upcoming\' state')
+    );
+
+    // Verify tournament remains in 'upcoming' state in DB
+    const [dbTourney] = await app.db
+      .select({ status: tournaments.status })
+      .from(tournaments)
+      .where(eq(tournaments.id, tournament.id));
+    assert.equal(dbTourney.status, 'upcoming');
+  });
 });

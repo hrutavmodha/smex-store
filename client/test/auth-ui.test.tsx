@@ -467,7 +467,7 @@ describe('Milestone 3: Client Authentication & UI Shell Suite (LLT Tests 24-29)'
     globalThis.fetch = originalFetch;
   });
 
-  it('Test 25c: LoginForm persists access token to localStorage and triggers onSuccess (BUG-M3-003)', async () => {
+  it('Test 25c: LoginForm triggers onSuccess without storing auth token in localStorage (cookie-only auth)', async () => {
     let capturedBody: any = null;
     let capturedOptions: any = null;
     let successUser: any = null;
@@ -514,7 +514,7 @@ describe('Milestone 3: Client Authentication & UI Shell Suite (LLT Tests 24-29)'
 
     await waitFor(() => {
       expect(capturedOptions?.credentials).toBe('include');
-      expect(localStorage.getItem('smex_auth_token')).toBe('test_access_jwt_789');
+      expect(localStorage.getItem('smex_auth_token')).toBeNull();
       expect(successUser).toEqual({
         id: 'usr_login_1',
         email: 'player@smexstore.com',
@@ -523,13 +523,10 @@ describe('Milestone 3: Client Authentication & UI Shell Suite (LLT Tests 24-29)'
       });
     });
 
-    localStorage.removeItem('smex_auth_token');
     globalThis.fetch = originalFetch;
   });
 
-  it('Test 26c: AppShell bootstraps session via /api/v1/auth/me when token exists and updates state (BUG-M3-003)', async () => {
-    localStorage.setItem('smex_auth_token', 'bootstrap_token_456');
-
+  it('Test 26c: AppShell bootstraps session via /api/v1/auth/me relying on HTTP cookies and updates state (BUG-M3-003)', async () => {
     let meAuthHeader: string | null = null;
     let meCredentials: any = null;
 
@@ -567,20 +564,60 @@ describe('Milestone 3: Client Authentication & UI Shell Suite (LLT Tests 24-29)'
     );
 
     await waitFor(() => {
-      expect(meAuthHeader).toBe('Bearer bootstrap_token_456');
+      expect(meAuthHeader).toBeNull();
       expect(meCredentials).toBe('include');
       const profileButton = container.querySelector('[data-testid="user-profile-button"]');
       expect(profileButton).toBeTruthy();
       expect(container.querySelector('[data-testid="user-ign"]')?.textContent).toBe('CaptainSmex');
+      expect(container.querySelector('[data-testid="user-avatar-badge"]')?.getAttribute('data-preset')).toBe('preset_default_01');
     });
 
-    localStorage.removeItem('smex_auth_token');
     globalThis.fetch = originalFetch;
   });
 
-  it('Test 27c: DeviceManagementDashboard attaches Authorization header and credentials (BUG-M3-003)', async () => {
-    localStorage.setItem('smex_auth_token', 'devices_dashboard_token');
+  it('Test 26d: AppShell bootstraps user IGN and avatarPreset from root properties of /api/v1/auth/me (Bug 3)', async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = async (url: any, options: any) => {
+      const urlStr = String(url);
+      if (urlStr.includes('/api/v1/auth/me')) {
+        return {
+          ok: true,
+          json: async () => ({
+            id: 'usr_uuid_101',
+            uid: 'usr_uuid_101',
+            ign: 'ViperStrike',
+            avatarPreset: 'preset_default_03',
+            email: 'viper@smexstore.com',
+            role: 'user',
+            emailVerified: true,
+            sessionId: 'sess_active_2',
+            profile: {
+              username: 'ViperStrike',
+              avatarPreset: 'preset_default_03',
+            },
+          }),
+        } as any;
+      }
+      return originalFetch(url, options);
+    };
 
+    const { container } = render(
+      <AppShell>
+        <div>Content</div>
+      </AppShell>
+    );
+
+    await waitFor(() => {
+      const ignElem = container.querySelector('[data-testid="user-ign"]');
+      expect(ignElem?.textContent).toBe('ViperStrike');
+      const avatarElem = container.querySelector('[data-testid="user-avatar-badge"]');
+      expect(avatarElem?.getAttribute('data-preset')).toBe('preset_default_03');
+    });
+
+    globalThis.fetch = originalFetch;
+  });
+
+  it('Test 27c: DeviceManagementDashboard attaches credentials: include via cookie-only auth (BUG-M3-003)', async () => {
     let sessionsAuthHeader: string | null = null;
     let sessionsCredentials: any = null;
 
@@ -613,13 +650,12 @@ describe('Milestone 3: Client Authentication & UI Shell Suite (LLT Tests 24-29)'
     const { container } = render(<DeviceManagementDashboard />);
 
     await waitFor(() => {
-      expect(sessionsAuthHeader).toBe('Bearer devices_dashboard_token');
+      expect(sessionsAuthHeader).toBeNull();
       expect(sessionsCredentials).toBe('include');
       const cards = container.querySelectorAll('[data-testid="device-session-card"]');
       expect(cards.length).toBe(1);
     });
 
-    localStorage.removeItem('smex_auth_token');
     globalThis.fetch = originalFetch;
   });
 

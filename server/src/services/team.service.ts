@@ -1,4 +1,4 @@
-import { eq, and, sql, desc, or, ilike } from 'drizzle-orm';
+import { eq, and, sql, desc, or, ilike, ne } from 'drizzle-orm';
 import type { SmexDatabase } from '../db/index.js';
 import {
   teams,
@@ -89,7 +89,7 @@ export class TeamService {
       .select({ teamId: teamMembers.teamId })
       .from(teamMembers)
       .innerJoin(teams, eq(teamMembers.teamId, teams.id))
-      .where(and(eq(teamMembers.userId, userId), eq(teams.gameSlug, gameSlug)))
+      .where(and(eq(teamMembers.userId, userId), eq(teams.gameSlug, gameSlug), ne(teams.status, 'disbanded')))
       .limit(1);
 
     if (existingMembership) {

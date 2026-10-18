@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { type UserProfile } from '@smex/shared';
-import { fetchWithAuth, getStoredToken } from './api';
+import { fetchWithAuth } from './api';
 
 export interface UseAuthReturn {
   user: UserProfile | null;
@@ -19,21 +19,22 @@ export function useAuth(): UseAuthReturn {
     let mounted = true;
 
     async function loadUser() {
-      const token = getStoredToken();
-      if (!token) {
-        if (mounted) {
-          setUser(null);
-          setLoading(false);
-        }
-        return;
-      }
-
       try {
         const res = await fetchWithAuth('/api/v1/auth/me');
         if (res.ok) {
           const data = await res.json();
           if (mounted) {
-            setUser(data.user || data);
+            const raw = data.user || data;
+            setUser({
+              uid: raw.uid || raw.id,
+              email: raw.email,
+              ign: raw.ign || raw.profile?.username || raw.username || '',
+              avatarPreset: raw.avatarPreset || raw.profile?.avatarPreset || 'preset_default_01',
+              emailVerified: Boolean(raw.emailVerified),
+              role: raw.role,
+              isBanned: raw.isBanned,
+              banReason: raw.banReason,
+            });
           }
         } else {
           if (mounted) {

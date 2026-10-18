@@ -7,7 +7,7 @@ import { Trophy, Swords, ArrowLeft, Users, Calendar, IndianRupee } from 'lucide-
 import { type MatchNodeData, type ParticipantItem } from '@smex/shared';
 import { BracketVisualizer } from '../../../components/tournaments/BracketVisualizer';
 import { TournamentLobbyRoom } from '../../../components/tournaments/TournamentLobbyRoom';
-import { fetchWithAuth, getStoredToken } from '../../../lib/api';
+import { fetchWithAuth } from '../../../lib/api';
 
 export interface TournamentDetailData {
   id: string;
@@ -36,17 +36,14 @@ function TournamentDetailContent() {
   useEffect(() => {
     let isMounted = true;
     const checkRole = async () => {
-      const token = getStoredToken();
-      if (!token) {
-        if (isMounted) setIsAdmin(false);
-        return;
-      }
       try {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
         const res = await fetchWithAuth(`${apiUrl}/api/v1/auth/me`);
         if (res.ok && isMounted) {
           const data = await res.json();
           setIsAdmin(data.role === 'admin');
+        } else if (isMounted) {
+          setIsAdmin(false);
         }
       } catch {
         if (isMounted) setIsAdmin(false);

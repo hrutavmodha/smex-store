@@ -1,4 +1,4 @@
-import { eq, and, sql, desc } from 'drizzle-orm';
+import { eq, and, sql, desc, ne } from 'drizzle-orm';
 import type { Redis } from 'ioredis';
 import type { SmexDatabase } from '../db/index.js';
 import {
@@ -73,7 +73,7 @@ export class TeamJoinService {
       .select({ teamId: teamMembers.teamId })
       .from(teamMembers)
       .innerJoin(teams, eq(teamMembers.teamId, teams.id))
-      .where(and(eq(teamMembers.userId, applicantId), eq(teams.gameSlug, team.gameSlug)))
+      .where(and(eq(teamMembers.userId, applicantId), eq(teams.gameSlug, team.gameSlug), ne(teams.status, 'disbanded')))
       .limit(1);
 
     if (existingGameMembership) {
@@ -234,6 +234,10 @@ export class TeamJoinService {
         throw createServiceError('Join request not found', 404, 'REQUEST_NOT_FOUND');
       }
 
+      if (joinReq.status !== 'pending') {
+        throw createServiceError(`Request has already been resolved (${joinReq.status})`, 400, 'REQUEST_ALREADY_RESOLVED');
+      }
+
       // If action is accept, check roster capacity first under the lock
       if (action === 'accept') {
         const [countResult] = await tx
@@ -251,10 +255,6 @@ export class TeamJoinService {
 
           throw createServiceError('Team roster is full', 409, 'TEAM_ROSTER_FULL');
         }
-      }
-
-      if (joinReq.status !== 'pending') {
-        throw createServiceError(`Request has already been resolved (${joinReq.status})`, 400, 'REQUEST_ALREADY_RESOLVED');
       }
 
       if (action === 'reject') {
@@ -284,7 +284,7 @@ export class TeamJoinService {
         .select()
         .from(teamMembers)
         .innerJoin(teams, eq(teamMembers.teamId, teams.id))
-        .where(and(eq(teamMembers.userId, joinReq.userId), eq(teams.gameSlug, lockedTeam.gameSlug)))
+        .where(and(eq(teamMembers.userId, joinReq.userId), eq(teams.gameSlug, lockedTeam.gameSlug), ne(teams.status, 'disbanded')))
         .limit(1);
 
       if (otherSquad) {
