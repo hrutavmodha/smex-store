@@ -8,4 +8,7 @@ export default defineConfig({
   sourcemap: true,
   outExtension: () => ({ js: '.mjs' }),
   platform: 'node',
+  deps: {
+    alwaysBundle: ['@smex/shared'],
+  },
 })
