@@ -377,6 +377,14 @@ export class ListingService {
       );
     }
 
+    if (existing.status !== 'active') {
+      throw createListingError(
+        `Cannot edit a listing in '${existing.status}' state`,
+        400,
+        'INVALID_LISTING_STATE'
+      );
+    }
+
     const updates: Partial<typeof marketplaceListings.$inferInsert> = {
       updatedAt: new Date(),
     };
@@ -477,6 +485,20 @@ export class ListingService {
       );
     }
 
+    const VALID_TRANSITIONS: Record<string, string[]> = {
+      active: ['sold', 'deleted'],
+      sold: [], // terminal
+      deleted: [], // terminal
+    };
+
+    if (!isAdmin && !VALID_TRANSITIONS[existing.status]?.includes(status)) {
+      throw createListingError(
+        `Invalid status transition from '${existing.status}' to '${status}'`,
+        400,
+        'INVALID_STATUS_TRANSITION'
+      );
+    }
+
     const [updated] = await db
       .update(marketplaceListings)
       .set({ status, updatedAt: new Date() })
@@ -506,6 +528,14 @@ export class ListingService {
         'You are not authorized to delete this listing',
         403,
         'NOT_LISTING_OWNER'
+      );
+    }
+
+    if (!isAdmin && existing.status !== 'active') {
+      throw createListingError(
+        `Cannot delete a listing in '${existing.status}' state`,
+        400,
+        'INVALID_LISTING_STATE'
       );
     }
 

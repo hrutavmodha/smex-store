@@ -11,6 +11,8 @@ const presignedUrlBodySchema = z.object({
   fileSize: z.number().int().positive('File size must be a positive integer'),
 });
 
+const S3_KEY_REGEX = /^marketplace\/proofs\/[a-zA-Z0-9_-]+\/[a-zA-Z0-9_.-]+\.(jpe?g|png|webp)$/i;
+
 const verifyUploadBodySchema = z.object({
   s3Key: z.string().trim().min(1, 'S3 key is required'),
   expectedMime: z.string().trim().min(1, 'Expected MIME type is required'),
@@ -95,6 +97,30 @@ export const marketplaceUploadsRoutes: FastifyPluginAsync = async (fastify) => {
       }
 
       const { s3Key, expectedMime } = parseResult.data;
+
+      if (!S3_KEY_REGEX.test(s3Key) || s3Key.includes('..')) {
+        return reply.code(400).send({
+          type: 'https://api.smexstore.com/errors/validation-error',
+          title: 'Bad Request',
+          status: 400,
+          detail: 'Invalid S3 key format',
+          code: 'VALIDATION_ERROR',
+        });
+      }
+
+      const userId = request.user.sub;
+      const isAdmin = request.user.role === 'admin';
+      const expectedPrefix = `marketplace/proofs/${userId}/`;
+
+      if (!isAdmin && !s3Key.startsWith(expectedPrefix)) {
+        return reply.code(403).send({
+          type: 'https://api.smexstore.com/errors/forbidden',
+          title: 'Forbidden',
+          status: 403,
+          detail: 'You are not authorized to verify objects outside your upload directory',
+          code: 'UNAUTHORIZED_OBJECT_ACCESS',
+        });
+      }
 
       try {
         const result = await mediaInspectorService.inspectAndVerify(

@@ -37,14 +37,14 @@ describe('Binary Magic Byte Media Inspection Suite (LLT 2.2)', () => {
 
     // 3. Endpoint integration verification
     const app = await build(t);
-    const { token } = await createVerifiedUser(app, 'media_jpeg');
+    const { token, user } = await createVerifiedUser(app, 'media_jpeg');
 
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/marketplace/uploads/verify',
       headers: { authorization: `Bearer ${token}` },
       payload: {
-        s3Key: 'marketplace/proofs/u1/photo.jpg',
+        s3Key: `marketplace/proofs/${user.id}/photo.jpg`,
         expectedMime: 'image/jpeg',
       },
     });
@@ -72,14 +72,14 @@ describe('Binary Magic Byte Media Inspection Suite (LLT 2.2)', () => {
 
     // 3. Endpoint verification
     const app = await build(t);
-    const { token } = await createVerifiedUser(app, 'media_png');
+    const { token, user } = await createVerifiedUser(app, 'media_png');
 
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/marketplace/uploads/verify',
       headers: { authorization: `Bearer ${token}` },
       payload: {
-        s3Key: 'marketplace/proofs/u1/screen.png',
+        s3Key: `marketplace/proofs/${user.id}/screen.png`,
         expectedMime: 'image/png',
       },
     });
@@ -110,14 +110,14 @@ describe('Binary Magic Byte Media Inspection Suite (LLT 2.2)', () => {
 
     // 3. Endpoint verification
     const app = await build(t);
-    const { token } = await createVerifiedUser(app, 'media_webp');
+    const { token, user } = await createVerifiedUser(app, 'media_webp');
 
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/marketplace/uploads/verify',
       headers: { authorization: `Bearer ${token}` },
       payload: {
-        s3Key: 'marketplace/proofs/u1/shot.webp',
+        s3Key: `marketplace/proofs/${user.id}/shot.webp`,
         expectedMime: 'image/webp',
       },
     });
@@ -158,14 +158,14 @@ describe('Binary Magic Byte Media Inspection Suite (LLT 2.2)', () => {
 
     // Endpoint verification
     const app = await build(t);
-    const { token } = await createVerifiedUser(app, 'media_trojan');
+    const { token, user } = await createVerifiedUser(app, 'media_trojan');
 
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/marketplace/uploads/verify',
       headers: { authorization: `Bearer ${token}` },
       payload: {
-        s3Key: 'marketplace/proofs/u1/trojan.png',
+        s3Key: `marketplace/proofs/${user.id}/trojan.png`,
         expectedMime: 'image/png',
       },
     });
@@ -200,14 +200,14 @@ describe('Binary Magic Byte Media Inspection Suite (LLT 2.2)', () => {
 
     // Endpoint verification
     const app = await build(t);
-    const { token } = await createVerifiedUser(app, 'media_trunc');
+    const { token, user } = await createVerifiedUser(app, 'media_trunc');
 
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/marketplace/uploads/verify',
       headers: { authorization: `Bearer ${token}` },
       payload: {
-        s3Key: 'marketplace/proofs/u1/short.png',
+        s3Key: `marketplace/proofs/${user.id}/short.png`,
         expectedMime: 'image/png',
       },
     });
@@ -215,5 +215,58 @@ describe('Binary Magic Byte Media Inspection Suite (LLT 2.2)', () => {
     assert.equal(res.statusCode, 422);
     const body = JSON.parse(res.payload);
     assert.equal(body.code, 'INVALID_IMAGE_PAYLOAD');
+  });
+
+  it('Test 10b: Tenant namespace authorization & IDOR defense (BUG-M7-001)', async (t) => {
+    const app = await build(t);
+    const { token: userAToken, user: userA } = await createVerifiedUser(app, 'media_user_a');
+    const { token: userBToken } = await createVerifiedUser(app, 'media_user_b');
+
+    const pngBuffer = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52]);
+    s3Mock.on(GetObjectCommand).resolves({
+      Body: {
+        transformToByteArray: async () => new Uint8Array(pngBuffer),
+      } as any,
+    });
+
+    // 1. User B attempts to verify User A's proof (IDOR attack) -> 403 Forbidden
+    const idorRes = await app.inject({
+      method: 'POST',
+      url: '/api/v1/marketplace/uploads/verify',
+      headers: { authorization: `Bearer ${userBToken}` },
+      payload: {
+        s3Key: `marketplace/proofs/${userA.id}/secret-proof.png`,
+        expectedMime: 'image/png',
+      },
+    });
+    assert.equal(idorRes.statusCode, 403);
+    const idorBody = JSON.parse(idorRes.payload);
+    assert.equal(idorBody.code, 'UNAUTHORIZED_OBJECT_ACCESS');
+
+    // 2. Path traversal attack attempt -> 400 Bad Request
+    const traversalRes = await app.inject({
+      method: 'POST',
+      url: '/api/v1/marketplace/uploads/verify',
+      headers: { authorization: `Bearer ${userAToken}` },
+      payload: {
+        s3Key: `marketplace/proofs/${userA.id}/../../../etc/passwd.png`,
+        expectedMime: 'image/png',
+      },
+    });
+    assert.equal(traversalRes.statusCode, 400);
+    const traversalBody = JSON.parse(traversalRes.payload);
+    assert.equal(traversalBody.code, 'VALIDATION_ERROR');
+
+    // 3. User A verifying own proof -> 200 OK
+    const legitRes = await app.inject({
+      method: 'POST',
+      url: '/api/v1/marketplace/uploads/verify',
+      headers: { authorization: `Bearer ${userAToken}` },
+      payload: {
+        s3Key: `marketplace/proofs/${userA.id}/legit-proof.png`,
+        expectedMime: 'image/png',
+      },
+    });
+    assert.equal(legitRes.statusCode, 200);
   });
 });

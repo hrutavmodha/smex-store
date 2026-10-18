@@ -279,6 +279,27 @@ describe('Marketplace Listing CRUD Lifecycle Suite (LLT 2.3)', () => {
     });
     const catalog = JSON.parse(catalogRes.payload);
     assert.ok(!catalog.listings.some((l: any) => l.id === created.id));
+
+    // Verify terminal state enforcement (BUG-M7-002)
+    // 1. Cannot mutate sold listing
+    const editSoldRes = await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/marketplace/listings/${created.id}`,
+      headers: { authorization: `Bearer ${token}` },
+      payload: { title: 'Updated Title Should Fail' },
+    });
+    assert.equal(editSoldRes.statusCode, 400);
+    assert.equal(JSON.parse(editSoldRes.payload).code, 'INVALID_LISTING_STATE');
+
+    // 2. Cannot reopen/revive sold listing
+    const reviveSoldRes = await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/marketplace/listings/${created.id}/status`,
+      headers: { authorization: `Bearer ${token}` },
+      payload: { status: 'active' },
+    });
+    assert.equal(reviveSoldRes.statusCode, 400);
+    assert.equal(JSON.parse(reviveSoldRes.payload).code, 'INVALID_STATUS_TRANSITION');
   });
 
   it('Test 18: Listing deletion and proof cascading', async (t) => {
@@ -323,6 +344,36 @@ describe('Marketplace Listing CRUD Lifecycle Suite (LLT 2.3)', () => {
       .from(listingProofs)
       .where(eq(listingProofs.listingId, created.id));
     assert.equal(dbProofs.length, 0);
+
+    // Verify terminal state enforcement for deleted listing (BUG-M7-002)
+    // 1. Cannot mutate deleted listing
+    const editDelRes = await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/marketplace/listings/${created.id}`,
+      headers: { authorization: `Bearer ${token}` },
+      payload: { title: 'Mutate Deleted Should Fail' },
+    });
+    assert.equal(editDelRes.statusCode, 400);
+    assert.equal(JSON.parse(editDelRes.payload).code, 'INVALID_LISTING_STATE');
+
+    // 2. Cannot reopen deleted listing
+    const reviveDelRes = await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/marketplace/listings/${created.id}/status`,
+      headers: { authorization: `Bearer ${token}` },
+      payload: { status: 'active' },
+    });
+    assert.equal(reviveDelRes.statusCode, 400);
+    assert.equal(JSON.parse(reviveDelRes.payload).code, 'INVALID_STATUS_TRANSITION');
+
+    // 3. Cannot re-delete deleted listing
+    const redeleteRes = await app.inject({
+      method: 'DELETE',
+      url: `/api/v1/marketplace/listings/${created.id}`,
+      headers: { authorization: `Bearer ${token}` },
+    });
+    assert.equal(redeleteRes.statusCode, 400);
+    assert.equal(JSON.parse(redeleteRes.payload).code, 'INVALID_LISTING_STATE');
   });
 
   it('Test 18b: Error handling for 404 not found and validation errors', async (t) => {
