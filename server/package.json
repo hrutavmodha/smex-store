@@ -23,7 +23,8 @@
     "db:migrate": "drizzle-kit migrate",
     "db:seed": "node --loader ts-node/esm src/db/seed.ts",
     "db:clean": "node --loader ts-node/esm src/db/cleanup.ts",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "db:check": "drizzle-kit check"
   },
   "keywords": [],
   "author": "",

@@ -17,10 +17,11 @@ export function formatRfc7807Problem(
   title: string,
   detail: string,
   instance?: string,
-  invalidParams?: Array<{ name: string; reason: string }>
+  invalidParams?: Array<{ name: string; reason: string }>,
+  type?: string
 ): Rfc7807Problem {
   const problem: Rfc7807Problem = {
-    type: `https://api.smexstore.com/errors/${code.toLowerCase().replace(/_/g, '-')}`,
+    type: type || `https://api.smexstore.com/errors/${code.toLowerCase().replace(/_/g, '-')}`,
     title,
     status: statusCode,
     detail,
@@ -53,20 +54,20 @@ export default fp<FastifySensibleOptions>(async (fastify) => {
   });
 
   // Global error handler adhering to RFC 7807 Problem Details
-  fastify.setErrorHandler((error, request, reply) => {
-    const statusCode = error.validation ? 422 : (error.statusCode || 500);
-    const code = (error as any).code || (statusCode === 422 ? 'VALIDATION_FAILED' : 'INTERNAL_ERROR');
-    const title = error.name || (statusCode === 422 ? 'Validation Error' : 'Internal Server Error');
-    const detail = error.message || 'An unexpected error occurred';
+  fastify.setErrorHandler((error: any, request, reply) => {
+    const statusCode = error.validation ? 422 : (error.statusCode || error.status || 500);
+    const code = error.code || (statusCode === 422 ? 'VALIDATION_FAILED' : 'INTERNAL_ERROR');
+    const title = error.title || error.name || (statusCode === 422 ? 'Validation Error' : 'Internal Server Error');
+    const detail = error.detail || error.message || 'An unexpected error occurred';
 
     let invalidParams: Array<{ name: string; reason: string }> | undefined;
-    if (error.validation) {
-      invalidParams = error.validation.map((v) => ({
-        name: v.instancePath ? v.instancePath.replace(/^\//, '') : (v.params as any)?.missingProperty || 'unknown',
+    if (error.validation && Array.isArray(error.validation)) {
+      invalidParams = error.validation.map((v: any) => ({
+        name: v.instancePath ? v.instancePath.replace(/^\//, '') : v.params?.missingProperty || 'unknown',
         reason: v.message || 'Invalid value',
       }));
-    } else if ((error as any).invalid_params) {
-      invalidParams = (error as any).invalid_params;
+    } else if (error.invalid_params) {
+      invalidParams = error.invalid_params;
     }
 
     const problem = formatRfc7807Problem(
@@ -75,7 +76,8 @@ export default fp<FastifySensibleOptions>(async (fastify) => {
       title,
       detail,
       request.url,
-      invalidParams
+      invalidParams,
+      error.type
     );
 
     reply

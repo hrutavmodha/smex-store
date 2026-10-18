@@ -5,7 +5,8 @@ import { tournaments } from '../../src/db/schema/tournaments.js';
 import { teams } from '../../src/db/schema/teams.js';
 import { marketplaceListings } from '../../src/db/schema/marketplace.js';
 import { profiles } from '../../src/db/schema/users.js';
-import { eq } from 'drizzle-orm';
+import { eq, inArray, sql } from 'drizzle-orm';
+import crypto from 'node:crypto';
 
 describe('PostgreSQL Trigram Universal Search Engine Suite (LLT 2.3)', () => {
   test('Test 11: Multi-entity exact search query matching', async (t) => {
@@ -284,40 +285,48 @@ describe('PostgreSQL Trigram Universal Search Engine Suite (LLT 2.3)', () => {
 
   test('Test 19: totalMatches accurately calculates total matching records across limits/pagination (BUG-M8-008)', async (t) => {
     const app = await build(t);
-    const uniqueWord = `Xylophonic${Date.now()}`;
+    const uniqueWord = `Zeta${crypto.randomUUID().replace(/-/g, '').slice(0, 12)}`;
 
     // Seed 3 tournaments with distinct names containing uniqueWord
-    await app.db.insert(tournaments).values([
-      {
-        title: `${uniqueWord} Tournament Alpha`,
-        gameSlug: 'mlbb',
-        status: 'upcoming',
-        startTime: new Date(Date.now() + 86400000),
-      },
-      {
-        title: `${uniqueWord} Tournament Beta`,
-        gameSlug: 'mlbb',
-        status: 'upcoming',
-        startTime: new Date(Date.now() + 86400000),
-      },
-      {
-        title: `${uniqueWord} Tournament Gamma`,
-        gameSlug: 'mlbb',
-        status: 'upcoming',
-        startTime: new Date(Date.now() + 86400000),
-      },
-    ]);
+    const seeded = await app.db
+      .insert(tournaments)
+      .values([
+        {
+          title: `${uniqueWord} Tournament Alpha`,
+          gameSlug: 'mlbb',
+          status: 'upcoming',
+          startTime: new Date(Date.now() + 86400000),
+        },
+        {
+          title: `${uniqueWord} Tournament Beta`,
+          gameSlug: 'mlbb',
+          status: 'upcoming',
+          startTime: new Date(Date.now() + 86400000),
+        },
+        {
+          title: `${uniqueWord} Tournament Gamma`,
+          gameSlug: 'mlbb',
+          status: 'upcoming',
+          startTime: new Date(Date.now() + 86400000),
+        },
+      ])
+      .returning();
 
-    // Query with limit = 1
-    const res = await app.inject({
-      method: 'GET',
-      url: `/api/v1/search?q=${uniqueWord.toLowerCase()}&category=tournaments&limit=1`,
-    });
+    try {
+      // Query with limit = 1
+      const res = await app.inject({
+        method: 'GET',
+        url: `/api/v1/search?q=${uniqueWord.toLowerCase()}&category=tournaments&limit=1`,
+      });
 
-    assert.equal(res.statusCode, 200);
-    const body = JSON.parse(res.body);
-    assert.equal(body.results.tournaments.length, 1, 'Paginated slice should contain only 1 item');
-    assert.equal(body.totalMatches, 3, 'totalMatches must reflect true count of matching records (3), not slice length');
+      assert.equal(res.statusCode, 200);
+      const body = JSON.parse(res.body);
+      assert.equal(body.results.tournaments.length, 1, 'Paginated slice should contain only 1 item');
+      assert.equal(body.totalMatches, 3, 'totalMatches must reflect true count of matching records (3), not slice length');
+    } finally {
+      const seededIds = seeded.map((s) => s.id);
+      await app.db.delete(tournaments).where(inArray(tournaments.id, seededIds));
+    }
   });
 });
 
