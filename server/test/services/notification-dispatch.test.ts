@@ -175,4 +175,72 @@ describe('Notification Persistence and Real-Time Dispatch Suite (LLT 2.1)', () =
       entityId: '00000000-0000-0000-0000-000000000001',
     });
   });
+
+  test('Test 6: Tournament schedule alert dispatch and persistence (BUG-M8-004)', async (t) => {
+    const app = await build(t);
+    const { user: p1 } = await createVerifiedUser(app, 'notif_tourn1');
+    const { user: p2 } = await createVerifiedUser(app, 'notif_tourn2');
+
+    const tournamentId = '00000000-0000-0000-0000-000000000099';
+    const alertMsg = 'Tournament Match Starting in 15 minutes!';
+
+    await NotificationService.notifyTournamentScheduleAlert(
+      [p1.id, p2.id],
+      tournamentId,
+      alertMsg,
+      app.db,
+      app.redis,
+      app.wsGateway
+    );
+
+    // Verify both participants received persisted notifications in DB
+    const notifsP1 = await app.db
+      .select()
+      .from(notifications)
+      .where(eq(notifications.recipientId, p1.id));
+    assert.equal(notifsP1.length, 1);
+    assert.equal(notifsP1[0].title, 'Tournament Schedule Alert');
+    assert.equal(notifsP1[0].message, alertMsg);
+    assert.equal(notifsP1[0].type, 'system');
+    assert.equal((notifsP1[0].payload as any).entityType, 'tournament');
+    assert.equal((notifsP1[0].payload as any).entityId, tournamentId);
+
+    const notifsP2 = await app.db
+      .select()
+      .from(notifications)
+      .where(eq(notifications.recipientId, p2.id));
+    assert.equal(notifsP2.length, 1);
+    assert.equal(notifsP2[0].message, alertMsg);
+  });
+
+  test('Test 7: Boosting order status update notification dispatch and persistence (BUG-M8-004)', async (t) => {
+    const app = await build(t);
+    const { user: customer } = await createVerifiedUser(app, 'notif_order');
+
+    const orderId = '00000000-0000-0000-0000-000000000088';
+    const status = 'in_progress';
+    const notes = 'Booster assigned: Legend rank target';
+
+    await NotificationService.notifyOrderStatusUpdate(
+      customer.id,
+      orderId,
+      status,
+      app.db,
+      app.redis,
+      app.wsGateway,
+      notes
+    );
+
+    // Verify customer received persisted notification in DB
+    const notifs = await app.db
+      .select()
+      .from(notifications)
+      .where(eq(notifications.recipientId, customer.id));
+    assert.equal(notifs.length, 1);
+    assert.equal(notifs[0].title, 'Boosting Order Status Update');
+    assert.ok(notifs[0].message.includes('in_progress'));
+    assert.equal(notifs[0].type, 'update');
+    assert.equal((notifs[0].payload as any).entityType, 'boosting_order');
+    assert.equal((notifs[0].payload as any).entityId, orderId);
+  });
 });

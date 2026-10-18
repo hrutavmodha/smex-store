@@ -32,11 +32,20 @@ export function MarketplaceCatalog() {
 
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
   const [selectedRanks, setSelectedRanks] = useState<string[]>([]);
   const [minPrice, setMinPrice] = useState<string>('');
   const [maxPrice, setMaxPrice] = useState<string>('');
   const [selectedBadge, setSelectedBadge] = useState<string>('');
   const [sortBy, setSortBy] = useState<'newest' | 'price_asc' | 'price_desc'>('newest');
+
+  // Keystroke debounce timer (300ms) to prevent network request flooding
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(searchQuery);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   useEffect(() => {
     let cancelled = false;
@@ -48,12 +57,12 @@ export function MarketplaceCatalog() {
           limit: 50,
         };
 
-        if (searchQuery.trim()) {
-          params.q = searchQuery.trim();
+        if (debouncedQuery.trim()) {
+          params.q = debouncedQuery.trim();
         }
 
-        if (selectedRanks.length === 1) {
-          params.rankTier = selectedRanks[0];
+        if (selectedRanks.length > 0) {
+          params.rankTier = selectedRanks.length === 1 ? selectedRanks[0] : selectedRanks;
         }
 
         if (minPrice && !isNaN(Number(minPrice))) {
@@ -71,13 +80,8 @@ export function MarketplaceCatalog() {
         const data = await fetchMarketplaceListings(params);
 
         if (!cancelled) {
-          let filtered = data.listings || [];
-          if (selectedRanks.length > 1) {
-            filtered = filtered.filter((l) => selectedRanks.includes(l.rankTier));
-          }
-
-          setListings(filtered);
-          setTotalCount(filtered.length);
+          setListings(data.listings || []);
+          setTotalCount(data.total ?? data.listings?.length ?? 0);
         }
       } catch {
         if (!cancelled) {
@@ -96,7 +100,7 @@ export function MarketplaceCatalog() {
     return () => {
       cancelled = true;
     };
-  }, [searchQuery, selectedRanks, minPrice, maxPrice, selectedBadge, sortBy]);
+  }, [debouncedQuery, selectedRanks, minPrice, maxPrice, selectedBadge, sortBy]);
 
   const toggleRank = (tier: string) => {
     setSelectedRanks((prev) =>
@@ -152,6 +156,7 @@ export function MarketplaceCatalog() {
                   setMaxPrice('');
                   setSelectedBadge('');
                   setSearchQuery('');
+                  setDebouncedQuery('');
                 }}
                 className="text-xs font-semibold text-[#1FAE7A] hover:underline cursor-pointer"
               >

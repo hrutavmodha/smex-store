@@ -9,6 +9,7 @@ import {
 import { profiles } from '../db/schema/users.js';
 import { sellerRatings } from '../db/schema/reviews.js';
 import { BadgeService, type BadgeType } from './badge.service.js';
+import { StorageService } from './storage.service.js';
 
 export interface ListingServiceError extends Error {
   statusCode: number;
@@ -358,7 +359,8 @@ export class ListingService {
     id: string,
     userId: string,
     isAdmin: boolean,
-    input: UpdateListingInput
+    input: UpdateListingInput,
+    storageService?: StorageService
   ): Promise<MarketplaceListing & { proofImages: ListingProof[] }> {
     const [existing] = await db
       .select()
@@ -427,7 +429,8 @@ export class ListingService {
       updates.badgeType = badgeCalc.badgeType;
     }
 
-    return await db.transaction(async (tx) => {
+    let oldS3Keys: string[] = [];
+    const txResult = await db.transaction(async (tx) => {
       const [updated] = await tx
         .update(marketplaceListings)
         .set(updates)
@@ -435,6 +438,16 @@ export class ListingService {
         .returning();
 
       if (input.proofImages) {
+        const existingProofs = await tx
+          .select({ s3Key: listingProofs.s3Key })
+          .from(listingProofs)
+          .where(eq(listingProofs.listingId, id));
+
+        const newKeys = new Set(input.proofImages.map((p) => p.s3Key));
+        oldS3Keys = existingProofs
+          .map((p) => p.s3Key)
+          .filter((k) => !newKeys.has(k));
+
         await tx.delete(listingProofs).where(eq(listingProofs.listingId, id));
 
         if (input.proofImages.length > 0) {
@@ -459,6 +472,15 @@ export class ListingService {
         proofImages: currentProofs,
       };
     });
+
+    if (oldS3Keys.length > 0) {
+      const storage = storageService || new StorageService();
+      for (const key of oldS3Keys) {
+        await storage.deleteObject(key).catch(() => {});
+      }
+    }
+
+    return txResult;
   }
 
   public static async updateListingStatus(
@@ -512,7 +534,8 @@ export class ListingService {
     db: SmexDatabase,
     id: string,
     userId: string,
-    isAdmin: boolean
+    isAdmin: boolean,
+    storageService?: StorageService
   ): Promise<{ success: boolean; id: string }> {
     const [existing] = await db
       .select()
@@ -539,7 +562,14 @@ export class ListingService {
       );
     }
 
+    let s3KeysToDelete: string[] = [];
     await db.transaction(async (tx) => {
+      const existingProofs = await tx
+        .select({ s3Key: listingProofs.s3Key })
+        .from(listingProofs)
+        .where(eq(listingProofs.listingId, id));
+      s3KeysToDelete = existingProofs.map((p) => p.s3Key);
+
       // Cascade delete proofs
       await tx.delete(listingProofs).where(eq(listingProofs.listingId, id));
       // Soft-delete listing status per specification
@@ -548,6 +578,13 @@ export class ListingService {
         .set({ status: 'deleted', updatedAt: new Date() })
         .where(eq(marketplaceListings.id, id));
     });
+
+    if (s3KeysToDelete.length > 0) {
+      const storage = storageService || new StorageService();
+      for (const key of s3KeysToDelete) {
+        await storage.deleteObject(key).catch(() => {});
+      }
+    }
 
     return { success: true, id };
   }

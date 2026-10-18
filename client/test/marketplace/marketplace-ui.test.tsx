@@ -215,4 +215,92 @@ describe('Marketplace Presentation UI & Media Carousel Suite (LLT 2.5)', () => {
     expect(href?.startsWith('https://wa.me/15550100100')).toBe(true);
     expect(href).toContain(encodeURIComponent(mockListing.title));
   });
+
+  it('Test 28: Multi-rank filter forwards rank tiers to server query without client truncation (BUG-M7-003)', async () => {
+    let capturedUrl = '';
+    const origFetch = window.fetch;
+    window.fetch = vi.fn().mockImplementation((url: string) => {
+      capturedUrl = url;
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({
+          listings: [
+            { ...mockListing, id: 'm1', rankTier: 'Mythic' },
+            { ...mockListing, id: 'm2', rankTier: 'Mythical Glory' },
+          ],
+          total: 42,
+          page: 1,
+          limit: 50,
+          totalPages: 1,
+        }),
+      });
+    });
+
+    const { MarketplaceCatalog } = await import('../../components/marketplace/MarketplaceCatalog');
+    const { container } = render(<MarketplaceCatalog />);
+
+    const mythicCheckbox = screen.getByLabelText('Mythic');
+    const gloryCheckbox = screen.getByLabelText('Mythical Glory');
+
+    await act(async () => {
+      fireEvent.click(mythicCheckbox);
+    });
+
+    await act(async () => {
+      fireEvent.click(gloryCheckbox);
+    });
+
+    expect(capturedUrl).toContain('rankTier=Mythic');
+    expect(capturedUrl).toContain('rankTier=Mythical+Glory');
+    expect(container.textContent).toContain('42');
+    expect(container.textContent).toContain('Active Listings Found');
+
+    window.fetch = origFetch;
+  });
+
+  it('Test 29: Catalog search input debounces keystrokes to prevent request flooding (BUG-M7-004)', async () => {
+    let fetchCount = 0;
+    const origFetch = window.fetch;
+    window.fetch = vi.fn().mockImplementation((url: string) => {
+      if (typeof url === 'string' && url.includes('/api/v1/marketplace/listings')) {
+        fetchCount++;
+      }
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({
+          listings: [],
+          total: 0,
+          page: 1,
+          limit: 50,
+          totalPages: 0,
+        }),
+      });
+    });
+
+    const { MarketplaceCatalog } = await import('../../components/marketplace/MarketplaceCatalog');
+    const { container } = render(<MarketplaceCatalog />);
+
+    expect(fetchCount).toBe(1);
+
+    const searchInput = container.querySelector('input[placeholder*="Search"]') as HTMLInputElement;
+    expect(searchInput).toBeTruthy();
+
+    await act(async () => {
+      fireEvent.change(searchInput, { target: { value: 'm' } });
+      fireEvent.change(searchInput, { target: { value: 'my' } });
+      fireEvent.change(searchInput, { target: { value: 'myt' } });
+      fireEvent.change(searchInput, { target: { value: 'myth' } });
+      fireEvent.change(searchInput, { target: { value: 'mythic' } });
+    });
+
+    expect(fetchCount).toBe(1);
+
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 350));
+    });
+
+    expect(fetchCount).toBe(2);
+
+    window.fetch = origFetch;
+  });
 });

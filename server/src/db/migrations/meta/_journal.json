@@ -43,6 +43,13 @@
       "when": 1792243287872,
       "tag": "0005_massive_miss_america",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792306745212,
+      "tag": "0006_soft_joshua_kane",
+      "breakpoints": true
     }
   ]
 }

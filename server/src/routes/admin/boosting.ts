@@ -1,6 +1,7 @@
 import { type FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { BoostingRateService } from '../../services/boosting-rate.service.js';
+import { NotificationService } from '../../services/notification.service.js';
 
 interface BoostingRouteError {
   name?: string;
@@ -62,16 +63,21 @@ const adminBoostingRoutes: FastifyPluginAsync = async (fastify) => {
     const { id } = request.params as { id: string };
     const parseResult = updateRateSchema.safeParse(request.body);
     if (!parseResult.success) {
-      return reply.code(400).send({
-        statusCode: 400,
-        error: 'Bad Request',
+      return reply.code(422).send({
+        statusCode: 422,
+        error: 'Unprocessable Entity',
         message: 'Invalid rate update parameters',
         issues: parseResult.error.issues,
       });
     }
 
     try {
-      const updated = await BoostingRateService.updateRate(id, parseResult.data, fastify.db);
+      const updated = await BoostingRateService.updateRate(
+        id,
+        parseResult.data,
+        fastify.db,
+        fastify.redis
+      );
       if (!updated) {
         return reply.code(404).send({
           statusCode: 404,
@@ -84,9 +90,9 @@ const adminBoostingRoutes: FastifyPluginAsync = async (fastify) => {
     } catch (err: unknown) {
       const errorObj = err as BoostingRouteError;
       if (errorObj?.name === 'ValidationError' || errorObj?.statusCode) {
-        return reply.code(errorObj.statusCode || 400).send({
-          statusCode: errorObj.statusCode || 400,
-          error: errorObj.code || 'Bad Request',
+        return reply.code(errorObj.statusCode || 422).send({
+          statusCode: errorObj.statusCode || 422,
+          error: errorObj.code || 'Unprocessable Entity',
           message: errorObj.message,
         });
       }
@@ -152,6 +158,24 @@ const adminBoostingRoutes: FastifyPluginAsync = async (fastify) => {
           message: 'Order not found',
         });
       }
+
+      // Dispatch order status update notification to customer (BUG-M8-004)
+      if (updated.customerId) {
+        try {
+          await NotificationService.notifyOrderStatusUpdate(
+            updated.customerId,
+            updated.id,
+            updated.status,
+            fastify.db,
+            fastify.redis,
+            fastify.wsGateway,
+            notes
+          );
+        } catch {
+          // Non-blocking notification dispatch
+        }
+      }
+
       return reply.code(200).send(updated);
     } catch (err: unknown) {
       const errorObj = err as BoostingRouteError;

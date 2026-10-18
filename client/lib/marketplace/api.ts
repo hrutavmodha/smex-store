@@ -14,7 +14,15 @@ export async function fetchMarketplaceListings(
   const query = new URLSearchParams();
   if (q) query.set('q', q);
   if (gameSlug) query.set('gameSlug', gameSlug);
-  if (rankTier) query.set('rankTier', rankTier);
+  if (rankTier) {
+    if (Array.isArray(rankTier)) {
+      for (const r of rankTier) {
+        query.append('rankTier', r);
+      }
+    } else {
+      query.set('rankTier', rankTier);
+    }
+  }
   if (minPrice !== undefined) query.set('minPrice', minPrice.toString());
   if (maxPrice !== undefined) query.set('maxPrice', maxPrice.toString());
   if (badgeType) query.set('badgeType', badgeType);

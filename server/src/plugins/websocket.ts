@@ -18,6 +18,7 @@ export interface WebSocketClientMeta {
 export interface WsGatewayDecorator {
   clients: Map<WebSocket, WebSocketClientMeta>;
   broadcastToChannel: (channel: string, message: unknown) => void;
+  broadcastAll: (message: unknown) => void;
   getActiveClientCount: () => number;
   terminateUserSockets: (userId: string, sessionId?: string) => void;
 }
@@ -77,6 +78,14 @@ const websocketPlugin: FastifyPluginAsync = async (fastify) => {
         }
       }
     },
+    broadcastAll: (message: unknown) => {
+      const payload = typeof message === 'string' ? message : JSON.stringify(message);
+      for (const socket of clients.keys()) {
+        if (socket.readyState === 1) {
+          socket.send(payload);
+        }
+      }
+    },
     getActiveClientCount: () => clients.size,
     terminateUserSockets: (userId: string, sessionId?: string) => {
       for (const [socket, meta] of clients.entries()) {
@@ -97,9 +106,9 @@ const websocketPlugin: FastifyPluginAsync = async (fastify) => {
   // Redis Pub/Sub Subscriber for horizontal multi-instance synchronization
   if (fastify.redis) {
     const redisSubscriber = fastify.redis.duplicate();
-    redisSubscriber.psubscribe('tournament:*', 'user:*', (err) => {
+    redisSubscriber.psubscribe('tournament:*', 'user:*', 'system:*', (err) => {
       if (err) {
-        fastify.log.error({ err }, 'Failed to psubscribe to tournament:* and user:* channel patterns');
+        fastify.log.error({ err }, 'Failed to psubscribe to tournament:*, user:*, system:* channel patterns');
       }
     });
 
@@ -110,7 +119,16 @@ const websocketPlugin: FastifyPluginAsync = async (fastify) => {
       } catch {
         // Keep string format
       }
-      wsGateway.broadcastToChannel(channel, parsed);
+      if (channel.startsWith('system:')) {
+        wsGateway.broadcastAll({
+          event: 'announcement:update',
+          channel,
+          timestamp: Date.now(),
+          payload: parsed,
+        });
+      } else {
+        wsGateway.broadcastToChannel(channel, parsed);
+      }
     });
 
     fastify.addHook('onClose', async () => {

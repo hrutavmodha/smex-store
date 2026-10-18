@@ -10,6 +10,7 @@
   },
   "scripts": {
     "test": "vitest run --fileParallelism=false",
+    "test:admin-governance": "vitest run --fileParallelism=false test/plugins/admin-guard.test.ts test/services/user-moderation.test.ts test/routes/admin-teams.test.ts test/services/marketplace-moderation.test.ts test/services/admin-rates-announcements.test.ts",
     "test:watch": "vitest",
     "clean": "node -e \"require('fs').rmSync('dist', {recursive: true, force: true})\"",
     "start": "fastify start -p 3001 -l info dist/app.mjs",

@@ -4,6 +4,7 @@ import { eq, and } from 'drizzle-orm';
 import { build } from '../helper.js';
 import { users } from '../../src/db/schema/users.js';
 import { teamMembers, teamJoinRequests } from '../../src/db/schema/teams.js';
+import { notifications } from '../../src/db/schema/notifications.js';
 import { TeamService } from '../../src/services/team.service.js';
 import { NotificationService } from '../../src/services/notification.service.js';
 import type { FastifyInstance } from 'fastify';
@@ -88,6 +89,15 @@ describe('Real-Time Event Dispatch Suite (LLT 2.6)', () => {
     assert.equal(notif.data.playerIgn, 'Valkyrie99');
     assert.equal(notif.data.playerRole, 'Hyper');
 
+    // Verify notification was persisted to database for captain (BUG-M8-002)
+    const [dbNotif] = await app.db
+      .select()
+      .from(notifications)
+      .where(eq(notifications.recipientId, captain.id));
+    assert.ok(dbNotif, 'Captain must receive persisted database notification');
+    assert.equal(dbNotif.type, 'request');
+    assert.equal(dbNotif.isRead, false);
+
     await subscriber.quit();
   });
 
@@ -142,6 +152,15 @@ describe('Real-Time Event Dispatch Suite (LLT 2.6)', () => {
     assert.equal(notif.channel, `user:${applicant.id}`);
     assert.equal(notif.data.teamId, team.id);
     assert.equal(notif.data.status, 'accepted');
+
+    // Verify notification was persisted to database for applicant (BUG-M8-002)
+    const [dbNotif] = await app.db
+      .select()
+      .from(notifications)
+      .where(eq(notifications.recipientId, applicant.id));
+    assert.ok(dbNotif, 'Applicant must receive persisted database notification');
+    assert.equal(dbNotif.type, 'update');
+    assert.equal(dbNotif.isRead, false);
 
     await subscriber.quit();
   });

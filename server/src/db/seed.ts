@@ -1,4 +1,4 @@
-import { eq, and } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 import { createDbPool, createDbClient, type SmexDatabase } from './index.js';
 import {
   users,
@@ -30,6 +30,16 @@ export interface SeedResult {
 }
 
 export async function seed(db: SmexDatabase): Promise<SeedResult> {
+  // Ensure required PostgreSQL extensions and trigram GIN indexes are enabled
+  await db.execute(sql`
+    CREATE EXTENSION IF NOT EXISTS pg_trgm;
+    CREATE INDEX IF NOT EXISTS tournaments_title_trgm_idx ON tournaments USING gin (title gin_trgm_ops);
+    CREATE INDEX IF NOT EXISTS teams_name_trgm_idx ON teams USING gin (name gin_trgm_ops);
+    CREATE INDEX IF NOT EXISTS profiles_username_trgm_idx ON profiles USING gin (username gin_trgm_ops);
+    CREATE INDEX IF NOT EXISTS profiles_in_game_id_trgm_idx ON profiles USING gin (in_game_id gin_trgm_ops);
+    CREATE INDEX IF NOT EXISTS marketplace_title_trgm_idx ON marketplace_listings USING gin (title gin_trgm_ops);
+  `);
+
   // 1. Upsert Default Admin Account
   const adminEmail = 'admin@smexstore.com';
   const existingAdmin = await db.select().from(users).where(eq(users.email, adminEmail));
@@ -167,6 +177,11 @@ export async function seed(db: SmexDatabase): Promise<SeedResult> {
         );
       if (existing.length === 0) {
         await db.insert(boostingRates).values(rate);
+      } else {
+        await db
+          .update(boostingRates)
+          .set(rate)
+          .where(eq(boostingRates.id, existing[0].id));
       }
     } else {
       const existing = await db
@@ -180,6 +195,11 @@ export async function seed(db: SmexDatabase): Promise<SeedResult> {
         );
       if (existing.length === 0) {
         await db.insert(boostingRates).values(rate);
+      } else {
+        await db
+          .update(boostingRates)
+          .set(rate)
+          .where(eq(boostingRates.id, existing[0].id));
       }
     }
   }

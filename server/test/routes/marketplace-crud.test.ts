@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { eq } from 'drizzle-orm';
 import { build, createVerifiedUser } from '../helper.js';
 import { marketplaceListings, listingProofs } from '../../src/db/schema/marketplace.js';
+import { ListingService } from '../../src/services/listing.service.js';
 
 describe('Marketplace Listing CRUD Lifecycle Suite (LLT 2.3)', () => {
   it('Test 11: Create valid marketplace listing with proof images', async (t) => {
@@ -125,6 +126,29 @@ describe('Marketplace Listing CRUD Lifecycle Suite (LLT 2.3)', () => {
       const price = parseFloat(listing.priceInr);
       assert.ok(price >= 500 && price <= 1500);
       assert.equal(listing.status, 'active');
+    }
+
+    // Multi-rank query testing via array and comma-delimited parameters (BUG-M7-003)
+    const multiRankArrayRes = await app.inject({
+      method: 'GET',
+      url: '/api/v1/marketplace/listings?rankTier=Mythic&rankTier=Epic',
+    });
+    assert.equal(multiRankArrayRes.statusCode, 200);
+    const multiRankArrayBody = JSON.parse(multiRankArrayRes.payload);
+    assert.ok(multiRankArrayBody.listings.some((l: any) => l.rankTier === 'Mythic'));
+    assert.ok(multiRankArrayBody.listings.some((l: any) => l.rankTier === 'Epic'));
+    for (const l of multiRankArrayBody.listings) {
+      assert.ok(['Mythic', 'Epic'].includes(l.rankTier));
+    }
+
+    const multiRankCsvRes = await app.inject({
+      method: 'GET',
+      url: '/api/v1/marketplace/listings?rankTier=Mythic,Epic',
+    });
+    assert.equal(multiRankCsvRes.statusCode, 200);
+    const multiRankCsvBody = JSON.parse(multiRankCsvRes.payload);
+    for (const l of multiRankCsvBody.listings) {
+      assert.ok(['Mythic', 'Epic'].includes(l.rankTier));
     }
   });
 
@@ -515,6 +539,57 @@ describe('Marketplace Listing CRUD Lifecycle Suite (LLT 2.3)', () => {
     const updated = JSON.parse(updateRes.payload);
     assert.equal(updated.title, 'Updated Proofs Listing');
     assert.equal(updated.proofImages.length, 2);
+  });
+
+  it('Test 18e: Prune orphaned S3 proof blobs on listing update and deletion (BUG-M7-005)', async (t) => {
+    const app = await build(t);
+    const { token, user } = await createVerifiedUser(app, 'seller_s3_prune');
+
+    const deletedKeys: string[] = [];
+    const mockStorage = {
+      deleteObject: async (key: string) => {
+        deletedKeys.push(key);
+      },
+    } as any;
+
+    const oldKey = `marketplace/proofs/${user.id}/old-screenshot.png`;
+    const newKey = `marketplace/proofs/${user.id}/new-screenshot.png`;
+
+    const createRes = await app.inject({
+      method: 'POST',
+      url: '/api/v1/marketplace/listings',
+      headers: { authorization: `Bearer ${token}` },
+      payload: {
+        title: 'Pruning Test Account',
+        rankTier: 'Epic II',
+        priceInr: 900,
+        contactChannel: 'whatsapp',
+        contactHandle: '15550100100',
+        proofImages: [{ s3Key: oldKey, cdnUrl: '/media/old.png' }],
+      },
+    });
+    const created = JSON.parse(createRes.payload);
+
+    // 1. Update listing with new proof images replacing old ones
+    await ListingService.updateListing(
+      app.db,
+      created.id,
+      user.id,
+      false,
+      {
+        proofImages: [{ s3Key: newKey, cdnUrl: '/media/new.png' }],
+      },
+      mockStorage
+    );
+
+    // Verify old key was pruned
+    assert.deepEqual(deletedKeys, [oldKey]);
+
+    // 2. Delete listing
+    await ListingService.deleteListing(app.db, created.id, user.id, false, mockStorage);
+
+    // Verify new key was pruned on delete
+    assert.deepEqual(deletedKeys, [oldKey, newKey]);
   });
 });
 

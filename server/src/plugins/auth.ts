@@ -61,7 +61,37 @@ const authPlugin: FastifyPluginAsync = async (fastify) => {
         });
       }
 
-      // Fast-path tombstone check via Redis
+      // 1. Check if user is banned (Redis cache or database fallback)
+      let isBanned = payload.isBanned ?? false;
+      const cachedBan = await fastify.redis.get(`banned_user:${payload.sub}`);
+      if (cachedBan === '1') {
+        isBanned = true;
+      } else if (cachedBan === null) {
+        const [userRow] = await fastify.db
+          .select({ isBanned: users.isBanned })
+          .from(users)
+          .where(eq(users.id, payload.sub))
+          .limit(1);
+
+        if (userRow?.isBanned) {
+          isBanned = true;
+          await fastify.redis.set(`banned_user:${payload.sub}`, '1', 'EX', 3600);
+        } else {
+          await fastify.redis.set(`banned_user:${payload.sub}`, '0', 'EX', 300);
+        }
+      }
+
+      if (isBanned) {
+        return reply.code(403).send({
+          type: 'https://api.smexstore.com/errors/account-banned',
+          title: 'Account Banned',
+          status: 403,
+          detail: 'Your account has been banned due to terms of service violation.',
+          code: 'ACCOUNT_BANNED',
+        });
+      }
+
+      // 2. Fast-path tombstone check via Redis for session revocation
       const isRevoked = await fastify.redis.exists(`revoked_token:${payload.sessionId}`);
       if (isRevoked) {
         return reply.code(401).send({
@@ -73,6 +103,7 @@ const authPlugin: FastifyPluginAsync = async (fastify) => {
         });
       }
 
+      payload.isBanned = false;
       request.user = payload;
     } catch (err: unknown) {
       return reply.code(401).send({
@@ -120,7 +151,7 @@ const authPlugin: FastifyPluginAsync = async (fastify) => {
         title: 'Forbidden',
         status: 403,
         detail: 'Admin privileges required',
-        code: 'FORBIDDEN',
+        code: 'ADMIN_ACCESS_REQUIRED',
       });
     }
   };

@@ -33,6 +33,17 @@ export interface RequestStatusNotificationData {
   status: 'accepted' | 'rejected' | 'cancelled';
 }
 
+export interface TournamentAlertNotificationData {
+  tournamentId: string;
+  message: string;
+}
+
+export interface OrderStatusNotificationData {
+  orderId: string;
+  status: string;
+  notes?: string;
+}
+
 
 export class NotificationService {
   /**
@@ -387,6 +398,110 @@ export class NotificationService {
       } catch {
         // Persistence side-effect failure should not throw
       }
+    }
+
+    return envelope;
+  }
+
+  /**
+   * Dispatches tournament schedule alerts to participants (durable DB persistence + WS/Redis)
+   */
+  static async notifyTournamentScheduleAlert(
+    participantIds: string[],
+    tournamentId: string,
+    alertMessage: string,
+    db: SmexDatabase,
+    redis?: Redis,
+    wsGateway?: WsGatewayDecorator
+  ): Promise<void> {
+    if (!participantIds || participantIds.length === 0) return;
+
+    for (const recipientId of participantIds) {
+      try {
+        await this.dispatchNotification(
+          recipientId,
+          'system',
+          'Tournament Schedule Alert',
+          alertMessage,
+          {
+            actionUrl: `/tournaments/${tournamentId}`,
+            entityType: 'tournament',
+            entityId: tournamentId,
+            metadata: { tournamentId, alertMessage },
+          },
+          db,
+          redis,
+          wsGateway
+        );
+      } catch {
+        // Non-blocking notification dispatch
+      }
+    }
+
+    // Also broadcast to tournament channel
+    const channel = `tournament:${tournamentId}`;
+    const envelope: BaseNotificationEnvelope<TournamentAlertNotificationData> = {
+      event: 'tournament:schedule_alert',
+      channel,
+      timestamp: Date.now(),
+      data: { tournamentId, message: alertMessage },
+    };
+
+    if (redis) {
+      await redis.publish(channel, JSON.stringify(envelope)).catch(() => {});
+    }
+    if (wsGateway) {
+      wsGateway.broadcastToChannel(channel, envelope);
+    }
+  }
+
+  /**
+   * Dispatches boosting order status update to customer (durable DB persistence + WS/Redis)
+   */
+  static async notifyOrderStatusUpdate(
+    customerId: string | null | undefined,
+    orderId: string,
+    status: string,
+    db: SmexDatabase,
+    redis?: Redis,
+    wsGateway?: WsGatewayDecorator,
+    notes?: string
+  ): Promise<BaseNotificationEnvelope<OrderStatusNotificationData> | null> {
+    if (!customerId) return null;
+
+    const channel = `user:${customerId}`;
+    const envelope: BaseNotificationEnvelope<OrderStatusNotificationData> = {
+      event: 'order:status_update',
+      channel,
+      timestamp: Date.now(),
+      data: { orderId, status, notes },
+    };
+
+    if (redis) {
+      await redis.publish(channel, JSON.stringify(envelope)).catch(() => {});
+    }
+    if (wsGateway) {
+      wsGateway.broadcastToChannel(channel, envelope);
+    }
+
+    try {
+      await this.dispatchNotification(
+        customerId,
+        'update',
+        'Boosting Order Status Update',
+        `Your order status has changed to '${status}'.`,
+        {
+          actionUrl: `/boosting`,
+          entityType: 'boosting_order',
+          entityId: orderId,
+          metadata: { orderId, status, notes },
+        },
+        db,
+        redis,
+        wsGateway
+      );
+    } catch {
+      // Non-blocking notification dispatch
     }
 
     return envelope;

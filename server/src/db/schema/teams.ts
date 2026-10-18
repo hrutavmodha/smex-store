@@ -2,7 +2,7 @@ import { sql } from 'drizzle-orm';
 import { pgEnum, pgTable, uuid, varchar, text, integer, timestamp, check, unique, uniqueIndex, index } from 'drizzle-orm/pg-core';
 import { users } from './users.js';
 
-export const teamStatusEnum = pgEnum('team_status', ['open', 'closed']);
+export const teamStatusEnum = pgEnum('team_status', ['open', 'closed', 'disbanded']);
 
 export const teams = pgTable(
   'teams',

@@ -190,14 +190,14 @@ flowchart TD
 
 ### Milestone 9: Admin Dashboard and Governance Suite
 
-* [ ] **9.1 User and Roster Moderation**: Admin ability to ban users, revoke tokens, and disband rule-breaking squads.
-* [ ] **9.2 Marketplace Moderation**: Takedown reported fraudulent listings and suspend seller accounts.
-* [ ] **9.3 Rate and Fee Overrides**: Live dashboard controls for boosting rates and platform announcements.
-* [ ] **9.4 Client Admin Governance UI**:
+* [X] **9.1 User and Roster Moderation**: Admin ability to ban users, revoke tokens, and disband rule-breaking squads.
+* [X] **9.2 Marketplace Moderation**: Takedown reported fraudulent listings and suspend seller accounts.
+* [X] **9.3 Rate and Fee Overrides**: Live dashboard controls for boosting rates and platform announcements.
+* [X] **9.4 Client Admin Governance UI**:
   * Build Admin layout and dashboard shell protected by role-based route guards.
   * Build moderation queues for flagged marketplace listings and reported accounts.
   * Build live boosting rate editor with instant pricing preview.
-* [ ] **9.5 Automated Governance and RBAC Testing**: Execute test suite verifying role-based access control guards, user ban enforcement, listing takedowns, boosting rate overrides, and admin UI views.
+* [X] **9.5 Automated Governance and RBAC Testing**: Execute test suite verifying role-based access control guards, user ban enforcement, listing takedowns, boosting rate overrides, and admin UI views (21 server tests passing, 4 client browser tests passing across 3 browsers; 25/25 total).
 
 ---
 

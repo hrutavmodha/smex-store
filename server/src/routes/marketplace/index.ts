@@ -6,6 +6,7 @@ import {
   type CreateListingInput,
   type UpdateListingInput,
 } from '../../services/listing.service.js';
+import { StorageService } from '../../services/storage.service.js';
 
 const proofImageSchema = z.object({
   s3Key: z.string().trim().min(1, 's3Key is required'),
@@ -40,7 +41,14 @@ const updateStatusSchema = z.object({
 const getListingsQuerySchema = z.object({
   q: z.string().optional(),
   gameSlug: z.string().optional(),
-  rankTier: z.union([z.string(), z.array(z.string())]).optional(),
+  rankTier: z
+    .union([z.string(), z.array(z.string())])
+    .transform((val) => {
+      if (Array.isArray(val)) return val;
+      if (val.includes(',')) return val.split(',').map((s) => s.trim());
+      return val;
+    })
+    .optional(),
   minPrice: z.coerce.number().optional(),
   maxPrice: z.coerce.number().optional(),
   badgeType: z.enum(['none', 'good_deal', 'hot']).optional(),
@@ -61,6 +69,8 @@ function formatRfc7807(statusCode: number, code: string, title: string, detail: 
 }
 
 export const marketplaceRoutes: FastifyPluginAsync = async (fastify) => {
+  const storageService = new StorageService();
+
   /**
    * GET /api/v1/marketplace/listings
    * Public filtered listing catalog
@@ -183,7 +193,8 @@ export const marketplaceRoutes: FastifyPluginAsync = async (fastify) => {
           id,
           userId,
           isAdmin,
-          parseResult.data as UpdateListingInput
+          parseResult.data as UpdateListingInput,
+          storageService
         );
         return reply.code(200).send(updated);
       } catch (err: unknown) {
@@ -261,7 +272,7 @@ export const marketplaceRoutes: FastifyPluginAsync = async (fastify) => {
       const isAdmin = request.user.role === 'admin';
 
       try {
-        const result = await ListingService.deleteListing(fastify.db, id, userId, isAdmin);
+        const result = await ListingService.deleteListing(fastify.db, id, userId, isAdmin, storageService);
         return reply.code(200).send(result);
       } catch (err: unknown) {
         const error = err as ListingServiceError;

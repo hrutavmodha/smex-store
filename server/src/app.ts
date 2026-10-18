@@ -17,6 +17,11 @@ import tournamentsRoutes from './routes/tournaments.js'
 import exampleRoutes from './routes/example/index.js'
 import boostingRoutes from './routes/boosting.js'
 import adminBoostingRoutes from './routes/admin/boosting.js'
+import adminMetricsRoutes from './routes/admin/metrics.js'
+import adminUsersRoutes from './routes/admin/users.js'
+import adminTeamsRoutes from './routes/admin/teams.js'
+import adminMarketplaceRoutes from './routes/admin/marketplace.js'
+import adminSystemRoutes from './routes/admin/system.js'
 import marketplaceRoutes from './routes/marketplace/index.js'
 import marketplaceUploadsRoutes from './routes/marketplace/uploads.js'
 import notificationsRoutes from './routes/notifications.js'
@@ -56,6 +61,11 @@ const app: FastifyPluginAsync<AppOptions> = async (
   await fastify.register(tournamentsRoutes)
   await fastify.register(boostingRoutes)
   await fastify.register(adminBoostingRoutes)
+  await fastify.register(adminMetricsRoutes)
+  await fastify.register(adminUsersRoutes)
+  await fastify.register(adminTeamsRoutes)
+  await fastify.register(adminMarketplaceRoutes)
+  await fastify.register(adminSystemRoutes)
   await fastify.register(marketplaceRoutes)
   await fastify.register(marketplaceUploadsRoutes)
   await fastify.register(notificationsRoutes)

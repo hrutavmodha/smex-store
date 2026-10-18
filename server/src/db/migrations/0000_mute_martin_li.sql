@@ -1,3 +1,4 @@
+CREATE EXTENSION IF NOT EXISTS pg_trgm;--> statement-breakpoint
 CREATE TYPE "public"."density_preference" AS ENUM('compact', 'comfortable', 'spacious');--> statement-breakpoint
 CREATE TYPE "public"."privacy_preference" AS ENUM('public', 'friends', 'private');--> statement-breakpoint
 CREATE TYPE "public"."theme_preference" AS ENUM('dark', 'amoled', 'light');--> statement-breakpoint
@@ -221,4 +222,9 @@ CREATE INDEX "sessions_expires_at_idx" ON "sessions" USING btree ("expires_at");
 CREATE INDEX "tournament_matches_round_idx" ON "tournament_matches" USING btree ("tournament_id","round_number");--> statement-breakpoint
 CREATE INDEX "boosting_rates_mode_idx" ON "boosting_rates" USING btree ("pricing_mode","is_active");--> statement-breakpoint
 CREATE INDEX "seller_ratings_seller_idx" ON "seller_ratings" USING btree ("seller_id");--> statement-breakpoint
-CREATE INDEX "activity_logs_user_created_idx" ON "activity_logs" USING btree ("user_id","created_at");
+CREATE INDEX "activity_logs_user_created_idx" ON "activity_logs" USING btree ("user_id","created_at");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "tournaments_title_trgm_idx" ON "tournaments" USING gin ("title" gin_trgm_ops);--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "teams_name_trgm_idx" ON "teams" USING gin ("name" gin_trgm_ops);--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "profiles_username_trgm_idx" ON "profiles" USING gin ("username" gin_trgm_ops);--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "profiles_in_game_id_trgm_idx" ON "profiles" USING gin ("in_game_id" gin_trgm_ops);--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "marketplace_title_trgm_idx" ON "marketplace_listings" USING gin ("title" gin_trgm_ops);

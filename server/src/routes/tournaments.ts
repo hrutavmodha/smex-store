@@ -11,7 +11,32 @@ import {
   tournaments,
   tournamentParticipants,
 } from '../db/schema/tournaments.js';
-import { teams } from '../db/schema/teams.js';
+import { teams, teamMembers } from '../db/schema/teams.js';
+import { NotificationService } from '../services/notification.service.js';
+import type { SmexDatabase } from '../db/index.js';
+
+async function getTournamentParticipantUserIds(tournamentId: string, db: SmexDatabase): Promise<string[]> {
+  const memberRows = await db
+    .select({ userId: teamMembers.userId })
+    .from(tournamentParticipants)
+    .innerJoin(teamMembers, eq(tournamentParticipants.teamId, teamMembers.teamId))
+    .where(eq(tournamentParticipants.tournamentId, tournamentId));
+
+  const captainRows = await db
+    .select({ captainId: teams.captainId })
+    .from(tournamentParticipants)
+    .innerJoin(teams, eq(tournamentParticipants.teamId, teams.id))
+    .where(eq(tournamentParticipants.tournamentId, tournamentId));
+
+  const userIds = new Set<string>();
+  for (const r of memberRows) {
+    if (r.userId) userIds.add(r.userId);
+  }
+  for (const r of captainRows) {
+    if (r.captainId) userIds.add(r.captainId);
+  }
+  return Array.from(userIds);
+}
 
 const createTournamentSchema = z.object({
   title: z
@@ -242,6 +267,7 @@ const tournamentsRoutes: FastifyPluginAsync = async (fastify) => {
 
         // Handle status transition if requested
         if (input.status && input.status !== current.status) {
+          const oldStatus = current.status;
           current = await TournamentLifecycleService.transitionStatus(
             id,
             input.status,
@@ -249,6 +275,20 @@ const tournamentsRoutes: FastifyPluginAsync = async (fastify) => {
             fastify.redis,
             { winnerTeamId: input.winnerTeamId }
           );
+
+          try {
+            const participantUserIds = await getTournamentParticipantUserIds(id, fastify.db);
+            await NotificationService.notifyTournamentScheduleAlert(
+              participantUserIds,
+              id,
+              `Tournament '${current.title}' transitioned from '${oldStatus}' to '${input.status}'.`,
+              fastify.db,
+              fastify.redis,
+              fastify.wsGateway
+            );
+          } catch {
+            // Non-blocking notification dispatch
+          }
         }
 
         // Handle field updates
@@ -654,6 +694,20 @@ const tournamentsRoutes: FastifyPluginAsync = async (fastify) => {
           fastify.db,
           fastify.redis
         );
+
+        try {
+          const participantUserIds = await getTournamentParticipantUserIds(id, fastify.db);
+          await NotificationService.notifyTournamentScheduleAlert(
+            participantUserIds,
+            id,
+            `Match result updated for Round ${result.match.roundNumber}: winner declared.`,
+            fastify.db,
+            fastify.redis,
+            fastify.wsGateway
+          );
+        } catch {
+          // Non-blocking notification dispatch
+        }
 
         return reply.code(200).send(result);
       } catch (err) {

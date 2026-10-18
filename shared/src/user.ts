@@ -10,6 +10,8 @@ export interface UserProfile {
   avatarPreset?: string;
   emailVerified: boolean;
   role?: string;
+  isBanned?: boolean;
+  banReason?: string | null;
 }
 
 export interface AccessTokenPayload {
@@ -18,4 +20,5 @@ export interface AccessTokenPayload {
   sessionId: string;
   iat?: number;
   exp?: number;
+  isBanned?: boolean;
 }

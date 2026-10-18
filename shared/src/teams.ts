@@ -1,4 +1,4 @@
-export type TeamStatus = 'open' | 'closed';
+export type TeamStatus = 'open' | 'closed' | 'disbanded';
 export type TeamAvailability = 'open' | 'closed' | 'full';
 
 export interface TeamCardData {

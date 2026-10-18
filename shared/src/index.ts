@@ -6,3 +6,4 @@ export * from './teams';
 export * from './boosting';
 export * from './user';
 export * from './cookie';
+export * from './admin';

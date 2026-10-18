@@ -1,6 +1,7 @@
 import { type FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { BoostingRateService } from '../services/boosting-rate.service.js';
+import { NotificationService } from '../services/notification.service.js';
 import {
   calculateBoostingPrice,
   ValidationError,
@@ -53,7 +54,7 @@ const boostingRoutes: FastifyPluginAsync = async (fastify) => {
    * Returns all active rates and surcharge multipliers
    */
   fastify.get('/api/v1/boosting/rates', async (_request, reply) => {
-    const rates = await BoostingRateService.getActiveRates(fastify.db);
+    const rates = await BoostingRateService.getActiveRates(fastify.db, fastify.redis);
     return reply.code(200).send({
       rates,
       surcharges: DEFAULT_SURCHARGES,
@@ -75,7 +76,7 @@ const boostingRoutes: FastifyPluginAsync = async (fastify) => {
       });
     }
 
-    const rates = await BoostingRateService.getActiveRates(fastify.db);
+    const rates = await BoostingRateService.getActiveRates(fastify.db, fastify.redis);
 
     try {
       const calculation = calculateBoostingPrice({
@@ -190,6 +191,21 @@ const boostingRoutes: FastifyPluginAsync = async (fastify) => {
       },
       fastify.db
     );
+
+    if (order.customerId) {
+      try {
+        await NotificationService.notifyOrderStatusUpdate(
+          order.customerId,
+          order.id,
+          order.status,
+          fastify.db,
+          fastify.redis,
+          fastify.wsGateway
+        );
+      } catch {
+        // Non-blocking notification dispatch
+      }
+    }
 
     return reply.code(201).send({
       orderId: order.id,

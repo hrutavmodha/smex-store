@@ -135,7 +135,8 @@ export class TeamJoinService {
           playerRole: input.playerRole,
         },
         redis,
-        wsGateway
+        wsGateway,
+        db
       );
     } catch {
       // Non-blocking notification dispatch: transport failures must not fail the created request
@@ -338,7 +339,8 @@ export class TeamJoinService {
         txResult.applicantId,
         { teamId, teamName: txResult.teamName, status: txResult.status },
         redis,
-        wsGateway
+        wsGateway,
+        db
       );
     } catch {
       // Non-blocking notification dispatch: transport failures must not fail the committed transaction

@@ -41,7 +41,7 @@ export interface MarketplaceListingItem {
 export interface GetListingsParams {
   q?: string;
   gameSlug?: string;
-  rankTier?: string;
+  rankTier?: string | string[];
   minPrice?: number;
   maxPrice?: number;
   badgeType?: string;

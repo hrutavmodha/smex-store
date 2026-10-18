@@ -1,3 +1,4 @@
+import type { Redis } from 'ioredis';
 import { eq, desc, and } from 'drizzle-orm';
 import { type SmexDatabase } from '../db/index.js';
 import {
@@ -8,6 +9,8 @@ import {
   type BoostingOrder,
 } from '../db/schema/boosting.js';
 import { ValidationError } from './boosting-calc.service.js';
+
+export const REDIS_BOOSTING_RATES_KEY = 'boosting:rates:active';
 
 export interface RateUpdateInput {
   priceInr?: number | string;
@@ -33,13 +36,34 @@ export const ALLOWED_ORDER_TRANSITIONS: Record<string, string[]> = {
 
 export class BoostingRateService {
   /**
-   * Retrieves all currently active boosting rates
+   * Retrieves all currently active boosting rates, caching in Redis when available
    */
-  static async getActiveRates(db: SmexDatabase): Promise<BoostingRate[]> {
-    return db
+  static async getActiveRates(db: SmexDatabase, redis?: Redis): Promise<BoostingRate[]> {
+    if (redis) {
+      try {
+        const cached = await redis.get(REDIS_BOOSTING_RATES_KEY);
+        if (cached) {
+          return JSON.parse(cached) as BoostingRate[];
+        }
+      } catch {
+        // Fallback to database on cache retrieval failure
+      }
+    }
+
+    const rates = await db
       .select()
       .from(boostingRates)
       .where(eq(boostingRates.isActive, true));
+
+    if (redis && rates.length > 0) {
+      try {
+        await redis.set(REDIS_BOOSTING_RATES_KEY, JSON.stringify(rates), 'EX', 3600);
+      } catch {
+        // Non-fatal cache population failure
+      }
+    }
+
+    return rates;
   }
 
   /**
@@ -50,12 +74,13 @@ export class BoostingRateService {
   }
 
   /**
-   * Updates an existing boosting rate row
+   * Updates an existing boosting rate row and invalidates active rates cache
    */
   static async updateRate(
     id: string,
     data: RateUpdateInput,
-    db: SmexDatabase
+    db: SmexDatabase,
+    redis?: Redis
   ): Promise<BoostingRate | undefined> {
     const [existing] = await db
       .select()
@@ -69,7 +94,7 @@ export class BoostingRateService {
     if (data.priceInr !== undefined) {
       const num = Number(data.priceInr);
       if (isNaN(num) || num <= 0) {
-        throw new ValidationError('INVALID_PRICE', 400, 'priceInr must be strictly positive');
+        throw new ValidationError('INVALID_PRICE', 422, 'priceInr must be strictly positive');
       }
     }
 
@@ -108,6 +133,14 @@ export class BoostingRateService {
       .set(updatePayload)
       .where(eq(boostingRates.id, id))
       .returning();
+
+    if (updated && redis) {
+      try {
+        await redis.del(REDIS_BOOSTING_RATES_KEY);
+      } catch {
+        // Non-fatal cache invalidation failure
+      }
+    }
 
     return updated;
   }
