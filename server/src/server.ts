@@ -8,7 +8,7 @@ export async function createServer() {
     logger: loggerOptions,
   });
 
-  await server.register(fp(appPlugin as any, { name: 'smex-app' }), appOptions);
+  await server.register(fp(appPlugin, { name: 'smex-app' }), appOptions);
 
   return server;
 }

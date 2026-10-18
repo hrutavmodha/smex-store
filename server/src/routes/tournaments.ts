@@ -1,6 +1,6 @@
 import { type FastifyPluginAsync, type FastifyReply } from 'fastify';
 import { z } from 'zod';
-import { eq, sql, and } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import {
   TournamentLifecycleService,
   TournamentLifecycleError,

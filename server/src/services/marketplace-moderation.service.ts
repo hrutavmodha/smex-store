@@ -1,5 +1,5 @@
 import type { Redis } from 'ioredis';
-import { eq, and, desc, sql } from 'drizzle-orm';
+import { eq, and, desc } from 'drizzle-orm';
 import type { SmexDatabase } from '../db/index.js';
 import { marketplaceListings, listingProofs } from '../db/schema/marketplace.js';
 import { users, profiles } from '../db/schema/users.js';
@@ -170,7 +170,7 @@ export class MarketplaceModerationService {
       try {
         await s3.deleteObject(proof.s3Key);
         deletedCount++;
-      } catch (err) {
+      } catch {
         // Log S3 cleanup error without blocking transactional takedown
       }
     }

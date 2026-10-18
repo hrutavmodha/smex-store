@@ -31,9 +31,13 @@ export function useCatalogListings() {
   }, [searchQuery]);
 
   // Reset to page 1 when any search filter changes
-  useEffect(() => {
+  const filterKey = `${debouncedQuery}:${selectedRanks.join(',')}:${minPrice}:${maxPrice}:${selectedBadge}:${sortBy}`;
+  const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
+
+  if (filterKey !== prevFilterKey) {
+    setPrevFilterKey(filterKey);
     setPage(1);
-  }, [debouncedQuery, selectedRanks, minPrice, maxPrice, selectedBadge, sortBy]);
+  }
 
   useEffect(() => {
     let cancelled = false;

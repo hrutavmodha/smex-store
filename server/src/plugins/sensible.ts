@@ -32,6 +32,21 @@ export function formatRfc7807Problem(
   return problem;
 }
 
+export interface AppError extends Partial<Error> {
+  statusCode?: number;
+  status?: number;
+  code?: string;
+  title?: string;
+  detail?: string;
+  type?: string;
+  validation?: Array<{
+    instancePath?: string;
+    params?: Record<string, unknown>;
+    message?: string;
+  }>;
+  invalid_params?: Array<{ name: string; reason: string }>;
+}
+
 export default fp<FastifySensibleOptions>(async (fastify) => {
   await fastify.register(sensible);
 
@@ -54,7 +69,7 @@ export default fp<FastifySensibleOptions>(async (fastify) => {
   });
 
   // Global error handler adhering to RFC 7807 Problem Details
-  fastify.setErrorHandler((error: any, request, reply) => {
+  fastify.setErrorHandler((error: AppError, request, reply) => {
     const statusCode = error.validation ? 422 : (error.statusCode || error.status || 500);
     const code = error.code || (statusCode === 422 ? 'VALIDATION_FAILED' : 'INTERNAL_ERROR');
     const title = error.title || error.name || (statusCode === 422 ? 'Validation Error' : 'Internal Server Error');
@@ -62,8 +77,8 @@ export default fp<FastifySensibleOptions>(async (fastify) => {
 
     let invalidParams: Array<{ name: string; reason: string }> | undefined;
     if (error.validation && Array.isArray(error.validation)) {
-      invalidParams = error.validation.map((v: any) => ({
-        name: v.instancePath ? v.instancePath.replace(/^\//, '') : v.params?.missingProperty || 'unknown',
+      invalidParams = error.validation.map((v) => ({
+        name: v.instancePath ? v.instancePath.replace(/^\//, '') : (v.params?.missingProperty as string) || 'unknown',
         reason: v.message || 'Invalid value',
       }));
     } else if (error.invalid_params) {

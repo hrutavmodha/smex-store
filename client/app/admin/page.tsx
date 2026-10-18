@@ -10,8 +10,6 @@ import {
   Trash2,
   UserX,
   CheckCircle,
-  ExternalLink,
-  Shield,
 } from 'lucide-react';
 import { fetchWithAuth } from '../../lib/api';
 import type { AdminMetrics, ModerationListingItem } from '@smex/shared';
