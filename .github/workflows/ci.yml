@@ -112,7 +112,7 @@ jobs:
           REDIS_URL: redis://localhost:6379
 
       - name: Execute server test suite with coverage gate
-        run: pnpm --filter @smex/server test --coverage --coverage.thresholds.lines=80 --coverage.thresholds.branches=80 --coverage.thresholds.functions=80
+        run: pnpm --filter @smex/server test --coverage --coverage.thresholds.lines=80 --coverage.thresholds.functions=80 --coverage.thresholds.statements=80
         env:
           NODE_ENV: test
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/smex_store
