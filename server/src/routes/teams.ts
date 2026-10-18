@@ -6,6 +6,7 @@ import {
 } from '@smex/shared';
 import { TeamService } from '../services/team.service.js';
 import { TeamJoinService } from '../services/team-join.service.js';
+import { formatRfc7807 } from '../utils/errors.js';
 
 const createTeamSchema = z.object({
   name: z.string().trim().min(2, 'Name must be at least 2 characters').max(50, 'Name cannot exceed 50 characters'),
@@ -36,16 +37,6 @@ const resolveJoinRequestSchema = z.object({
 const transferCaptaincySchema = z.object({
   newCaptainId: z.string().uuid('Invalid new captain user ID'),
 });
-
-function formatRfc7807(statusCode: number, code: string, title: string, detail: string) {
-  return {
-    type: `https://api.smexstore.com/errors/${code.toLowerCase().replace(/_/g, '-')}`,
-    title,
-    status: statusCode,
-    detail,
-    code,
-  };
-}
 
 interface TeamRouteError {
   code?: string;

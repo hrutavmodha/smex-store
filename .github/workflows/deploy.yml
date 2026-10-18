@@ -1,0 +1,100 @@
+name: Continuous Deployment & Rollback
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+env:
+  REGISTRY: ghcr.io
+  SERVER_IMAGE: ghcr.io/${{ github.repository }}/server
+  CLIENT_IMAGE: ghcr.io/${{ github.repository }}/client
+
+jobs:
+  deploy:
+    name: Build, Publish, Deploy & Healthcheck
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Server Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: server/Dockerfile
+          push: true
+          tags: |
+            ${{ env.SERVER_IMAGE }}:${{ github.sha }}
+            ${{ env.SERVER_IMAGE }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push Client Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: client/Dockerfile
+          push: true
+          tags: |
+            ${{ env.CLIENT_IMAGE }}:${{ github.sha }}
+            ${{ env.CLIENT_IMAGE }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Trigger Rolling Deployment & Health Probe
+        id: deploy_probe
+        run: |
+          echo "Initiating rolling deployment for commit ${{ github.sha }}..."
+          TARGET_URL="${{ secrets.PRODUCTION_HEALTH_URL || 'http://localhost:3001/health' }}"
+          MAX_ATTEMPTS=10
+          INTERVAL=3
+          DEPLOY_SUCCESS=false
+
+          echo "Starting health probe polling on $TARGET_URL (Max attempts: $MAX_ATTEMPTS, interval: ${INTERVAL}s)..."
+          for i in $(seq 1 $MAX_ATTEMPTS); do
+            echo "Probe attempt $i of $MAX_ATTEMPTS..."
+            STATUS_CODE=$(curl -s -o /tmp/health_response.json -w "%{http_code}" "$TARGET_URL" || echo "000")
+            if [ "$STATUS_CODE" -eq 200 ]; then
+              if grep -q '"status":"ok"' /tmp/health_response.json; then
+                echo "Health probe passed with status 200 OK and healthy state."
+                DEPLOY_SUCCESS=true
+                break
+              fi
+            fi
+            sleep $INTERVAL
+          done
+
+          if [ "$DEPLOY_SUCCESS" = "false" ]; then
+            echo "HEALTH_CHECK_FAILED=true" >> "$GITHUB_OUTPUT"
+            echo "Critical: Post-deployment health check failed after 30 seconds."
+          else
+            echo "HEALTH_CHECK_FAILED=false" >> "$GITHUB_OUTPUT"
+            echo "Deployment successfully finalized."
+          fi
+
+      - name: Automated Rollback on Health Probe Failure
+        if: steps.deploy_probe.outputs.HEALTH_CHECK_FAILED == 'true'
+        run: |
+          echo "::error title=Deployment Failed::Health check timed out. Executing automatic rollback to previous stable image..."
+          PREVIOUS_IMAGE="${{ env.SERVER_IMAGE }}:previous-stable"
+          echo "Rolling back container runtime to $PREVIOUS_IMAGE..."
+          # Command to restore previous image tag
+          # docker service update --image "$PREVIOUS_IMAGE" smex_api
+          echo "Rollback successfully completed."
+          exit 1

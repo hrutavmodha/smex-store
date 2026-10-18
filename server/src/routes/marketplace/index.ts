@@ -7,6 +7,7 @@ import {
   type UpdateListingInput,
 } from '../../services/listing.service.js';
 import { StorageService } from '../../services/storage.service.js';
+import { formatRfc7807 } from '../../utils/errors.js';
 
 const proofImageSchema = z.object({
   s3Key: z.string().trim().min(1, 's3Key is required'),
@@ -57,16 +58,6 @@ const getListingsQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).optional().default(20),
   sortBy: z.enum(['price_asc', 'price_desc', 'newest']).optional().default('newest'),
 });
-
-function formatRfc7807(statusCode: number, code: string, title: string, detail: string) {
-  return {
-    type: `https://api.smexstore.com/errors/${code.toLowerCase().replace(/_/g, '-')}`,
-    title,
-    status: statusCode,
-    detail,
-    code,
-  };
-}
 
 export const marketplaceRoutes: FastifyPluginAsync = async (fastify) => {
   const storageService = new StorageService();

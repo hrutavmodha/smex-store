@@ -8,12 +8,6 @@ import { CreateListingForm } from '../../components/marketplace/CreateListingFor
 import { SellerContactModal } from '../../components/marketplace/SellerContactModal';
 import * as uploaderModule from '../../lib/marketplace/uploader';
 
-import catalogSource from '../../components/marketplace/MarketplaceCatalog.tsx?raw';
-import carouselSource from '../../components/marketplace/ProofLightboxCarousel.tsx?raw';
-import detailSource from '../../components/marketplace/ListingDetailView.tsx?raw';
-import modalSource from '../../components/marketplace/SellerContactModal.tsx?raw';
-import marketplacePageSource from '../../app/marketplace/page.tsx?raw';
-
 const mockListing = {
   id: '7b8e5c3a-1234-4567-89ab-cdef01234567',
   sellerId: 'user-123',
@@ -138,58 +132,86 @@ describe('Marketplace Presentation UI & Media Carousel Suite (LLT 2.5)', () => {
     // Initial counter: Proof 1 of 3
     expect(container.textContent).toContain('Proof 1 of 3');
 
+    const slidingContainer = container.querySelector('.transition-transform');
+    expect(slidingContainer).toBeTruthy();
+    expect((slidingContainer as HTMLElement)?.style.transform).toMatch(/translateX\(-?0%\)/);
+
     const nextBtn = screen.getByLabelText('Next screenshot');
     expect(nextBtn).toBeTruthy();
 
     // Click Next -> increments to Proof 2 of 3
     fireEvent.click(nextBtn);
     expect(container.textContent).toContain('Proof 2 of 3');
+    expect((slidingContainer as HTMLElement)?.style.transform).toContain('translateX(-100%)');
 
     // Click Next again -> increments to Proof 3 of 3
     fireEvent.click(nextBtn);
     expect(container.textContent).toContain('Proof 3 of 3');
+    expect((slidingContainer as HTMLElement)?.style.transform).toContain('translateX(-200%)');
 
     // Click Previous -> decrements back to Proof 2 of 3
     const prevBtn = screen.getByLabelText('Previous screenshot');
     expect(prevBtn).toBeTruthy();
     fireEvent.click(prevBtn);
     expect(container.textContent).toContain('Proof 2 of 3');
+    expect((slidingContainer as HTMLElement)?.style.transform).toContain('translateX(-100%)');
 
-    // Audit carousel source: hardware transform 120ms and zero opacity fade
-    expect(carouselSource.includes('duration-120')).toBe(true);
-    expect(carouselSource.includes('transition-transform')).toBe(true);
-    expect(carouselSource.includes('fade-in')).toBe(false);
-    expect(carouselSource.includes('opacity-0')).toBe(false);
+    // Audit carousel DOM element: hardware transform 120ms and zero opacity fade (BUG-M7-006)
+    expect(slidingContainer?.classList.contains('duration-120')).toBe(true);
+    expect(slidingContainer?.classList.contains('transition-transform')).toBe(true);
+    expect(slidingContainer?.classList.contains('fade-in')).toBe(false);
+    expect(slidingContainer?.classList.contains('opacity-0')).toBe(false);
   });
 
-  it('Test 26: AMOLED #000000 surface and motion physics compliance', () => {
-    const { container } = render(<MarketplacePage />);
-    const mainElement = container.querySelector('main');
+  it('Test 26: AMOLED #000000 surface and motion physics compliance (BUG-M7-006)', () => {
+    const pageRender = render(<MarketplacePage />);
+    const mainElement = pageRender.container.querySelector('main');
     expect(mainElement).toBeTruthy();
 
     // Background is AMOLED True-Black #000000
     expect(mainElement?.style.backgroundColor).toBe('rgb(0, 0, 0)');
 
-    // Source code audits across all Marketplace presentation components
-    const allMarketplaceSources = [
-      catalogSource,
-      carouselSource,
-      detailSource,
-      modalSource,
-      marketplacePageSource,
+    // Render marketplace presentation components to verify actual rendered DOM trees
+    const carouselRender = render(
+      <ProofLightboxCarousel
+        proofImages={mockListing.proofImages}
+        title={mockListing.title}
+      />
+    );
+    const detailRender = render(<ListingDetailView listing={mockListing} />);
+    const modalRender = render(
+      <SellerContactModal
+        listing={mockListing}
+        isOpen={true}
+        onClose={() => {}}
+      />
+    );
+
+    const renderedContainers = [
+      pageRender.container,
+      carouselRender.container,
+      detailRender.container,
+      modalRender.container,
     ];
 
-    for (const source of allMarketplaceSources) {
-      // Prohibited: frosted glass blur
-      expect(source.includes('backdrop-blur')).toBe(false);
-      expect(source.includes('backdrop-filter: blur')).toBe(false);
-
-      // Prohibited: opacity fade animations
-      expect(source.includes('animate-fade')).toBe(false);
-      expect(source.includes('fade-in')).toBe(false);
+    for (const cont of renderedContainers) {
+      const allElements = cont.querySelectorAll('*');
+      for (const el of allElements) {
+        const className = el.className;
+        if (typeof className === 'string') {
+          // Prohibited: frosted glass blur
+          expect(className).not.toContain('backdrop-blur');
+          // Prohibited: opacity fade animations
+          expect(className).not.toContain('animate-fade');
+          expect(className).not.toContain('fade-in');
+        }
+      }
 
       // Mandated: 120ms hardware transitions
-      expect(source.includes('duration-120')).toBe(true);
+      const transitionElements = cont.querySelectorAll('[class*="transition-"]');
+      for (const el of transitionElements) {
+        expect(el.classList.contains('duration-120')).toBe(true);
+      }
     }
   });
 
@@ -300,6 +322,87 @@ describe('Marketplace Presentation UI & Media Carousel Suite (LLT 2.5)', () => {
     });
 
     expect(fetchCount).toBe(2);
+
+    window.fetch = origFetch;
+  });
+
+  it('Test 30: Marketplace catalog renders pagination controls and loads subsequent pages (BUG-M7-007)', async () => {
+    const urlsRequested: string[] = [];
+    const origFetch = window.fetch;
+
+    window.fetch = vi.fn().mockImplementation((url: string) => {
+      urlsRequested.push(url);
+
+      if (url.includes('page=2')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            listings: Array.from({ length: 25 }, (_, i) => ({
+              ...mockListing,
+              id: `p2-listing-${i}`,
+              title: `Page 2 Listing ${i + 1}`,
+            })),
+            total: 75,
+            page: 2,
+            limit: 50,
+            totalPages: 2,
+          }),
+        });
+      }
+
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({
+          listings: Array.from({ length: 50 }, (_, i) => ({
+            ...mockListing,
+            id: `p1-listing-${i}`,
+            title: `Page 1 Listing ${i + 1}`,
+          })),
+          total: 75,
+          page: 1,
+          limit: 50,
+          totalPages: 2,
+        }),
+      });
+    });
+
+    const { MarketplaceCatalog } = await import('../../components/marketplace/MarketplaceCatalog');
+    const { container } = render(<MarketplaceCatalog />);
+
+    // Wait for initial fetch
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    // Authoritative server total matches count: 75
+    expect(container.textContent).toContain('75');
+    expect(container.textContent).toContain('Active Listings Found');
+    expect(container.textContent).toContain('Page 1 of 2');
+    expect(container.textContent).toContain('Showing 50 of 75 listings');
+
+    // Pagination controls present
+    const prevBtn = screen.getByLabelText('Previous page') as HTMLButtonElement;
+    const nextBtn = screen.getByLabelText('Next page') as HTMLButtonElement;
+    expect(prevBtn).toBeTruthy();
+    expect(nextBtn).toBeTruthy();
+
+    // On page 1: Previous is disabled, Next is enabled
+    expect(prevBtn.disabled).toBe(true);
+    expect(nextBtn.disabled).toBe(false);
+
+    // Click Next -> advances to page 2
+    await act(async () => {
+      fireEvent.click(nextBtn);
+    });
+
+    // Verifies request sent with page=2
+    expect(urlsRequested.some((u) => u.includes('page=2'))).toBe(true);
+
+    // Page 2 assertions
+    expect(container.textContent).toContain('Page 2 of 2');
+    expect(container.textContent).toContain('Showing 25 of 75 listings');
+    expect(prevBtn.disabled).toBe(false);
+    expect(nextBtn.disabled).toBe(true);
 
     window.fetch = origFetch;
   });

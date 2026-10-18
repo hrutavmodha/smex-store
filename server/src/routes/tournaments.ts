@@ -5,6 +5,7 @@ import {
   TournamentLifecycleService,
   TournamentLifecycleError,
 } from '../services/tournament-lifecycle.service.js';
+import { TournamentParticipantService } from '../services/tournament-participant.service.js';
 import { BracketGeneratorService } from '../services/bracket-generator.service.js';
 import { MatchService, MatchError } from '../services/match.service.js';
 import {
@@ -13,6 +14,7 @@ import {
 } from '../db/schema/tournaments.js';
 import { teams, teamMembers } from '../db/schema/teams.js';
 import { NotificationService } from '../services/notification.service.js';
+import { formatRfc7807 } from '../utils/errors.js';
 import type { SmexDatabase } from '../db/index.js';
 
 async function getTournamentParticipantUserIds(tournamentId: string, db: SmexDatabase): Promise<string[]> {
@@ -82,16 +84,6 @@ const updateMatchScoreSchema = z.object({
   teamBScore: z.number().int().min(0, 'Score cannot be negative'),
   winnerId: z.string().uuid('Invalid winner team ID format'),
 });
-
-function formatRfc7807(statusCode: number, code: string, title: string, detail: string) {
-  return {
-    type: `https://api.smexstore.com/errors/${code.toLowerCase().replace(/_/g, '-')}`,
-    title,
-    status: statusCode,
-    detail,
-    code,
-  };
-}
 
 interface TournamentRouteError {
   code?: string;
@@ -346,100 +338,13 @@ const tournamentsRoutes: FastifyPluginAsync = async (fastify) => {
       const userId = request.user.sub;
 
       try {
-        const participant = await fastify.db.transaction(async (tx) => {
-          // Verify tournament exists and state is registration_open
-          const [tourney] = await tx
-            .select()
-            .from(tournaments)
-            .where(eq(tournaments.id, id))
-            .for('update')
-            .limit(1);
-
-          if (!tourney) {
-            throw new TournamentLifecycleError(
-              'TOURNAMENT_NOT_FOUND',
-              404,
-              'Tournament not found'
-            );
-          }
-
-          if (tourney.status !== 'registration_open') {
-            throw new TournamentLifecycleError(
-              'REGISTRATION_CLOSED',
-              400,
-              `Registrations are not open for this tournament (current status: ${tourney.status})`
-            );
-          }
-
-          // Verify caller is captain of squad
-          const [teamRecord] = await tx
-            .select()
-            .from(teams)
-            .where(eq(teams.id, teamId))
-            .limit(1);
-
-          if (!teamRecord) {
-            throw new TournamentLifecycleError('TEAM_NOT_FOUND', 404, 'Team not found');
-          }
-
-          if (teamRecord.captainId !== userId && request.user.role !== 'admin') {
-            throw new TournamentLifecycleError(
-              'CAPTAIN_PERMISSION_REQUIRED',
-              403,
-              'Only the squad captain may register the team for a tournament'
-            );
-          }
-
-          // Check if already registered
-          const [existingParticipant] = await tx
-            .select()
-            .from(tournamentParticipants)
-            .where(
-              and(
-                eq(tournamentParticipants.tournamentId, id),
-                eq(tournamentParticipants.teamId, teamId)
-              )
-            )
-            .limit(1);
-
-          if (existingParticipant) {
-            throw new TournamentLifecycleError(
-              'DUPLICATE_REGISTRATION',
-              409,
-              'This squad is already registered in this tournament'
-            );
-          }
-
-          // Check capacity limit
-          const [countRecord] = await tx
-            .select({ count: sql<number>`CAST(count(*) AS integer)` })
-            .from(tournamentParticipants)
-            .where(eq(tournamentParticipants.tournamentId, id));
-
-          const currentCount = countRecord?.count ?? 0;
-          if (currentCount >= tourney.maxTeams) {
-            throw new TournamentLifecycleError(
-              'TOURNAMENT_FULL',
-              422,
-              'Tournament has reached maximum squad capacity'
-            );
-          }
-
-          // Assign next seed
-          const assignedSeed = currentCount + 1;
-
-          const [inserted] = await tx
-            .insert(tournamentParticipants)
-            .values({
-              tournamentId: id,
-              teamId,
-              seed: assignedSeed,
-              registeredAt: new Date(),
-            })
-            .returning();
-
-          return inserted;
-        });
+        const participant = await TournamentParticipantService.registerSquad(
+          id,
+          teamId,
+          userId,
+          request.user.role,
+          fastify.db
+        );
 
         return reply.code(201).send(participant);
       } catch (err) {
@@ -459,107 +364,13 @@ const tournamentsRoutes: FastifyPluginAsync = async (fastify) => {
       const userId = request.user.sub;
 
       try {
-        const [tourney] = await fastify.db
-          .select()
-          .from(tournaments)
-          .where(eq(tournaments.id, id))
-          .limit(1);
-
-        if (!tourney) {
-          return reply
-            .code(404)
-            .send(formatRfc7807(404, 'TOURNAMENT_NOT_FOUND', 'Not Found', 'Tournament not found'));
-        }
-
-        if (tourney.status !== 'registration_open') {
-          return reply
-            .code(400)
-            .send(
-              formatRfc7807(
-                400,
-                'REGISTRATION_CLOSED',
-                'Bad Request',
-                'Squads can only be withdrawn while tournament is in registration_open state'
-              )
-            );
-        }
-
-        const [teamRecord] = await fastify.db
-          .select()
-          .from(teams)
-          .where(eq(teams.id, teamId))
-          .limit(1);
-
-        if (!teamRecord) {
-          return reply
-            .code(404)
-            .send(formatRfc7807(404, 'TEAM_NOT_FOUND', 'Not Found', 'Team not found'));
-        }
-
-        if (teamRecord.captainId !== userId && request.user.role !== 'admin') {
-          return reply
-            .code(403)
-            .send(
-              formatRfc7807(
-                403,
-                'FORBIDDEN',
-                'Forbidden',
-                'Only the squad captain or an administrator may withdraw this squad'
-              )
-            );
-        }
-
-        await fastify.db.transaction(async (tx) => {
-          const [participant] = await tx
-            .select()
-            .from(tournamentParticipants)
-            .where(
-              and(
-                eq(tournamentParticipants.tournamentId, id),
-                eq(tournamentParticipants.teamId, teamId)
-              )
-            )
-            .limit(1);
-
-          if (!participant) {
-            throw new TournamentLifecycleError(
-              'PARTICIPANT_NOT_FOUND',
-              404,
-              'Squad is not registered in this tournament'
-            );
-          }
-
-          await tx
-            .delete(tournamentParticipants)
-            .where(
-              and(
-                eq(tournamentParticipants.tournamentId, id),
-                eq(tournamentParticipants.teamId, teamId)
-              )
-            );
-
-          // BUG-M5-003: Re-compact seeds of remaining participants sequentially
-          const remaining = await tx
-            .select()
-            .from(tournamentParticipants)
-            .where(eq(tournamentParticipants.tournamentId, id))
-            .orderBy(tournamentParticipants.seed, tournamentParticipants.registeredAt);
-
-          for (let i = 0; i < remaining.length; i++) {
-            const newSeed = i + 1;
-            if (remaining[i].seed !== newSeed) {
-              await tx
-                .update(tournamentParticipants)
-                .set({ seed: newSeed })
-                .where(
-                  and(
-                    eq(tournamentParticipants.tournamentId, id),
-                    eq(tournamentParticipants.teamId, remaining[i].teamId)
-                  )
-                );
-            }
-          }
-        });
+        await TournamentParticipantService.withdrawSquad(
+          id,
+          teamId,
+          userId,
+          request.user.role,
+          fastify.db
+        );
 
         return reply.code(200).send({ message: 'Squad successfully withdrawn from tournament' });
       } catch (err) {

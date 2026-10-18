@@ -3,23 +3,7 @@ import { z } from 'zod';
 import { SearchService } from '../services/search.service.js';
 import { type SearchCategory } from '@smex/shared';
 import { searchRateLimitConfig } from '../plugins/rate-limit.js';
-
-function formatRfc7807(
-  statusCode: number,
-  code: string,
-  title: string,
-  detail: string,
-  instance?: string
-) {
-  return {
-    type: `https://api.smexstore.com/errors/${code.toLowerCase().replace(/_/g, '-')}`,
-    title,
-    status: statusCode,
-    detail,
-    code,
-    ...(instance ? { instance } : {}),
-  };
-}
+import { formatRfc7807 } from '../utils/errors.js';
 
 const searchQuerySchema = z.object({
   q: z.string().default(''),

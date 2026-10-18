@@ -1,23 +1,7 @@
 import { type FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { NotificationService } from '../services/notification.service.js';
-
-function formatRfc7807(
-  statusCode: number,
-  code: string,
-  title: string,
-  detail: string,
-  instance?: string
-) {
-  return {
-    type: `https://api.smexstore.com/errors/${code.toLowerCase().replace(/_/g, '-')}`,
-    title,
-    status: statusCode,
-    detail,
-    code,
-    ...(instance ? { instance } : {}),
-  };
-}
+import { formatRfc7807 } from '../utils/errors.js';
 
 const getNotificationsQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),

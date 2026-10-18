@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
-import { Upload, X, ShieldAlert, AlertCircle, Loader2 } from 'lucide-react';
+import { ShieldAlert, AlertCircle, Loader2 } from 'lucide-react';
 import { uploadScreenshotProof, MAX_UPLOAD_SIZE, ALLOWED_UPLOAD_TYPES } from '../../lib/marketplace/uploader';
 import { createMarketplaceListing } from '../../lib/marketplace/api';
+import { ProofUploadGrid } from './ProofUploadGrid';
 import type { ProofImageItem } from '@smex/shared';
 
 const RANK_TIERS = [
@@ -19,7 +19,6 @@ const RANK_TIERS = [
 
 export function CreateListingForm() {
   const router = useRouter();
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [title, setTitle] = useState('');
   const [rankTier, setRankTier] = useState<string>('Mythic');
@@ -88,9 +87,6 @@ export function CreateListingForm() {
       setUploadError((err as Error).message || 'Failed to upload screenshot proofs.');
     } finally {
       setIsUploading(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
     }
   };
 
@@ -118,19 +114,19 @@ export function CreateListingForm() {
     }
 
     if (!contactHandle.trim()) {
-      setFormError('Please enter your contact handle or phone number.');
+      setFormError('Contact handle/number is required.');
       return;
     }
 
     if (uploadedProofs.length === 0) {
-      setFormError('Please upload at least 1 verified proof screenshot of the account.');
+      setFormError('Please upload at least one verified screenshot proof.');
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      const created = await createMarketplaceListing({
+      const newListing = await createMarketplaceListing({
         title: title.trim(),
         gameSlug: 'mlbb',
         rankTier,
@@ -140,7 +136,7 @@ export function CreateListingForm() {
         proofImages: uploadedProofs,
       });
 
-      router.push(`/marketplace/${created.id}`);
+      router.push(`/marketplace/${newListing.id}`);
     } catch (err: unknown) {
       setFormError((err as Error).message || 'Failed to publish listing. Please try again.');
       setIsSubmitting(false);
@@ -148,11 +144,10 @@ export function CreateListingForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="w-full max-w-2xl mx-auto flex flex-col gap-6">
-      {/* Error banner */}
+    <form onSubmit={handleSubmit} className="w-full max-w-2xl flex flex-col gap-6">
       {formError && (
-        <div className="p-4 rounded-xl bg-red-950/40 border border-red-800/60 flex items-start gap-3 text-red-200 text-sm">
-          <AlertCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+        <div className="p-4 rounded-xl bg-red-950/40 border border-red-800 text-sm text-red-200 flex items-center gap-3">
+          <AlertCircle className="w-5 h-5 text-red-400 shrink-0" />
           <span>{formError}</span>
         </div>
       )}
@@ -167,9 +162,9 @@ export function CreateListingForm() {
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="e.g. MLBB Mythical Glory 75★ - 120 Skins, All Heroes"
-          maxLength={150}
+          placeholder="e.g. MLBB Mythical Glory 75★ - 120 Skins, Collector Granger"
           required
+          maxLength={100}
           className="w-full px-4 py-3 rounded-xl bg-[#121C19] border border-[#223530] text-[#E9F5F1] placeholder-[#8FA39C] focus:outline-none focus:border-[#1FAE7A] transition-all duration-120 ease-out"
         />
       </div>
@@ -196,7 +191,7 @@ export function CreateListingForm() {
 
         <div className="flex flex-col gap-2">
           <label htmlFor="price-inr" className="text-sm font-semibold text-[#E9F5F1]">
-            Price (INR) <span className="text-[#1FAE7A]">*</span>
+            Asking Price (INR) <span className="text-[#1FAE7A]">*</span>
           </label>
           <div className="relative">
             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#8FA39C] font-bold">
@@ -251,113 +246,15 @@ export function CreateListingForm() {
         </div>
       </div>
 
-      {/* Screenshot Proof Dropzone */}
-      <div className="flex flex-col gap-2">
-        <label className="text-sm font-semibold text-[#E9F5F1] flex items-center justify-between">
-          <span>
-            Verified Proof Screenshots <span className="text-[#1FAE7A]">*</span>
-          </span>
-          <span className="text-xs font-normal text-[#8FA39C]">
-            {uploadedProofs.length}/5 uploaded
-          </span>
-        </label>
-
-        {uploadError && (
-          <div className="p-3 rounded-xl bg-red-950/40 border border-red-800/60 text-xs text-red-300">
-            {uploadError}
-          </div>
-        )}
-
-        {/* Dropzone Container */}
-        <div
-          onClick={() => fileInputRef.current?.click()}
-          onDragOver={(e) => e.preventDefault()}
-          onDrop={(e) => {
-            e.preventDefault();
-            handleFileSelect(e.dataTransfer.files);
-          }}
-          className={`relative w-full p-8 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-120 ease-out ${
-            isUploading
-              ? 'border-[#1FAE7A] bg-[#121C19]/80 cursor-wait'
-              : 'border-[#223530] hover:border-[#1FAE7A] bg-[#121C19] hover:bg-[#16211D]'
-          }`}
-        >
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            multiple
-            className="hidden"
-            onChange={(e) => handleFileSelect(e.target.files)}
-            disabled={isUploading || uploadedProofs.length >= 5}
-          />
-
-          <div className="p-3.5 rounded-2xl bg-[#0B0F12] border border-[#223530] text-[#1FAE7A] mb-3">
-            <Upload className="w-6 h-6 stroke-[1.75]" />
-          </div>
-
-          <p className="text-sm font-bold text-[#E9F5F1] mb-1">
-            Click or drag & drop account proof screenshots
-          </p>
-          <p className="text-xs text-[#8FA39C]">
-            JPEG, PNG, or WebP up to 5MB each. Direct encrypted upload to storage.
-          </p>
-        </div>
-
-        {/* Deterministic Upload Progress Bar */}
-        {isUploading && (
-          <div className="flex flex-col gap-1.5 mt-2">
-            <div className="flex justify-between text-xs font-semibold text-[#8FA39C]">
-              <span>Uploading to storage...</span>
-              <span>{uploadProgress}%</span>
-            </div>
-            <div
-              role="progressbar"
-              aria-label="Upload progress"
-              aria-valuenow={uploadProgress}
-              aria-valuemin={0}
-              aria-valuemax={100}
-              className="w-full h-2 rounded-full bg-[#16211D] border border-[#223530] overflow-hidden"
-            >
-              <div
-                className="h-full bg-[#1FAE7A] transition-all duration-120 ease-out"
-                style={{ width: `${uploadProgress}%` }}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Uploaded Thumbnails Grid */}
-        {uploadedProofs.length > 0 && (
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mt-3">
-            {uploadedProofs.map((proof, idx) => (
-              <div
-                key={proof.s3Key}
-                className="relative aspect-video rounded-xl overflow-hidden border border-[#223530] bg-[#0B0F12] group"
-              >
-                <Image
-                  src={proof.cdnUrl || `/api/v1/media/${proof.s3Key}`}
-                  alt={`Uploaded Proof ${idx + 1}`}
-                  fill
-                  unoptimized
-                  className="object-cover"
-                />
-                <div className="absolute top-1 left-1 px-1.5 py-0.5 rounded bg-black/70 text-[10px] font-bold text-white z-10">
-                  #{idx + 1}
-                </div>
-                <button
-                  type="button"
-                  aria-label={`Remove screenshot ${idx + 1}`}
-                  onClick={() => removeProof(idx)}
-                  className="absolute top-1 right-1 p-1 rounded-md bg-red-600/80 hover:bg-red-600 text-white transition-all duration-120 cursor-pointer"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      {/* Screenshot Proof Dropzone & Thumbnails */}
+      <ProofUploadGrid
+        uploadedProofs={uploadedProofs}
+        isUploading={isUploading}
+        uploadProgress={uploadProgress}
+        uploadError={uploadError}
+        onFileSelect={handleFileSelect}
+        onRemoveProof={removeProof}
+      />
 
       {/* Safety Notice */}
       <div className="p-4 rounded-xl bg-[#121C19] border border-[#223530] flex items-start gap-3 text-xs text-[#8FA39C]">
@@ -385,3 +282,5 @@ export function CreateListingForm() {
     </form>
   );
 }
+
+export default CreateListingForm;

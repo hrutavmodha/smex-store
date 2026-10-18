@@ -251,4 +251,73 @@ describe('PostgreSQL Trigram Universal Search Engine Suite (LLT 2.3)', () => {
     assert.equal(body.code, 'QUERY_TOO_SHORT');
     assert.equal(body.status, 400);
   });
+
+  test('Test 18: SQL wildcard characters (% and _) are escaped to prevent greedy pattern injection (BUG-M8-006)', async (t) => {
+    const app = await build(t);
+
+    // Seed tournaments without literal underscores
+    const [t1] = await app.db
+      .insert(tournaments)
+      .values({
+        title: `AlphaCup_${Date.now()}`,
+        gameSlug: 'mlbb',
+        status: 'upcoming',
+        startTime: new Date(Date.now() + 86400000),
+      })
+      .returning();
+
+    // Query with __ (double underscore). If unescaped, ILIKE '%__%' matches all titles with 2+ characters.
+    // When escaped, it searches for literal '__' which does not exist in standard titles.
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/v1/search?q=____&category=tournaments',
+    });
+
+    assert.equal(res.statusCode, 200);
+    const body = JSON.parse(res.body);
+    const matches = body.results.tournaments || [];
+    assert.ok(
+      !matches.some((x: any) => x.id === t1.id),
+      'Double/quadruple underscore query must not match normal text via unescaped wildcard expansion'
+    );
+  });
+
+  test('Test 19: totalMatches accurately calculates total matching records across limits/pagination (BUG-M8-008)', async (t) => {
+    const app = await build(t);
+    const uniqueWord = `Xylophonic${Date.now()}`;
+
+    // Seed 3 tournaments with distinct names containing uniqueWord
+    await app.db.insert(tournaments).values([
+      {
+        title: `${uniqueWord} Tournament Alpha`,
+        gameSlug: 'mlbb',
+        status: 'upcoming',
+        startTime: new Date(Date.now() + 86400000),
+      },
+      {
+        title: `${uniqueWord} Tournament Beta`,
+        gameSlug: 'mlbb',
+        status: 'upcoming',
+        startTime: new Date(Date.now() + 86400000),
+      },
+      {
+        title: `${uniqueWord} Tournament Gamma`,
+        gameSlug: 'mlbb',
+        status: 'upcoming',
+        startTime: new Date(Date.now() + 86400000),
+      },
+    ]);
+
+    // Query with limit = 1
+    const res = await app.inject({
+      method: 'GET',
+      url: `/api/v1/search?q=${uniqueWord.toLowerCase()}&category=tournaments&limit=1`,
+    });
+
+    assert.equal(res.statusCode, 200);
+    const body = JSON.parse(res.body);
+    assert.equal(body.results.tournaments.length, 1, 'Paginated slice should contain only 1 item');
+    assert.equal(body.totalMatches, 3, 'totalMatches must reflect true count of matching records (3), not slice length');
+  });
 });
+

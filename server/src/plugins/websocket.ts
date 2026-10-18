@@ -8,6 +8,7 @@ export interface WebSocketClientMeta {
   id: string;
   userId: string | null;
   sessionId?: string | null;
+  reqId?: string | null;
   isAlive: boolean;
   connectedAt: number;
   lastPingAt: number;
@@ -56,8 +57,12 @@ const websocketPlugin: FastifyPluginAsync = async (fastify) => {
   // Clean shutdown hook to prevent open socket handle leaks
   fastify.addHook('onClose', (_instance, done) => {
     clearInterval(interval);
+    const shutdownPayload = JSON.stringify({ event: 'server:shutdown', code: 1001 });
     for (const socket of clients.keys()) {
       try {
+        if (socket.readyState === 1) {
+          socket.send(shutdownPayload);
+        }
         socket.close(1001, 'Server shutting down');
       } catch {
         socket.terminate?.();
@@ -152,19 +157,38 @@ const websocketPlugin: FastifyPluginAsync = async (fastify) => {
       }
     }
 
-    const meta = registerSocket(socket, clients, fastify.log, userId, sessionId);
+    const meta = registerSocket(socket, clients, fastify.log, userId, sessionId, req.id);
 
     socket.on('message', (raw: Buffer | string) => {
       try {
         const text = typeof raw === 'string' ? raw : raw.toString();
         const msg = JSON.parse(text);
         if (msg.action === 'subscribe' && typeof msg.channel === 'string') {
-          meta.subscriptions.add(msg.channel);
+          const channel = msg.channel.trim();
+
+          // Enforce private channel authorization (BUG-M8-005)
+          if (channel.startsWith('user:')) {
+            const targetUserId = channel.slice(5);
+            if (!meta.userId || meta.userId !== targetUserId) {
+              if (socket.readyState === socket.OPEN) {
+                socket.send(
+                  JSON.stringify({
+                    event: 'error',
+                    code: 'FORBIDDEN_CHANNEL',
+                    message: 'You are not authorized to subscribe to this private channel',
+                  })
+                );
+              }
+              return;
+            }
+          }
+
+          meta.subscriptions.add(channel);
           if (socket.readyState === socket.OPEN) {
             socket.send(
               JSON.stringify({
                 event: 'subscribed',
-                channel: msg.channel,
+                channel,
                 timestamp: Date.now(),
               })
             );
@@ -193,12 +217,14 @@ export function registerSocket(
   clients: Map<WebSocket, WebSocketClientMeta>,
   logger?: FastifyBaseLogger | null,
   userId: string | null = null,
-  sessionId: string | null = null
+  sessionId: string | null = null,
+  reqId: string | null = null
 ): WebSocketClientMeta {
   const meta: WebSocketClientMeta = {
     id: crypto.randomUUID(),
     userId,
     sessionId,
+    reqId,
     isAlive: true,
     connectedAt: Date.now(),
     lastPingAt: Date.now(),

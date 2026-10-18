@@ -1,1 +1,1 @@
-ALTER TABLE "tournament_matches" ADD COLUMN "bracket_type" varchar(20) DEFAULT 'upper' NOT NULL;
+ALTER TABLE "tournament_matches" ADD COLUMN IF NOT EXISTS "bracket_type" varchar(20) DEFAULT 'upper' NOT NULL;

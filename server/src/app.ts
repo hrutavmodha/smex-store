@@ -7,6 +7,7 @@ import dbPlugin from './plugins/db.js'
 import redisPlugin from './plugins/redis.js'
 import authPlugin from './plugins/auth.js'
 import rateLimitPlugin from './plugins/rate-limit.js'
+import loggerPlugin from './plugins/logger.js'
 import { loadEnv } from './config/env.js'
 import rootRoutes from './routes/root.js'
 import healthRoutes from './routes/health.js'
@@ -49,6 +50,7 @@ const app: FastifyPluginAsync<AppOptions> = async (
   await fastify.register(authPlugin)
   await fastify.register(rateLimitPlugin)
   await fastify.register(websocketPlugin)
+  await fastify.register(loggerPlugin)
   await fastify.register(sensiblePlugin)
   await fastify.register(supportPlugin)
 

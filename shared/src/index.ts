@@ -7,3 +7,4 @@ export * from './boosting';
 export * from './user';
 export * from './cookie';
 export * from './admin';
+export * from './errors';

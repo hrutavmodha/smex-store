@@ -14,6 +14,13 @@ import type {
   SearchOptions,
 } from '@smex/shared';
 
+/**
+ * Escapes PostgreSQL LIKE/ILIKE wildcard meta-characters (%, _, \) to prevent pattern injection (BUG-M8-006)
+ */
+export function escapeLikeWildcards(str: string): string {
+  return str.replace(/([%_\\])/g, '\\$1');
+}
+
 export class SearchService {
   /**
    * Executes cross-entity universal search using PostgreSQL pg_trgm similarity with Redis caching
@@ -80,20 +87,20 @@ export class SearchService {
     let totalMatches = 0;
 
     if (tournaments !== undefined) {
-      results.tournaments = tournaments;
-      totalMatches += tournaments.length;
+      results.tournaments = tournaments.items;
+      totalMatches += tournaments.totalCount;
     }
     if (teams !== undefined) {
-      results.teams = teams;
-      totalMatches += teams.length;
+      results.teams = teams.items;
+      totalMatches += teams.totalCount;
     }
     if (players !== undefined) {
-      results.players = players;
-      totalMatches += players.length;
+      results.players = players.items;
+      totalMatches += players.totalCount;
     }
     if (marketplace !== undefined) {
-      results.marketplace = marketplace;
-      totalMatches += marketplace.length;
+      results.marketplace = marketplace.items;
+      totalMatches += marketplace.totalCount;
     }
 
     const response: UniversalSearchResponse = {
@@ -120,16 +127,19 @@ export class SearchService {
     limit: number,
     offset: number,
     db: SmexDatabase
-  ): Promise<TournamentSearchResult[]> {
-    const pattern = `%${query}%`;
+  ): Promise<{ items: TournamentSearchResult[]; totalCount: number }> {
+    const safeQuery = escapeLikeWildcards(query);
+    const pattern = `%${safeQuery}%`;
     const res = await db.execute<{
       id: string;
       title: string;
       game_slug: string;
       status: string;
+      total_count: string | number;
     }>(sql`
       SELECT id, title, game_slug, status,
-             greatest(similarity(title, ${query}), word_similarity(${query}, title)) AS score
+             greatest(similarity(title, ${query}), word_similarity(${query}, title)) AS score,
+             count(*) OVER() AS total_count
       FROM tournaments
       WHERE (
         title % ${query}
@@ -142,13 +152,17 @@ export class SearchService {
       LIMIT ${limit} OFFSET ${offset};
     `);
 
-    return (res.rows || []).map((row) => ({
+    const rows = res.rows || [];
+    const totalCount = rows.length > 0 ? Number(rows[0].total_count) : 0;
+    const items = rows.map((row) => ({
       id: String(row.id),
       title: String(row.title),
       gameSlug: String(row.game_slug),
       status: String(row.status),
       url: `/tournaments/${row.id}`,
     }));
+
+    return { items, totalCount };
   }
 
   private static async searchTeams(
@@ -156,16 +170,19 @@ export class SearchService {
     limit: number,
     offset: number,
     db: SmexDatabase
-  ): Promise<TeamSearchResult[]> {
-    const pattern = `%${query}%`;
+  ): Promise<{ items: TeamSearchResult[]; totalCount: number }> {
+    const safeQuery = escapeLikeWildcards(query);
+    const pattern = `%${safeQuery}%`;
     const res = await db.execute<{
       id: string;
       name: string;
       tag: string;
       game_slug: string;
+      total_count: string | number;
     }>(sql`
       SELECT id, name, tag, game_slug,
-             greatest(similarity(name, ${query}), word_similarity(${query}, name)) AS score
+             greatest(similarity(name, ${query}), word_similarity(${query}, name)) AS score,
+             count(*) OVER() AS total_count
       FROM teams
       WHERE (
         name % ${query}
@@ -179,13 +196,17 @@ export class SearchService {
       LIMIT ${limit} OFFSET ${offset};
     `);
 
-    return (res.rows || []).map((row) => ({
+    const rows = res.rows || [];
+    const totalCount = rows.length > 0 ? Number(rows[0].total_count) : 0;
+    const items = rows.map((row) => ({
       id: String(row.id),
       name: String(row.name),
       tag: String(row.tag),
       gameSlug: String(row.game_slug),
       url: `/teams/${row.id}`,
     }));
+
+    return { items, totalCount };
   }
 
   private static async searchPlayers(
@@ -193,13 +214,15 @@ export class SearchService {
     limit: number,
     offset: number,
     db: SmexDatabase
-  ): Promise<PlayerSearchResult[]> {
-    const pattern = `%${query}%`;
+  ): Promise<{ items: PlayerSearchResult[]; totalCount: number }> {
+    const safeQuery = escapeLikeWildcards(query);
+    const pattern = `%${safeQuery}%`;
     const res = await db.execute<{
       id: string;
       username: string;
       in_game_id: string | null;
       playstyle: string | null;
+      total_count: string | number;
     }>(sql`
       SELECT u.id, p.username, p.in_game_id, p.playstyle,
              greatest(
@@ -207,7 +230,8 @@ export class SearchService {
                word_similarity(${query}, p.username),
                coalesce(similarity(p.in_game_id, ${query}), 0),
                coalesce(word_similarity(${query}, p.in_game_id), 0)
-             ) AS score
+             ) AS score,
+             count(*) OVER() AS total_count
       FROM profiles p
       JOIN users u ON u.id = p.user_id
       WHERE (
@@ -228,13 +252,17 @@ export class SearchService {
       LIMIT ${limit} OFFSET ${offset};
     `);
 
-    return (res.rows || []).map((row) => ({
+    const rows = res.rows || [];
+    const totalCount = rows.length > 0 ? Number(rows[0].total_count) : 0;
+    const items = rows.map((row) => ({
       id: String(row.id),
       username: String(row.username),
       ign: row.in_game_id ? String(row.in_game_id) : String(row.username),
       role: row.playstyle ? String(row.playstyle) : 'Player',
       url: `/profile/${row.id}`,
     }));
+
+    return { items, totalCount };
   }
 
   private static async searchMarketplace(
@@ -242,8 +270,9 @@ export class SearchService {
     limit: number,
     offset: number,
     db: SmexDatabase
-  ): Promise<MarketplaceSearchResult[]> {
-    const pattern = `%${query}%`;
+  ): Promise<{ items: MarketplaceSearchResult[]; totalCount: number }> {
+    const safeQuery = escapeLikeWildcards(query);
+    const pattern = `%${safeQuery}%`;
     const res = await db.execute<{
       id: string;
       title: string;
@@ -251,9 +280,11 @@ export class SearchService {
       price_inr: string | number;
       badge_type: string;
       status: string;
+      total_count: string | number;
     }>(sql`
       SELECT id, title, rank_tier, price_inr, badge_type, status,
-             greatest(similarity(title, ${query}), word_similarity(${query}, title)) AS score
+             greatest(similarity(title, ${query}), word_similarity(${query}, title)) AS score,
+             count(*) OVER() AS total_count
       FROM marketplace_listings
       WHERE status = 'active'
         AND (
@@ -267,7 +298,9 @@ export class SearchService {
       LIMIT ${limit} OFFSET ${offset};
     `);
 
-    return (res.rows || []).map((row) => ({
+    const rows = res.rows || [];
+    const totalCount = rows.length > 0 ? Number(rows[0].total_count) : 0;
+    const items = rows.map((row) => ({
       id: String(row.id),
       title: String(row.title),
       rankTier: String(row.rank_tier),
@@ -275,5 +308,7 @@ export class SearchService {
       badgeType: String(row.badge_type),
       url: `/marketplace/${row.id}`,
     }));
+
+    return { items, totalCount };
   }
 }
