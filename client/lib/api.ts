@@ -12,6 +12,7 @@ export function getStoredToken(): string | null {
  * Persist or clear the access token (no-op since cookies are used).
  */
 export function setStoredToken(_token: string | null): void {
+  void _token;
   // No-op: Auth tokens are managed exclusively via HTTP-only cookies
 }
 
@@ -30,6 +31,7 @@ export async function fetchWithAuth(
   init: FetchWithAuthOptions = {}
 ): Promise<Response> {
   const { skipAuth = false, skipAutoRefresh = false, ...fetchInit } = init;
+  void skipAuth;
   const headers = new Headers(fetchInit.headers || {});
 
   const response = await fetch(input, {

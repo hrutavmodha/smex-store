@@ -2,7 +2,7 @@
 
 import { useEffect, useSyncExternalStore } from 'react';
 
-export type ThemeMode = 'dark' | 'amoled' | 'light';
+export type ThemeMode = 'dark' | 'light';
 export type DensityMode = 'compact' | 'comfortable' | 'spacious';
 
 function subscribeStorage(callback: () => void) {
@@ -16,7 +16,7 @@ export function useNavbarPreferences() {
     () => {
       if (typeof window === 'undefined' || !window.localStorage) return 'dark';
       const stored = window.localStorage.getItem('smex_theme') as ThemeMode;
-      return stored || 'dark';
+      return stored === 'light' ? 'light' : 'dark';
     },
     () => 'dark'
   );
@@ -35,7 +35,7 @@ export function useNavbarPreferences() {
   useEffect(() => {
     if (typeof document !== 'undefined') {
       const savedTheme = window.localStorage?.getItem('smex_theme') as ThemeMode;
-      if (savedTheme && (savedTheme === 'dark' || savedTheme === 'amoled' || savedTheme === 'light')) {
+      if (savedTheme === 'light' || savedTheme === 'dark') {
         document.documentElement.setAttribute('data-theme', savedTheme);
       }
       const savedDensity = window.localStorage?.getItem('smex_density') as DensityMode;
@@ -46,12 +46,7 @@ export function useNavbarPreferences() {
   }, []);
 
   const handleCycleTheme = () => {
-    const cycleMap: Record<ThemeMode, ThemeMode> = {
-      dark: 'amoled',
-      amoled: 'light',
-      light: 'dark',
-    };
-    const nextTheme = cycleMap[theme];
+    const nextTheme: ThemeMode = theme === 'dark' ? 'light' : 'dark';
     if (typeof window !== 'undefined' && window.localStorage) {
       window.localStorage.setItem('smex_theme', nextTheme);
     }

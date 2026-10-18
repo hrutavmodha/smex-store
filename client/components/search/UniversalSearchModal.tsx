@@ -171,12 +171,12 @@ export function UniversalSearchModal({
       }}
     >
       <div
-        className="w-full max-w-2xl rounded-2xl border border-border-subtle bg-[#121C19] shadow-2xl overflow-hidden flex flex-col transition-all duration-[120ms]"
+        className="w-full max-w-2xl rounded-2xl border border-border-subtle bg-bg-surface shadow-2xl overflow-hidden flex flex-col transition-all duration-[120ms]"
         style={{ backdropFilter: 'none' }}
         onKeyDown={handleKeyDown}
       >
         {/* Search Input Bar */}
-        <div className="flex items-center gap-3 px-4 py-3.5 border-b border-border-subtle bg-[#0B0F12]">
+        <div className="flex items-center gap-3 px-4 py-3.5 border-b border-border-subtle bg-bg-surface-elevated">
           <Search className="h-5 w-5 text-emerald-primary shrink-0" />
           <input
             ref={inputRef}
@@ -206,13 +206,13 @@ export function UniversalSearchModal({
               <X className="h-4 w-4" />
             </button>
           )}
-          <kbd className="hidden sm:inline-block px-1.5 py-0.5 text-[10px] font-mono bg-bg-surface-elevated text-text-muted rounded border border-border-subtle">
+          <kbd className="hidden sm:inline-block px-1.5 py-0.5 text-[10px] font-mono bg-bg-surface text-text-muted rounded border border-border-subtle">
             ESC
           </kbd>
         </div>
 
         {/* Category Filter Pills */}
-        <div className="flex items-center gap-1.5 px-4 py-2 border-b border-border-subtle/40 bg-[#0B0F12]/50 overflow-x-auto text-xs">
+        <div className="flex items-center gap-1.5 px-4 py-2 border-b border-border-subtle/40 bg-bg-surface-elevated/50 overflow-x-auto text-xs">
           {(
             [
               { key: 'all', label: 'All' },
@@ -230,7 +230,7 @@ export function UniversalSearchModal({
               className={`px-2.5 py-1 rounded-md font-medium transition-colors duration-[120ms] ${
                 category === cat.key
                   ? 'bg-emerald-primary text-black font-semibold'
-                  : 'bg-[#16211D] text-text-muted hover:text-text-primary hover:bg-bg-surface-elevated'
+                  : 'bg-bg-surface text-text-muted hover:text-text-primary hover:bg-bg-surface-elevated'
               }`}
             >
               {cat.label}
@@ -239,7 +239,7 @@ export function UniversalSearchModal({
         </div>
 
         {/* Search Results Area */}
-        <div className="max-h-96 overflow-y-auto p-2 divide-y divide-border-subtle/30 bg-[#121C19]">
+        <div className="max-h-96 overflow-y-auto p-2 divide-y divide-border-subtle/30 bg-bg-surface">
           {isLoading ? (
             <div className="py-12 text-center text-xs text-text-muted">
               Searching platform records...
@@ -271,7 +271,7 @@ export function UniversalSearchModal({
                   }`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#16211D] border border-border-subtle text-emerald-primary shrink-0">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-bg-surface-elevated border border-border-subtle text-emerald-primary shrink-0">
                       {item.category === 'tournaments' && <Trophy className="h-4 w-4" />}
                       {item.category === 'teams' && <Shield className="h-4 w-4" />}
                       {item.category === 'players' && <User className="h-4 w-4" />}

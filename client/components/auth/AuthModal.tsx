@@ -49,12 +49,12 @@ export function AuthModal({
 
       {/* Modal Surface:
           Dark Mode: Solid Obsidian #12181D.
-          AMOLED Mode: Pure True-Black #000000 with subtle border #1F1F1F.
+          Light Mode: Crisp Clean White #FFFFFF.
           Physical transitions: 120ms transform, zero opacity fades, zero backdrop-filter blur.
       */}
       <div
         data-testid="auth-modal-surface"
-        className="relative z-10 w-full max-w-md rounded-2xl border border-border-subtle bg-[#12181D] [data-theme=amoled]_&:bg-[#000000] [data-theme=amoled]_&:border-[#1F1F1F] p-6 shadow-2xl transition-transform duration-[120ms] ease-out"
+        className="relative z-10 w-full max-w-md rounded-2xl border border-border-subtle bg-bg-surface p-6 shadow-2xl transition-all duration-[120ms] ease-out"
       >
         {/* Header Cluster */}
         <div className="flex items-center justify-between pb-4 border-b border-border-subtle">

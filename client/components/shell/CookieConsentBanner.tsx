@@ -58,7 +58,7 @@ export function CookieConsentBanner() {
       role="region"
       aria-label="Cookie Consent"
       data-testid="cookie-consent-banner"
-      className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:max-w-md z-50 rounded-2xl border border-border-subtle bg-[#121C19] p-5 shadow-2xl transition-all duration-200 ease-out"
+      className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:max-w-md z-50 rounded-2xl border border-border-subtle bg-bg-surface p-5 shadow-2xl transition-all duration-200 ease-out"
       style={{ backdropFilter: 'none' }}
     >
       <div className="flex items-start gap-3">
@@ -76,7 +76,7 @@ export function CookieConsentBanner() {
       </div>
 
       {showPreferences && (
-        <div className="mt-4 space-y-3 rounded-xl border border-border-subtle/50 bg-[#0B0F12] p-3 text-xs">
+        <div className="mt-4 space-y-3 rounded-xl border border-border-subtle/50 bg-bg-surface-elevated p-3 text-xs">
           <div className="flex items-center justify-between">
             <div>
               <p className="font-medium text-text-primary">Strictly Necessary</p>
@@ -135,7 +135,7 @@ export function CookieConsentBanner() {
           type="button"
           onClick={() => saveConsent({ preferences: false, analytics: false })}
           data-testid="cookie-reject-all"
-          className="flex-1 rounded-lg bg-[#16211D] border border-border-subtle px-3 py-2 text-xs font-semibold text-text-secondary transition-colors hover:text-text-primary hover:bg-bg-surface-elevated"
+          className="flex-1 rounded-lg bg-bg-surface-elevated border border-border-subtle px-3 py-2 text-xs font-semibold text-text-secondary transition-colors hover:text-text-primary hover:bg-bg-canvas"
         >
           Reject Non-Essential
         </button>
@@ -150,7 +150,7 @@ export function CookieConsentBanner() {
             }
           }}
           data-testid="cookie-customize"
-          className="w-full flex items-center justify-center gap-1 rounded-lg border border-border-subtle/60 py-1.5 text-[11px] font-medium text-text-muted hover:text-text-primary hover:bg-[#16211D]"
+          className="w-full flex items-center justify-center gap-1 rounded-lg border border-border-subtle/60 py-1.5 text-[11px] font-medium text-text-muted hover:text-text-primary hover:bg-bg-surface-elevated"
         >
           {showPreferences ? (
             <>

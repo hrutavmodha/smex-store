@@ -69,7 +69,7 @@ function ResetPasswordContent() {
 export default function ResetPasswordPage() {
   return (
     <div className="min-h-[calc(100vh-8rem)] flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-md rounded-2xl border border-border-subtle bg-bg-surface [data-theme=amoled]_&:bg-[#000000] [data-theme=amoled]_&:border-[#1F1F1F] p-6 sm:p-8 shadow-2xl transition-colors duration-[120ms]">
+      <div className="w-full max-w-md rounded-2xl border border-border-subtle bg-bg-surface p-6 sm:p-8 shadow-2xl transition-colors duration-[120ms]">
         <div className="flex items-center gap-2.5 pb-4 mb-4 border-b border-border-subtle">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-primary/10 text-emerald-primary border border-emerald-primary/20">
             <Lock className="h-4 w-4" />

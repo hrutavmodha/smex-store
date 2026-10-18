@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
-:root {
+:root,
+[data-theme="dark"] {
   /* Matrix Emerald Core Palette */
   --emerald-primary: #1FAE7A;
   --emerald-hover: #178C62;
@@ -28,17 +29,16 @@
   --transition-curve: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Pure AMOLED Overrides */
-[data-theme="amoled"] {
-  --bg-canvas: #000000;
-  --bg-surface: #000000;
-  --bg-surface-elevated: #0B0B0B;
-  --border-subtle: #1F1F1F;
-  --border-prominent: #2E2E2E;
-}
-
 /* Light Mode Overrides */
 [data-theme="light"] {
+  --emerald-primary: #1FAE7A;
+  --emerald-hover: #178C62;
+  --emerald-active: #13724F;
+  --emerald-glow: rgba(31, 174, 122, 0.25);
+
+  --cyan-depth: #1B8F97;
+  --cyan-hover: #16767D;
+
   --bg-canvas: #F4FAF8;
   --bg-surface: #FFFFFF;
   --bg-surface-elevated: #E8F4F0;
@@ -92,6 +92,7 @@ body {
   min-height: 100vh;
   margin: 0;
   -webkit-font-smoothing: antialiased;
+  transition: background-color var(--transition-speed) var(--transition-curve), color var(--transition-speed) var(--transition-curve);
 }
 
 /* Reduced-Motion Media Query Hardening (LLD 6.2) */

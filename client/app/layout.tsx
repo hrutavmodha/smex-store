@@ -36,7 +36,7 @@ export default function RootLayout({
       <head>
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('smex_theme');if(t)document.documentElement.setAttribute('data-theme',t);var d=localStorage.getItem('smex_density');if(d)document.documentElement.setAttribute('data-density',d);}catch(e){}})();`,
+            __html: `(function(){try{var t=localStorage.getItem('smex_theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);}else{document.documentElement.setAttribute('data-theme','dark');}var d=localStorage.getItem('smex_density');if(d)document.documentElement.setAttribute('data-density',d);}catch(e){}})();`,
           }}
         />
       </head>

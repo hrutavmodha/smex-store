@@ -21,7 +21,7 @@ export function NotificationCenter({ user }: NotificationCenterProps) {
   const [notifications, setNotifications] = useState<NotificationEnvelope[]>([]);
   const [unreadCount, setUnreadCount] = useState<number>(0);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const accountId = (user as any)?.id || user?.uid;
+  const accountId = user?.id || user?.uid;
 
   // Fetch notifications on mount if user is present
   useEffect(() => {
@@ -198,11 +198,11 @@ export function NotificationCenter({ user }: NotificationCenterProps) {
       {isOpen && (
         <div
           data-testid="notification-dropdown"
-          className="absolute right-0 mt-2 w-80 sm:w-96 rounded-xl border border-border-subtle bg-[#121C19] shadow-2xl z-50 flex flex-col overflow-hidden transition-all duration-[120ms]"
+          className="absolute right-0 mt-2 w-80 sm:w-96 rounded-xl border border-border-subtle bg-bg-surface shadow-2xl z-50 flex flex-col overflow-hidden transition-all duration-[120ms]"
           style={{ backdropFilter: 'none' }}
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-border-subtle bg-[#0B0F12]">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-border-subtle bg-bg-surface-elevated">
             <div className="flex items-center gap-2">
               <span className="text-xs font-bold tracking-wider uppercase text-text-primary">
                 Notifications
@@ -227,11 +227,11 @@ export function NotificationCenter({ user }: NotificationCenterProps) {
           </div>
 
           {/* Notifications List or Empty State */}
-          <div className="max-h-80 overflow-y-auto divide-y divide-border-subtle/40 bg-[#121C19]">
+          <div className="max-h-80 overflow-y-auto divide-y divide-border-subtle/40 bg-bg-surface">
             {notifications.length === 0 ? (
               <div
                 data-testid="notification-empty"
-                className="flex flex-col items-center justify-center py-8 px-4 text-center bg-[#000000]"
+                className="flex flex-col items-center justify-center py-8 px-4 text-center bg-bg-surface"
                 style={{ backdropFilter: 'none' }}
               >
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-border-subtle/30 text-text-muted mb-2">
@@ -251,7 +251,7 @@ export function NotificationCenter({ user }: NotificationCenterProps) {
                   data-testid="notification-item"
                   onClick={() => handleNotificationClick(notif)}
                   className={`flex flex-col gap-1 p-3 text-left transition-colors duration-[120ms] cursor-pointer hover:bg-bg-surface-elevated ${
-                    !notif.isRead ? 'bg-[#16211D]' : 'bg-[#121C19]'
+                    !notif.isRead ? 'bg-bg-surface-elevated' : 'bg-bg-surface'
                   }`}
                 >
                   <div className="flex items-center justify-between gap-2">

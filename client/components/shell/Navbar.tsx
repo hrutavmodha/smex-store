@@ -8,7 +8,6 @@ import {
   Search,
   Moon,
   Sun,
-  Smartphone,
   Sliders,
   Menu,
   X,
@@ -128,7 +127,7 @@ export function Navbar({ user, onLogout, onOpenAuthModal }: NavbarProps) {
           {/* Real-time Notification Center */}
           <NotificationCenter user={user} />
 
-          {/* Theme Toggle (Dark -> AMOLED -> Light) */}
+          {/* Theme Toggle (Dark <-> Light) */}
           <button
             type="button"
             onClick={handleCycleTheme}
@@ -136,9 +135,11 @@ export function Navbar({ user, onLogout, onOpenAuthModal }: NavbarProps) {
             aria-label={`Toggle theme (current: ${theme})`}
             data-testid="theme-toggle"
           >
-            {theme === 'dark' && <Moon className="h-4 w-4" />}
-            {theme === 'amoled' && <Smartphone className="h-4 w-4 text-emerald-primary" />}
-            {theme === 'light' && <Sun className="h-4 w-4 text-cyan-depth" />}
+            {theme === 'dark' ? (
+              <Moon className="h-4 w-4" />
+            ) : (
+              <Sun className="h-4 w-4 text-cyan-depth" />
+            )}
           </button>
 
           {/* Density Toggle (Comfortable -> Compact -> Spacious) */}
@@ -191,9 +192,11 @@ export function Navbar({ user, onLogout, onOpenAuthModal }: NavbarProps) {
             aria-label={`Toggle theme (current: ${theme})`}
             data-testid="mobile-theme-toggle"
           >
-            {theme === 'dark' && <Moon className="h-5 w-5" />}
-            {theme === 'amoled' && <Smartphone className="h-5 w-5 text-emerald-primary" />}
-            {theme === 'light' && <Sun className="h-5 w-5 text-cyan-depth" />}
+            {theme === 'dark' ? (
+              <Moon className="h-5 w-5" />
+            ) : (
+              <Sun className="h-5 w-5 text-cyan-depth" />
+            )}
           </button>
 
           <button
