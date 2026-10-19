@@ -4,7 +4,7 @@ import { StorageService, StorageError } from '../../services/storage.service.js'
 import { MediaInspectorService, MediaInspectionError } from '../../services/media-inspector.service.js';
 import { presignedUploadRateLimitConfig } from '../../plugins/rate-limit.js';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
-import { formatRfc7807 } from '../../utils/errors.js';
+import { formatRfc7807 } from '@smex/shared';
 
 const presignedUrlBodySchema = z.object({
   fileName: z.string().trim().min(1, 'File name is required').max(255),

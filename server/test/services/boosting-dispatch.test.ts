@@ -5,7 +5,7 @@ import {
   formatOrderMessage,
   resolveWhatsAppHandoff,
   resolveInstagramHandoff,
-} from '../../src/services/boosting-dispatch.service.js';
+} from '@smex/shared';
 
 describe('External Communication Link Dispatcher Suite (LLT 2.5)', () => {
   const originalEnv = { ...process.env };

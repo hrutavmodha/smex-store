@@ -66,22 +66,22 @@ function TournamentsDirectoryContent() {
   return (
     <main
       aria-label="Tournaments Directory"
-      className="min-h-screen bg-[#000000] text-[#E9F5F1] py-10 px-4 sm:px-6 lg:px-8"
+      className="min-h-screen bg-bg-canvas text-text-primary py-10 px-4 sm:px-6 lg:px-8"
     >
       <div className="mx-auto max-w-7xl">
         {/* Header Hero */}
-        <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-[#1A2A25] pb-6">
+        <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-border-subtle pb-6">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <Swords className="h-6 w-6 text-[#1FAE7A]" />
-              <span className="text-xs font-mono font-bold uppercase tracking-wider text-[#1FAE7A]">
+              <Swords className="h-6 w-6 text-emerald-primary" />
+              <span className="text-xs font-mono font-bold uppercase tracking-wider text-emerald-primary">
                 Competitive Esports
               </span>
             </div>
-            <h1 className="text-3xl font-black tracking-tight text-[#E9F5F1] sm:text-4xl">
+            <h1 className="text-3xl font-black tracking-tight text-text-primary sm:text-4xl">
               Tournaments
             </h1>
-            <p className="mt-1 text-sm text-[#8FA39C]">
+            <p className="mt-1 text-sm text-text-secondary">
               Compete in official community clash tournaments and climb the esports leaderboards.
             </p>
           </div>
@@ -89,7 +89,7 @@ function TournamentsDirectoryContent() {
           {/* Segmented Tabs */}
           <nav
             aria-label="Tournament Status Tabs"
-            className="flex rounded-lg border border-[#1A2A25] bg-[#0B0F12] p-1 select-none"
+            className="flex rounded-lg border border-border-subtle bg-bg-surface p-1 select-none"
           >
             <button
               type="button"
@@ -98,8 +98,8 @@ function TournamentsDirectoryContent() {
               onClick={() => handleTabChange('upcoming')}
               className={`rounded-md px-4 py-2 text-xs font-bold uppercase transition-all duration-[120ms] ${
                 activeTab === 'upcoming'
-                  ? 'bg-[#1FAE7A] text-[#000000]'
-                  : 'text-[#8FA39C] hover:text-[#E9F5F1]'
+                  ? 'bg-emerald-primary text-[#0B1A15]'
+                  : 'text-text-secondary hover:text-text-primary'
               }`}
             >
               Upcoming
@@ -111,11 +111,11 @@ function TournamentsDirectoryContent() {
               onClick={() => handleTabChange('ongoing')}
               className={`flex items-center gap-1.5 rounded-md px-4 py-2 text-xs font-bold uppercase transition-all duration-[120ms] ${
                 activeTab === 'ongoing'
-                  ? 'bg-[#1FAE7A] text-[#000000]'
-                  : 'text-[#8FA39C] hover:text-[#E9F5F1]'
+                  ? 'bg-emerald-primary text-[#0B1A15]'
+                  : 'text-text-secondary hover:text-text-primary'
               }`}
             >
-              <span className="h-2 w-2 animate-pulse rounded-full bg-[#22C58F]" />
+              <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-primary" />
               Ongoing
             </button>
             <button
@@ -125,8 +125,8 @@ function TournamentsDirectoryContent() {
               onClick={() => handleTabChange('past')}
               className={`rounded-md px-4 py-2 text-xs font-bold uppercase transition-all duration-[120ms] ${
                 activeTab === 'past'
-                  ? 'bg-[#1FAE7A] text-[#000000]'
-                  : 'text-[#8FA39C] hover:text-[#E9F5F1]'
+                  ? 'bg-emerald-primary text-[#0B1A15]'
+                  : 'text-text-secondary hover:text-text-primary'
               }`}
             >
               Past
@@ -140,17 +140,17 @@ function TournamentsDirectoryContent() {
             {[1, 2, 3].map((n) => (
               <div
                 key={n}
-                className="h-64 rounded-xl border border-[#1A2A25] bg-[#0B0F12] p-6 animate-pulse"
+                className="h-64 rounded-xl border border-border-subtle bg-bg-surface p-6 animate-pulse"
               />
             ))}
           </div>
         ) : tournamentsList.length === 0 ? (
           <div
-            className="flex flex-col items-center justify-center rounded-2xl border border-[#1A2A25] bg-[#0B0F12] py-16 px-4 text-center"
+            className="flex flex-col items-center justify-center rounded-2xl border border-border-subtle bg-bg-surface py-16 px-4 text-center"
           >
-            <Trophy className="h-12 w-12 text-[#8FA39C] mb-3 opacity-60" />
-            <h3 className="text-base font-bold text-[#E9F5F1]">No Tournaments Found</h3>
-            <p className="mt-1 text-xs text-[#8FA39C] max-w-sm">
+            <Trophy className="h-12 w-12 text-text-muted mb-3 opacity-60" />
+            <h3 className="text-base font-bold text-text-primary">No Tournaments Found</h3>
+            <p className="mt-1 text-xs text-text-secondary max-w-sm">
               There are currently no {activeTab} tournaments scheduled. Check back soon for announcements.
             </p>
           </div>
@@ -167,16 +167,16 @@ function TournamentsDirectoryContent() {
                 <Link
                   key={t.id}
                   href={`/tournaments/${t.id}`}
-                  className="group relative flex flex-col justify-between rounded-xl border border-[#1A2A25] bg-[#0B0F12] p-6 transition-all duration-[120ms] ease-out hover:border-[#22C58F] hover:-translate-y-0.5"
+                  className="group relative flex flex-col justify-between rounded-xl border border-border-subtle bg-bg-surface p-6 transition-all duration-[120ms] ease-out hover:border-emerald-primary hover:-translate-y-0.5"
                 >
                   <div>
                     {/* Badges & Live Status */}
                     <div className="flex items-center justify-between gap-2 mb-3">
                       <div className="flex items-center gap-2">
-                        <span className="rounded bg-[#121C19] px-2 py-0.5 text-[10px] font-mono font-bold uppercase text-[#1FAE7A] border border-[#1A2A25]">
+                        <span className="rounded bg-bg-surface-elevated px-2 py-0.5 text-[10px] font-mono font-bold uppercase text-emerald-primary border border-border-subtle">
                           {t.gameSlug.toUpperCase()}
                         </span>
-                        <span className="rounded bg-[#16211D] px-2 py-0.5 text-[10px] font-medium text-[#8FA39C]">
+                        <span className="rounded bg-bg-surface-elevated px-2 py-0.5 text-[10px] font-medium text-text-secondary">
                           {formatFormatBadge(t.format)}
                         </span>
                       </div>
@@ -184,40 +184,40 @@ function TournamentsDirectoryContent() {
                       {isOngoing && (
                         <div
                           aria-label="Live Tournament Status"
-                          className="flex items-center gap-1.5 rounded-full border border-[#1FAE7A]/40 bg-[#121C19] px-2.5 py-0.5 text-[10px] font-bold text-[#1FAE7A] shadow-[0_0_8px_rgba(31,174,122,0.3)]"
+                          className="flex items-center gap-1.5 rounded-full border border-emerald-primary/40 bg-bg-surface-elevated px-2.5 py-0.5 text-[10px] font-bold text-emerald-primary shadow-[0_0_8px_rgba(31,174,122,0.3)]"
                         >
-                          <span className="h-2 w-2 rounded-full bg-[#1FAE7A] animate-pulse" />
+                          <span className="h-2 w-2 rounded-full bg-emerald-primary animate-pulse" />
                           LIVE
                         </div>
                       )}
                     </div>
 
                     {/* Tournament Title */}
-                    <h3 className="text-lg font-bold text-[#E9F5F1] group-hover:text-[#22C58F] transition-colors duration-[120ms]">
+                    <h3 className="text-lg font-bold text-text-primary group-hover:text-emerald-primary transition-colors duration-[120ms]">
                       {t.title}
                     </h3>
 
                     {/* Prize Pool */}
-                    <div className="mt-4 flex items-baseline gap-1 text-[#1FAE7A]">
+                    <div className="mt-4 flex items-baseline gap-1 text-emerald-primary">
                       <IndianRupee className="h-4 w-4" />
                       <span className="text-xl font-mono font-black">
                         {Number(t.prizePoolInr).toLocaleString('en-IN')}
                       </span>
-                      <span className="text-[10px] font-semibold text-[#8FA39C] ml-1">Prize Pool</span>
+                      <span className="text-[10px] font-semibold text-text-muted ml-1">Prize Pool</span>
                     </div>
                   </div>
 
                   {/* Metadata Footer */}
-                  <div className="mt-6 flex items-center justify-between border-t border-[#1A2A25] pt-4 text-xs text-[#8FA39C]">
+                  <div className="mt-6 flex items-center justify-between border-t border-border-subtle pt-4 text-xs text-text-secondary">
                     <div className="flex items-center gap-1.5">
-                      <Users className="h-3.5 w-3.5 text-[#1B8F97]" />
+                      <Users className="h-3.5 w-3.5 text-cyan-depth" />
                       <span>
                         {t.registeredTeams ?? 0} / {t.maxTeams} Teams
                       </span>
                     </div>
 
                     <div className="flex items-center gap-1.5">
-                      <Calendar className="h-3.5 w-3.5 text-[#8FA39C]" />
+                      <Calendar className="h-3.5 w-3.5 text-text-muted" />
                       <span>{new Date(t.startTime).toLocaleDateString()}</span>
                     </div>
                   </div>
@@ -233,7 +233,7 @@ function TournamentsDirectoryContent() {
 
 export default function TournamentsPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#000000]" />}>
+    <Suspense fallback={<div className="min-h-screen bg-bg-canvas" />}>
       <TournamentsDirectoryContent />
     </Suspense>
   );

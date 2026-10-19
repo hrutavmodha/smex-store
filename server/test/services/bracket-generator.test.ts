@@ -1,9 +1,10 @@
-import { test, describe } from 'vitest';
+import { test, describe, vi } from 'vitest';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import { build } from '../helper.js';
 import { BracketGeneratorService } from '../../src/services/bracket-generator.service.js';
-import { tournaments, tournamentParticipants } from '../../src/db/schema/tournaments.js';
+import { TournamentLifecycleService } from '../../src/services/tournament-lifecycle.service.js';
+import { tournaments, tournamentParticipants, tournamentMatches } from '../../src/db/schema/tournaments.js';
 import { TeamService } from '../../src/services/team.service.js';
 import { users } from '../../src/db/schema/users.js';
 import { eq } from 'drizzle-orm';
@@ -418,4 +419,93 @@ describe('Bracket Generation Algorithms Suite (LLT 2.3)', () => {
     const byeRecipients = new Set(allByes.map((m) => m.winnerId));
     assert.equal(byeRecipients.size, 5);
   });
+
+  // Test 15: Transactional bracket generation rolls back match insertion and status transition on lifecycle failure (Bug 24)
+  test('Test 15: Transactional bracket generation rolls back match insertion and status transition on lifecycle failure (Bug 24)', async (t) => {
+    const app = await build(t);
+    const { user: admin } = await createVerifiedUser(app, 'bg_admin15');
+    const adminToken = createAdminToken(app, admin.id);
+
+    // Create 4-team single elimination tournament
+    const createRes = await app.inject({
+      method: 'POST',
+      url: '/api/v1/tournaments',
+      headers: { authorization: `Bearer ${adminToken}` },
+      payload: {
+        title: `BracketTxRollback_${Date.now()}`,
+        gameSlug: 'mlbb',
+        format: 'single_elimination',
+        maxTeams: 4,
+        startTime: new Date(Date.now() + 86400000).toISOString(),
+      },
+    });
+    assert.equal(createRes.statusCode, 201);
+    const tournament = JSON.parse(createRes.body);
+
+    // Set tournament status to registration_open
+    await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/tournaments/${tournament.id}`,
+      headers: { authorization: `Bearer ${adminToken}` },
+      payload: { status: 'registration_open' },
+    });
+
+    // Register 4 teams
+    for (let i = 1; i <= 4; i++) {
+      const { user: cap } = await createVerifiedUser(app, `bg15_cap_${i}`);
+      const { team } = await TeamService.createTeam(
+        cap.id,
+        { name: `Squad_Tx_${i}_${Date.now()}`, tag: `ST${i}` },
+        app.db
+      );
+
+      await app.inject({
+        method: 'POST',
+        url: `/api/v1/tournaments/${tournament.id}/register`,
+        headers: { authorization: `Bearer ${adminToken}` },
+        payload: { teamId: team.id },
+      });
+    }
+
+    // Simulate failure during status transition step
+    const transitionSpy = vi
+      .spyOn(TournamentLifecycleService, 'transitionStatus')
+      .mockRejectedValueOnce(new Error('Simulated Redis / guard failure'));
+
+    // Attempt bracket generation
+    const genRes = await app.inject({
+      method: 'POST',
+      url: `/api/v1/tournaments/${tournament.id}/bracket/generate`,
+      headers: { authorization: `Bearer ${adminToken}` },
+    });
+
+    transitionSpy.mockRestore();
+
+    // Must fail
+    assert.equal(genRes.statusCode, 500);
+
+    // Assert ACID rollback: No matches must remain in database for this tournament
+    const matchesInDb = await app.db
+      .select()
+      .from(tournamentMatches)
+      .where(eq(tournamentMatches.tournamentId, tournament.id));
+    assert.equal(
+      matchesInDb.length,
+      0,
+      'Matches inserted prior to lifecycle failure must be rolled back completely'
+    );
+
+    // Assert tournament status remains registration_open (not ongoing)
+    const [tourneyRecord] = await app.db
+      .select()
+      .from(tournaments)
+      .where(eq(tournaments.id, tournament.id))
+      .limit(1);
+    assert.equal(
+      tourneyRecord.status,
+      'registration_open',
+      'Tournament status must not transition to ongoing if transaction failed'
+    );
+  });
 });
+

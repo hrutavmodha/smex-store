@@ -14,7 +14,7 @@ import {
 } from '../db/schema/tournaments.js';
 import { teams, teamMembers } from '../db/schema/teams.js';
 import { NotificationService } from '../services/notification.service.js';
-import { formatRfc7807 } from '../utils/errors.js';
+import { formatRfc7807 } from '@smex/shared';
 import type { SmexDatabase } from '../db/index.js';
 
 async function getTournamentParticipantUserIds(tournamentId: string, db: SmexDatabase): Promise<string[]> {
@@ -442,21 +442,24 @@ const tournamentsRoutes: FastifyPluginAsync = async (fastify) => {
           seed: idx + 1,
         }));
 
-        // Generate bracket matches
-        const matches = await BracketGeneratorService.generateBracket(
-          id,
-          tourney.format,
-          validParticipants,
-          fastify.db
-        );
+        // Generate bracket matches and transition status atomically in a transaction (Bug 24)
+        const matches = await fastify.db.transaction(async (tx) => {
+          const generatedMatches = await BracketGeneratorService.generateBracket(
+            id,
+            tourney.format,
+            validParticipants,
+            tx
+          );
 
-        // Transition tournament status to ongoing
-        await TournamentLifecycleService.transitionStatus(
-          id,
-          'ongoing',
-          fastify.db,
-          fastify.redis
-        );
+          await TournamentLifecycleService.transitionStatus(
+            id,
+            'ongoing',
+            tx,
+            fastify.redis
+          );
+
+          return generatedMatches;
+        });
 
         return reply.code(200).send({
           tournamentId: id,

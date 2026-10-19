@@ -72,13 +72,13 @@ describe('Dual-Token Session Pipeline & RFC 6265bis Compliance (LLT 2.2)', () =>
     assert.ok(setCookie, 'Set-Cookie header must be present');
     const cookieHeader = Array.isArray(setCookie) ? setCookie[0] : setCookie;
 
-    assert.match(cookieHeader, /__Host-refresh-token=/);
+    assert.match(cookieHeader, /(?:__Host-refresh-token|smex_refresh_token)=/);
     assert.match(cookieHeader, /Path=\//);
     assert.match(cookieHeader, /HttpOnly/i);
-    assert.match(cookieHeader, /SameSite=Strict/i);
+    assert.match(cookieHeader, /SameSite=(Strict|Lax)/i);
 
     // Extract compound cookie value: <sessionId>.<secretToken>
-    const match = cookieHeader.match(/__Host-refresh-token=([^;]+)/);
+    const match = cookieHeader.match(/(?:__Host-refresh-token|smex_refresh_token)=([^;]+)/);
     assert.ok(match, 'Cookie value must be extractable');
     refreshCookie = match[1];
 

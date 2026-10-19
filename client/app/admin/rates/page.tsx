@@ -193,10 +193,10 @@ export default function AdminRatesPage() {
       className="space-y-8 transition-all duration-120 ease-out"
     >
       <div>
-        <h1 className="text-xl font-bold tracking-tight text-white mb-1">
+        <h1 className="text-xl font-bold tracking-tight text-text-primary mb-1">
           LIVE BOOSTING RATE CONFIGURATION
         </h1>
-        <p className="text-xs text-gray-400 font-mono">
+        <p className="text-xs text-text-secondary font-mono">
           Adjust base rates in INR. Updates take effect immediately with zero server restart.
         </p>
       </div>
@@ -204,7 +204,7 @@ export default function AdminRatesPage() {
       {savedSuccess && (
         <div
           data-testid="rates-saved-alert"
-          className="bg-emerald-950/70 border border-[#22C58F]/40 text-[#22C58F] px-4 py-3 rounded-lg text-xs font-mono flex items-center gap-2 transition-all duration-120 ease-out"
+          className="bg-emerald-950/70 border border-[#22C58F]/40 text-emerald-primary px-4 py-3 rounded-lg text-xs font-mono flex items-center gap-2 transition-all duration-120 ease-out"
         >
           <CheckCircle size={16} />
           <span>Rates updated successfully. Cache invalidated sitewide.</span>
@@ -223,10 +223,9 @@ export default function AdminRatesPage() {
 
       {/* Sub-Mythic Fixed Tiers */}
       <section
-        className="bg-[#121C19] border border-[#223530] rounded-xl p-6 transition-all duration-120 ease-out"
-        style={{ backgroundColor: '#121C19', borderColor: '#223530' }}
+        className="bg-bg-surface border border-border-subtle rounded-xl p-6 transition-all duration-120 ease-out"
       >
-        <h2 className="text-xs font-bold font-mono tracking-wider text-gray-300 uppercase mb-4">
+        <h2 className="text-xs font-bold font-mono tracking-wider text-text-secondary uppercase mb-4">
           SUB-MYTHIC FIXED TIERS
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -235,20 +234,19 @@ export default function AdminRatesPage() {
             .map((r) => (
               <div
                 key={r.id}
-                className="bg-[#0B0F12] border border-[#223530] rounded-lg p-4 space-y-2 transition-all duration-120 ease-out"
-                style={{ backgroundColor: '#0B0F12', borderColor: '#223530' }}
+                className="bg-bg-canvas border border-border-subtle rounded-lg p-4 space-y-2 transition-all duration-120 ease-out"
               >
-                <div className="text-xs font-semibold text-white">{r.label}</div>
+                <div className="text-xs font-semibold text-text-primary">{r.label}</div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-mono text-gray-400">₹</span>
+                  <span className="text-xs font-mono text-text-muted">₹</span>
                   <input
                     type="number"
                     data-testid={`rate-input-${r.id}`}
                     value={r.priceInr}
                     onChange={(e) => handlePriceChange(r.id, e.target.value)}
-                    className="w-full bg-[#16211D] border border-[#223530] rounded px-3 py-1.5 text-xs font-mono text-white focus:outline-none focus:border-[#22C58F] min-h-[38px] transition-all duration-120 ease-out"
+                    className="w-full bg-bg-surface border border-border-subtle rounded px-3 py-1.5 text-xs font-mono text-text-primary focus:outline-none focus:border-emerald-primary min-h-[38px] transition-all duration-120 ease-out"
                   />
-                  <span className="text-[10px] font-mono text-gray-400">INR</span>
+                  <span className="text-[10px] font-mono text-text-muted">INR</span>
                 </div>
               </div>
             ))}
@@ -257,10 +255,9 @@ export default function AdminRatesPage() {
 
       {/* Mythic+ Progressive Per-Star Rates */}
       <section
-        className="bg-[#121C19] border border-[#223530] rounded-xl p-6 transition-all duration-120 ease-out"
-        style={{ backgroundColor: '#121C19', borderColor: '#223530' }}
+        className="bg-bg-surface border border-border-subtle rounded-xl p-6 transition-all duration-120 ease-out"
       >
-        <h2 className="text-xs font-bold font-mono tracking-wider text-gray-300 uppercase mb-4">
+        <h2 className="text-xs font-bold font-mono tracking-wider text-text-secondary uppercase mb-4">
           MYTHIC+ PROGRESSIVE PER-STAR RATES
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -269,20 +266,19 @@ export default function AdminRatesPage() {
             .map((r) => (
               <div
                 key={r.id}
-                className="bg-[#0B0F12] border border-[#223530] rounded-lg p-4 space-y-2 transition-all duration-120 ease-out"
-                style={{ backgroundColor: '#0B0F12', borderColor: '#223530' }}
+                className="bg-bg-canvas border border-border-subtle rounded-lg p-4 space-y-2 transition-all duration-120 ease-out"
               >
-                <div className="text-xs font-semibold text-white">{r.label}</div>
+                <div className="text-xs font-semibold text-text-primary">{r.label}</div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-mono text-gray-400">₹</span>
+                  <span className="text-xs font-mono text-text-muted">₹</span>
                   <input
                     type="number"
                     data-testid={`rate-input-${r.id}`}
                     value={r.priceInr}
                     onChange={(e) => handlePriceChange(r.id, e.target.value)}
-                    className="w-full bg-[#16211D] border border-[#223530] rounded px-3 py-1.5 text-xs font-mono text-white focus:outline-none focus:border-[#22C58F] min-h-[38px] transition-all duration-120 ease-out"
+                    className="w-full bg-bg-surface border border-border-subtle rounded px-3 py-1.5 text-xs font-mono text-text-primary focus:outline-none focus:border-emerald-primary min-h-[38px] transition-all duration-120 ease-out"
                   />
-                  <span className="text-[10px] font-mono text-gray-400">/star</span>
+                  <span className="text-[10px] font-mono text-text-muted">/star</span>
                 </div>
               </div>
             ))}
@@ -292,30 +288,28 @@ export default function AdminRatesPage() {
       {/* Live Quote Preview Calculator */}
       <section
         data-testid="quote-preview-section"
-        className="bg-[#121C19] border border-[#223530] rounded-xl p-6 transition-all duration-120 ease-out"
-        style={{ backgroundColor: '#121C19', borderColor: '#223530' }}
+        className="bg-bg-surface border border-border-subtle rounded-xl p-6 transition-all duration-120 ease-out"
       >
         <div className="flex items-center gap-2 mb-3">
-          <Calculator size={16} className="text-[#22C58F]" />
-          <h2 className="text-xs font-bold font-mono tracking-wider text-white uppercase">
+          <Calculator size={16} className="text-emerald-primary" />
+          <h2 className="text-xs font-bold font-mono tracking-wider text-text-primary uppercase">
             LIVE QUOTE PREVIEW CALCULATOR
           </h2>
         </div>
-        <p className="text-xs text-gray-400 mb-4">
+        <p className="text-xs text-text-secondary mb-4">
           Instant client-side evaluation without network overhead ($&lt; 5\text&#123;ms&#125;$):
         </p>
 
         <div
           data-testid="quote-preview-result"
-          className="bg-[#0B0F12] border border-[#223530] rounded-lg p-4 font-mono text-xs text-gray-200 transition-all duration-120 ease-out"
-          style={{ backgroundColor: '#0B0F12', borderColor: '#223530' }}
+          className="bg-bg-canvas border border-border-subtle rounded-lg p-4 font-mono text-xs text-text-primary transition-all duration-120 ease-out"
         >
-          <span className="text-gray-400">Test: Mythic 10★ → Honor 30★ = </span>
+          <span className="text-text-secondary">Test: Mythic 10★ → Honor 30★ = </span>
           <span>
             {quotePreview.starsInMythic}★@{quotePreview.mythicRate} +{' '}
             {quotePreview.starsInHonor}★@{quotePreview.honorRate} ={' '}
           </span>
-          <span className="text-[#22C58F] font-bold text-sm">
+          <span className="text-emerald-primary font-bold text-sm">
             ₹{quotePreview.total.toFixed(2)} INR
           </span>
         </div>
@@ -325,14 +319,14 @@ export default function AdminRatesPage() {
       <div className="flex items-center justify-end gap-3 pt-2">
         <button
           onClick={handleRevert}
-          className="flex items-center gap-1.5 px-4 py-2.5 rounded-lg bg-[#16211D] hover:bg-[#223530] text-gray-300 border border-[#223530] text-xs font-bold transition-all duration-120 ease-out min-h-[44px]"
+          className="flex items-center gap-1.5 px-4 py-2.5 rounded-lg bg-bg-surface-elevated hover:bg-bg-canvas text-text-secondary border border-border-subtle text-xs font-bold transition-all duration-120 ease-out min-h-[44px]"
         >
           <RotateCcw size={14} />
           <span>REVERT TO DEFAULTS</span>
         </button>
         <button
           onClick={handleSave}
-          className="flex items-center gap-1.5 px-6 py-2.5 rounded-lg bg-[#1FAE7A] hover:bg-[#22C58F] text-black text-xs font-bold transition-all duration-120 ease-out min-h-[44px]"
+          className="flex items-center gap-1.5 px-6 py-2.5 rounded-lg bg-emerald-primary hover:bg-[#22C58F] text-[#0B1A15] text-xs font-bold transition-all duration-120 ease-out min-h-[44px]"
         >
           <Save size={14} />
           <span>SAVE RATE OVERRIDES</span>

@@ -1,17 +1,17 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { calculateBoostingPrice } from '../../lib/boosting/calculator';
-import type {
-  BoostingAddons,
-  BoostingRateRow,
-  BoostingSurchargeConfig,
-} from '@smex/shared';
+import { useQuery } from '@tanstack/react-query';
+import { useSafeQueryClient } from '../../providers/QueryProvider';
 import {
+  calculateBoostingPrice,
   generateOrderRef,
   resolveWhatsAppHandoff,
   resolveInstagramHandoff,
-} from '../../lib/boosting/dispatcher';
+  type BoostingAddons,
+  type BoostingRateRow,
+  type BoostingSurchargeConfig,
+} from '@smex/shared';
 import { fetchWithAuth } from '../../lib/api';
 
 const SUB_MYTHIC_TIERS = ['Epic', 'Legend', 'Mythic'];
@@ -68,22 +68,30 @@ export function Calculator() {
     setCompositeTargetTier(getTierFromStars(clamped));
   };
 
-  // Active rates and surcharges fetched from API (BUG-M6-002)
-  const [rates, setRates] = useState<BoostingRateRow[] | undefined>(undefined);
-  const [surcharges, setSurcharges] = useState<Partial<BoostingSurchargeConfig> | undefined>(undefined);
+  // Active rates and surcharges fetched via TanStack Query (BUG-M6-002, Bug 27)
+  const queryClient = useSafeQueryClient();
+  const { data: ratesData } = useQuery(
+    {
+      queryKey: ['boosting-rates'],
+      queryFn: async () => {
+        try {
+          const res = await fetch('/api/v1/boosting/rates');
+          if (!res.ok) return null;
+          return (await res.json()) as {
+            rates?: BoostingRateRow[];
+            surcharges?: Partial<BoostingSurchargeConfig>;
+          };
+        } catch {
+          return null;
+        }
+      },
+      staleTime: 5 * 60 * 1000,
+    },
+    queryClient
+  );
 
-  useEffect(() => {
-    fetch('/api/v1/boosting/rates')
-      .then((res) => {
-        if (!res.ok) return null;
-        return res.json();
-      })
-      .then((data) => {
-        if (data?.rates) setRates(data.rates);
-        if (data?.surcharges) setSurcharges(data.surcharges);
-      })
-      .catch(() => {});
-  }, []);
+  const rates = ratesData?.rates;
+  const surcharges = ratesData?.surcharges;
 
   // Dropdown <-> Slider bidirectional synchronization handlers (BUG-M6-003)
   const handleStartTierChange = (tier: string) => {
@@ -310,6 +318,7 @@ export function Calculator() {
   return (
     <div
       data-testid="boosting-calculator"
+      /* AMOLED True Black surface palette (#000000) */
       className="w-full max-w-4xl mx-auto rounded-2xl bg-bg-surface border border-border-subtle p-6 sm:p-8 space-y-8 transition-colors duration-[120ms]"
     >
       {/* Toast Notification */}

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   calculateBoostingPrice,
   ValidationError,
-} from '../../src/services/boosting-calc.service.js';
+} from '@smex/shared';
 
 describe('Mythic Progressive Per-Star & Multi-Bracket Traversal Suite (LLT 2.2)', () => {
   it('Test 6: Intra-bracket star accumulation: Mythic 10★ to 20★', () => {

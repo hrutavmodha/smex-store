@@ -1,5 +1,5 @@
 import { eq, sql, and, desc } from 'drizzle-orm';
-import { type SmexDatabase } from '../db/index.js';
+import { type SmexDatabase, type DbOrTx } from '../db/index.js';
 import {
   tournaments,
   tournamentParticipants,
@@ -10,7 +10,7 @@ import {
 import { teams } from '../db/schema/teams.js';
 import { type Redis } from 'ioredis';
 
-export type TournamentStatus = 'upcoming' | 'registration_open' | 'ongoing' | 'completed';
+import { type TournamentStatus } from '@smex/shared';
 
 export interface TournamentFilterOptions {
   status?: string;
@@ -53,7 +53,7 @@ export class TournamentLifecycleService {
     data: Omit<NewTournament, 'id' | 'status' | 'createdAt' | 'updatedAt'> & {
       status?: TournamentStatus;
     },
-    db: SmexDatabase
+    db: DbOrTx
   ): Promise<Tournament> {
     const [created] = await db
       .insert(tournaments)
@@ -197,7 +197,7 @@ export class TournamentLifecycleService {
   static async transitionStatus(
     tournamentId: string,
     targetStatus: TournamentStatus,
-    db: SmexDatabase,
+    db: DbOrTx,
     redis?: Redis,
     options?: { winnerTeamId?: string }
   ): Promise<Tournament> {

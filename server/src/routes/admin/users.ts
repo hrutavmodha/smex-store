@@ -4,7 +4,7 @@ import {
   UserModerationService,
   UserModerationError,
 } from '../../services/user-moderation.service.js';
-import { formatRfc7807 } from '../../utils/errors.js';
+import { formatRfc7807 } from '@smex/shared';
 
 const banUserSchema = z.object({
   reason: z.string().min(1, 'Ban reason is required'),

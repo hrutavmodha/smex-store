@@ -13,6 +13,7 @@ export const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(3001),
   HOST: z.string().default('0.0.0.0'),
+  COOKIE_SECURE: z.coerce.boolean().optional(),
   DATABASE_URL: z
     .string()
     .url()

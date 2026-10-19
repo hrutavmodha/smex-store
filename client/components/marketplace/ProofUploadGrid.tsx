@@ -26,11 +26,11 @@ export function ProofUploadGrid({
 
   return (
     <div className="flex flex-col gap-2">
-      <label className="text-sm font-semibold text-[#E9F5F1] flex items-center justify-between">
+      <label className="text-sm font-semibold text-text-primary flex items-center justify-between">
         <span>
-          Verified Proof Screenshots <span className="text-[#1FAE7A]">*</span>
+          Verified Proof Screenshots <span className="text-emerald-primary">*</span>
         </span>
-        <span className="text-xs font-normal text-[#8FA39C]">
+        <span className="text-xs font-normal text-text-secondary">
           {uploadedProofs.length}/5 uploaded
         </span>
       </label>
@@ -51,8 +51,8 @@ export function ProofUploadGrid({
         }}
         className={`relative w-full p-8 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-120 ease-out ${
           isUploading
-            ? 'border-[#1FAE7A] bg-[#121C19]/80 cursor-wait'
-            : 'border-[#223530] hover:border-[#1FAE7A] bg-[#121C19] hover:bg-[#16211D]'
+            ? 'border-emerald-primary bg-bg-surface/80 cursor-wait'
+            : 'border-border-subtle hover:border-emerald-primary bg-bg-surface hover:bg-bg-surface-elevated'
         }`}
       >
         <input
@@ -65,14 +65,14 @@ export function ProofUploadGrid({
           disabled={isUploading || uploadedProofs.length >= 5}
         />
 
-        <div className="p-3.5 rounded-2xl bg-[#0B0F12] border border-[#223530] text-[#1FAE7A] mb-3">
+        <div className="p-3.5 rounded-2xl bg-bg-canvas border border-border-subtle text-emerald-primary mb-3">
           <Upload className="w-6 h-6 stroke-[1.75]" />
         </div>
 
-        <p className="text-sm font-bold text-[#E9F5F1] mb-1">
+        <p className="text-sm font-bold text-text-primary mb-1">
           Click or drag & drop account proof screenshots
         </p>
-        <p className="text-xs text-[#8FA39C]">
+        <p className="text-xs text-text-secondary">
           JPEG, PNG, or WebP up to 5MB each. Direct encrypted upload to storage.
         </p>
       </div>
@@ -80,7 +80,7 @@ export function ProofUploadGrid({
       {/* Deterministic Upload Progress Bar */}
       {isUploading && (
         <div className="flex flex-col gap-1.5 mt-2">
-          <div className="flex justify-between text-xs font-semibold text-[#8FA39C]">
+          <div className="flex justify-between text-xs font-semibold text-text-secondary">
             <span>Uploading to storage...</span>
             <span>{uploadProgress}%</span>
           </div>
@@ -90,10 +90,10 @@ export function ProofUploadGrid({
             aria-valuenow={uploadProgress}
             aria-valuemin={0}
             aria-valuemax={100}
-            className="w-full h-2 rounded-full bg-[#16211D] border border-[#223530] overflow-hidden"
+            className="w-full h-2 rounded-full bg-bg-canvas border border-border-subtle overflow-hidden"
           >
             <div
-              className="h-full bg-[#1FAE7A] transition-all duration-120 ease-out"
+              className="h-full bg-emerald-primary transition-all duration-120 ease-out"
               style={{ width: `${uploadProgress}%` }}
             />
           </div>
@@ -106,7 +106,7 @@ export function ProofUploadGrid({
           {uploadedProofs.map((proof, idx) => (
             <div
               key={proof.s3Key}
-              className="relative aspect-video rounded-xl overflow-hidden border border-[#223530] bg-[#0B0F12] group"
+              className="relative aspect-video rounded-xl overflow-hidden border border-border-subtle bg-bg-canvas group"
             >
               <Image
                 src={proof.cdnUrl || `/api/v1/media/${proof.s3Key}`}

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   calculateBoostingPrice,
   ValidationError,
-} from '../../src/services/boosting-calc.service.js';
+} from '@smex/shared';
 
 describe('Sub-Mythic Fixed Tier Jump Matrix Suite (LLT 2.1)', () => {
   it('Test 1: Standard 1-division leap: Epic to Legend', () => {

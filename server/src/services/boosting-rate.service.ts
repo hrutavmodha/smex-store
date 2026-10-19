@@ -8,7 +8,7 @@ import {
   type NewBoostingOrder,
   type BoostingOrder,
 } from '../db/schema/boosting.js';
-import { ValidationError } from './boosting-calc.service.js';
+import { ValidationError } from '@smex/shared';
 
 export const REDIS_BOOSTING_RATES_KEY = 'boosting:rates:active';
 

@@ -3,10 +3,10 @@ import { z } from 'zod';
 import {
   type AccessTokenPayload,
   STANDARDIZED_ROLES,
+  formatRfc7807,
 } from '@smex/shared';
 import { TeamService } from '../services/team.service.js';
 import { TeamJoinService } from '../services/team-join.service.js';
-import { formatRfc7807 } from '../utils/errors.js';
 
 const createTeamSchema = z.object({
   name: z.string().trim().min(2, 'Name must be at least 2 characters').max(50, 'Name cannot exceed 50 characters'),

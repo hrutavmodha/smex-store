@@ -6,10 +6,6 @@ import { type MatchNodeData } from '@smex/shared';
 import { BracketVisualizer } from '../components/tournaments/BracketVisualizer';
 import { TournamentLobbyRoom } from '../components/tournaments/TournamentLobbyRoom';
 
-import tournamentsPageSource from '../app/tournaments/page.tsx?raw';
-import bracketVisualizerSource from '../components/tournaments/BracketVisualizer.tsx?raw';
-import lobbyRoomSource from '../components/tournaments/TournamentLobbyRoom.tsx?raw';
-
 const mockTournaments = [
   {
     id: 'tourney-1',
@@ -266,7 +262,7 @@ describe('Milestone 5: Client Presentation Tier & Bracket UI Suite (LLT Tests 22
 
     const liveIndicator = await findByText('LIVE');
     expect(liveIndicator).toBeTruthy();
-    expect(liveIndicator.className).toContain('text-[#1FAE7A]');
+    expect(liveIndicator.className).toContain('text-emerald-primary');
   });
 
   // Test 24: Bracket visualizer renders rounds, match nodes, dynamic SVG connectors, and format-aware titles
@@ -420,8 +416,8 @@ describe('Milestone 5: Client Presentation Tier & Bracket UI Suite (LLT Tests 22
     await waitFor(() => {
       const winnerRow = matchNode.querySelector('[aria-label*="Omega Elite"]') as HTMLElement;
       expect(winnerRow).toBeTruthy();
-      expect(winnerRow.className).toContain('text-[#1FAE7A]');
-      expect(winnerRow.className).toContain('border-l-[#1FAE7A]');
+      expect(winnerRow.className).toContain('text-emerald-primary');
+      expect(winnerRow.className).toContain('border-l-emerald-primary');
       expect(matchNode.textContent).toContain('2');
     });
   });
@@ -564,32 +560,60 @@ describe('Milestone 5: Client Presentation Tier & Bracket UI Suite (LLT Tests 22
     expect(getByText(/Round 1 • Match #2/i)).toBeTruthy();
   });
 
-  // Test 27: AMOLED theme pure true-black surface, motion audit, and production purity
-  it('Test 27: AMOLED theme pure true-black surface, motion audit, and production purity (LLT 27)', async () => {
-    // 1. Surface colors: True-Black #000000 and Obsidian #0B0F12
-    expect(tournamentsPageSource.includes('#000000')).toBe(true);
-    expect(tournamentsPageSource.includes('#0B0F12')).toBe(true);
-    expect(bracketVisualizerSource.includes('#000000')).toBe(true);
-    expect(bracketVisualizerSource.includes('#0B0F12')).toBe(true);
-    expect(lobbyRoomSource.includes('#000000')).toBe(true);
-    expect(lobbyRoomSource.includes('#0B0F12')).toBe(true);
+  // Test 27: Theme semantic surface, motion audit, and production purity
+  it('Test 27: Theme semantic surface, motion audit, and production purity (LLT 27)', async () => {
+    // Override fetch for TournamentsPage
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({ tournaments: mockTournaments, total: 3 }),
+    });
 
-    // 2. Prohibited visual effects: zero backdrop-filter: blur, zero opacity fades
-    expect(tournamentsPageSource.includes('backdrop-blur')).toBe(false);
-    expect(tournamentsPageSource.includes('backdrop-filter')).toBe(false);
-    expect(bracketVisualizerSource.includes('backdrop-blur')).toBe(false);
-    expect(bracketVisualizerSource.includes('backdrop-filter')).toBe(false);
-    expect(lobbyRoomSource.includes('backdrop-blur')).toBe(false);
-    expect(lobbyRoomSource.includes('backdrop-filter')).toBe(false);
+    const pageRender = render(<TournamentsPage />);
+    const bracketRender = render(
+      <BracketVisualizer
+        tournamentId="test-tourney"
+        initialMatches={mock8TeamBracket}
+      />
+    );
+    const lobbyRender = render(
+      <TournamentLobbyRoom
+        tournamentId="test-tourney"
+        matches={mock8TeamBracket}
+        participants={[
+          { id: 'p1', teamId: 'team-1', teamName: 'Omega Elite', seed: 1 },
+          { id: 'p2', teamId: 'team-2', teamName: 'Valkyrie Squad', seed: 2 },
+        ]}
+      />
+    );
 
-    // 3. Motion physics: snappy transitions <= 120ms
-    expect(tournamentsPageSource.includes('duration-[120ms]')).toBe(true);
-    expect(bracketVisualizerSource.includes('duration-[120ms]')).toBe(true);
-    expect(lobbyRoomSource.includes('duration-[120ms]')).toBe(true);
+    const renderedContainers = [
+      pageRender.container,
+      bracketRender.container,
+      lobbyRender.container,
+    ];
 
-    // 4. Production Code Purity: Zero test-only data-testid attributes in production components
-    expect(tournamentsPageSource.includes('data-testid')).toBe(false);
-    expect(bracketVisualizerSource.includes('data-testid')).toBe(false);
-    expect(lobbyRoomSource.includes('data-testid')).toBe(false);
+    // 1. Surface colors: semantic tokens bg-bg-canvas, bg-bg-surface, bg-bg-surface-elevated
+    expect(pageRender.container.querySelector('main')?.className).toContain('bg-bg-canvas');
+
+    for (const cont of renderedContainers) {
+      // 2. Prohibited visual effects: zero backdrop-filter: blur, zero opacity fades
+      const blurElements = cont.querySelectorAll('[class*="backdrop-blur"]');
+      expect(blurElements.length).toBe(0);
+
+      const fadeElements = cont.querySelectorAll('[class*="fade-in"], [class*="animate-fade"], [class*="opacity-0"]');
+      expect(fadeElements.length).toBe(0);
+
+      // 3. Motion physics: snappy transitions <= 120ms
+      const transitionElements = cont.querySelectorAll('[class*="transition-"]');
+      for (const el of transitionElements) {
+        const cls = typeof el.className === 'string' ? el.className : el.getAttribute('class') || '';
+        expect(cls.includes('duration-[120ms]') || cls.includes('duration-120')).toBe(true);
+      }
+
+      // 4. Production Code Purity: Zero test-only data-testid attributes in production components
+      const testIdElements = cont.querySelectorAll('[data-testid]');
+      expect(testIdElements.length).toBe(0);
+    }
   });
 });

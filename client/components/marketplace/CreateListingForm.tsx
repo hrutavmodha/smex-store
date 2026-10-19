@@ -181,8 +181,8 @@ export function CreateListingForm() {
 
       {/* Listing Title */}
       <div className="flex flex-col gap-2">
-        <label htmlFor="listing-title" className="text-sm font-semibold text-[#E9F5F1]">
-          Listing Title <span className="text-[#1FAE7A]">*</span>
+        <label htmlFor="listing-title" className="text-sm font-semibold text-text-primary">
+          Listing Title <span className="text-emerald-primary">*</span>
         </label>
         <input
           id="listing-title"
@@ -192,24 +192,24 @@ export function CreateListingForm() {
           placeholder="e.g. MLBB Mythical Glory 75★ - 120 Skins, Collector Granger"
           required
           maxLength={100}
-          className="w-full px-4 py-3 rounded-xl bg-[#121C19] border border-[#223530] text-[#E9F5F1] placeholder-[#8FA39C] focus:outline-none focus:border-[#1FAE7A] transition-all duration-120 ease-out"
+          className="w-full px-4 py-3 rounded-xl bg-bg-canvas border border-border-subtle text-text-primary placeholder:text-text-muted focus:outline-none focus:border-emerald-primary transition-all duration-120 ease-out"
         />
       </div>
 
       {/* Grid: Rank Tier & Price */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="flex flex-col gap-2">
-          <label htmlFor="rank-tier" className="text-sm font-semibold text-[#E9F5F1]">
-            Rank Tier <span className="text-[#1FAE7A]">*</span>
+          <label htmlFor="rank-tier" className="text-sm font-semibold text-text-primary">
+            Rank Tier <span className="text-emerald-primary">*</span>
           </label>
           <select
             id="rank-tier"
             value={rankTier}
             onChange={(e) => setRankTier(e.target.value)}
-            className="w-full px-4 py-3 rounded-xl bg-[#121C19] border border-[#223530] text-[#E9F5F1] focus:outline-none focus:border-[#1FAE7A] transition-all duration-120 ease-out cursor-pointer"
+            className="w-full px-4 py-3 rounded-xl bg-bg-canvas border border-border-subtle text-text-primary focus:outline-none focus:border-emerald-primary transition-all duration-120 ease-out cursor-pointer"
           >
             {RANK_TIERS.map((tier) => (
-              <option key={tier} value={tier} className="bg-[#121C19] text-[#E9F5F1]">
+              <option key={tier} value={tier} className="bg-bg-surface text-text-primary">
                 {tier}
               </option>
             ))}
@@ -217,11 +217,11 @@ export function CreateListingForm() {
         </div>
 
         <div className="flex flex-col gap-2">
-          <label htmlFor="price-inr" className="text-sm font-semibold text-[#E9F5F1]">
-            Asking Price (INR) <span className="text-[#1FAE7A]">*</span>
+          <label htmlFor="price-inr" className="text-sm font-semibold text-text-primary">
+            Asking Price (INR) <span className="text-emerald-primary">*</span>
           </label>
           <div className="relative">
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#8FA39C] font-bold">
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted font-bold">
               ₹
             </span>
             <input
@@ -233,7 +233,7 @@ export function CreateListingForm() {
               onChange={(e) => setPriceInr(e.target.value)}
               placeholder="Min. 100"
               required
-              className="w-full pl-8 pr-4 py-3 rounded-xl bg-[#121C19] border border-[#223530] text-[#E9F5F1] placeholder-[#8FA39C] focus:outline-none focus:border-[#1FAE7A] transition-all duration-120 ease-out"
+              className="w-full pl-8 pr-4 py-3 rounded-xl bg-bg-canvas border border-border-subtle text-text-primary placeholder:text-text-muted focus:outline-none focus:border-emerald-primary transition-all duration-120 ease-out"
             />
           </div>
         </div>
@@ -242,24 +242,24 @@ export function CreateListingForm() {
       {/* Grid: Contact Channel & Handle */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="flex flex-col gap-2">
-          <label htmlFor="contact-channel" className="text-sm font-semibold text-[#E9F5F1]">
-            Preferred Contact Channel <span className="text-[#1FAE7A]">*</span>
+          <label htmlFor="contact-channel" className="text-sm font-semibold text-text-primary">
+            Preferred Contact Channel <span className="text-emerald-primary">*</span>
           </label>
           <select
             id="contact-channel"
             value={contactChannel}
             onChange={(e) => setContactChannel(e.target.value as 'whatsapp' | 'instagram')}
-            className="w-full px-4 py-3 rounded-xl bg-[#121C19] border border-[#223530] text-[#E9F5F1] focus:outline-none focus:border-[#1FAE7A] transition-all duration-120 ease-out cursor-pointer capitalize"
+            className="w-full px-4 py-3 rounded-xl bg-bg-canvas border border-border-subtle text-text-primary focus:outline-none focus:border-emerald-primary transition-all duration-120 ease-out cursor-pointer capitalize"
           >
-            <option value="whatsapp" className="bg-[#121C19] text-[#E9F5F1]">WhatsApp</option>
-            <option value="instagram" className="bg-[#121C19] text-[#E9F5F1]">Instagram</option>
+            <option value="whatsapp" className="bg-bg-surface text-text-primary">WhatsApp</option>
+            <option value="instagram" className="bg-bg-surface text-text-primary">Instagram</option>
           </select>
         </div>
 
         <div className="flex flex-col gap-2">
-          <label htmlFor="contact-handle" className="text-sm font-semibold text-[#E9F5F1]">
+          <label htmlFor="contact-handle" className="text-sm font-semibold text-text-primary">
             {contactChannel === 'whatsapp' ? 'WhatsApp Phone Number' : 'Instagram Username'}{' '}
-            <span className="text-[#1FAE7A]">*</span>
+            <span className="text-emerald-primary">*</span>
           </label>
           <input
             id="contact-handle"
@@ -268,7 +268,7 @@ export function CreateListingForm() {
             onChange={(e) => setContactHandle(e.target.value)}
             placeholder={contactChannel === 'whatsapp' ? '+91 98765 43210' : '@your_handle'}
             required
-            className="w-full px-4 py-3 rounded-xl bg-[#121C19] border border-[#223530] text-[#E9F5F1] placeholder-[#8FA39C] focus:outline-none focus:border-[#1FAE7A] transition-all duration-120 ease-out"
+            className="w-full px-4 py-3 rounded-xl bg-bg-canvas border border-border-subtle text-text-primary placeholder:text-text-muted focus:outline-none focus:border-emerald-primary transition-all duration-120 ease-out"
           />
         </div>
       </div>
@@ -284,8 +284,8 @@ export function CreateListingForm() {
       />
 
       {/* Safety Notice */}
-      <div className="p-4 rounded-xl bg-[#121C19] border border-[#223530] flex items-start gap-3 text-xs text-[#8FA39C]">
-        <ShieldAlert className="w-5 h-5 text-[#1FAE7A] shrink-0 mt-0.5" />
+      <div className="p-4 rounded-xl bg-bg-surface border border-border-subtle flex items-start gap-3 text-xs text-text-secondary">
+        <ShieldAlert className="w-5 h-5 text-emerald-primary shrink-0 mt-0.5" />
         <span>
           Screenshots are verified automatically for binary authenticity. Disguised executable files are permanently purged. Always hide confidential account credentials.
         </span>
@@ -295,7 +295,7 @@ export function CreateListingForm() {
       <button
         type="submit"
         disabled={isSubmitting || isUploading}
-        className="w-full py-3.5 px-6 rounded-xl font-bold text-center text-[#0B1A15] bg-[#1FAE7A] hover:bg-[#22C58F] transition-all duration-120 ease-out active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer shadow-lg mt-2"
+        className="w-full py-3.5 px-6 rounded-xl font-bold text-center text-[#0B1A15] bg-emerald-primary hover:bg-[#22C58F] transition-all duration-120 ease-out active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer shadow-lg mt-2"
       >
         {isSubmitting ? (
           <>

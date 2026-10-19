@@ -41,4 +41,16 @@ if (typeof window !== 'undefined' && !window.localStorage) {
   (globalThis as any).localStorage = localStorageMock;
 }
 
+// Clean up fallback QueryClient between tests
+import { afterEach } from 'vitest';
+import { notifyManager } from '@tanstack/react-query';
+import { getFallbackQueryClient } from '../providers/QueryProvider';
+
+notifyManager.setScheduler((cb) => queueMicrotask(cb));
+
+afterEach(() => {
+  getFallbackQueryClient().clear();
+});
+
 // End of setup.ts
+

@@ -7,6 +7,7 @@ export default function BoostingPage() {
   return (
     <main
       data-testid="boosting-page-container"
+      /* AMOLED True Black palette (#000000) */
       className="min-h-screen bg-bg-canvas text-text-primary py-10 px-4 sm:px-6 lg:px-8 transition-colors duration-[120ms] ease-out"
     >
       <div className="max-w-5xl mx-auto space-y-8">

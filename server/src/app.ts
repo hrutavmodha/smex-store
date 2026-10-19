@@ -1,6 +1,5 @@
 import { type FastifyPluginAsync } from 'fastify'
 import sensiblePlugin from './plugins/sensible.js'
-import supportPlugin from './plugins/support.js'
 import corsPlugin from './plugins/cors.js'
 import websocketPlugin from './plugins/websocket.js'
 import dbPlugin from './plugins/db.js'
@@ -15,7 +14,6 @@ import authRoutes from './routes/auth.js'
 import devicesRoutes from './routes/devices.js'
 import teamsRoutes from './routes/teams.js'
 import tournamentsRoutes from './routes/tournaments.js'
-import exampleRoutes from './routes/example/index.js'
 import boostingRoutes from './routes/boosting.js'
 import adminBoostingRoutes from './routes/admin/boosting.js'
 import adminMetricsRoutes from './routes/admin/metrics.js'
@@ -52,7 +50,6 @@ const app: FastifyPluginAsync<AppOptions> = async (
   await fastify.register(websocketPlugin)
   await fastify.register(loggerPlugin)
   await fastify.register(sensiblePlugin)
-  await fastify.register(supportPlugin)
 
   // Register routes
   await fastify.register(rootRoutes)
@@ -72,7 +69,6 @@ const app: FastifyPluginAsync<AppOptions> = async (
   await fastify.register(marketplaceUploadsRoutes)
   await fastify.register(notificationsRoutes)
   await fastify.register(searchRoutes)
-  await fastify.register(exampleRoutes, { prefix: '/example' })
 }
 
 export default app

@@ -1,15 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { fetchMarketplaceListings } from '../lib/marketplace/api';
+import { useSafeQueryClient } from '../providers/QueryProvider';
 import type { MarketplaceListingItem, GetListingsParams } from '@smex/shared';
 
 export function useCatalogListings() {
-  const [listings, setListings] = useState<MarketplaceListingItem[]>([]);
-  const [totalCount, setTotalCount] = useState(0);
+  const queryClient = useSafeQueryClient();
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [isLoading, setIsLoading] = useState(true);
 
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -30,20 +29,32 @@ export function useCatalogListings() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Reset to page 1 when any search filter changes
-  const filterKey = `${debouncedQuery}:${selectedRanks.join(',')}:${minPrice}:${maxPrice}:${selectedBadge}:${sortBy}`;
-  const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
-
-  if (filterKey !== prevFilterKey) {
-    setPrevFilterKey(filterKey);
-    setPage(1);
-  }
-
+  // Reset to page 1 when any search filter changes (using useEffect, avoiding render-time mutation)
+  const isFirstMount = useRef(true);
   useEffect(() => {
-    let cancelled = false;
+    if (isFirstMount.current) {
+      isFirstMount.current = false;
+      return;
+    }
+    setPage(1);
+  }, [debouncedQuery, selectedRanks, minPrice, maxPrice, selectedBadge, sortBy]);
 
-    const load = async () => {
-      try {
+  const { data, isLoading } = useQuery(
+    {
+      queryKey: [
+        'marketplace-listings',
+        {
+          debouncedQuery,
+          selectedRanks,
+          minPrice,
+          maxPrice,
+          selectedBadge,
+          sortBy,
+          page,
+          limit,
+        },
+      ],
+      queryFn: async () => {
         const params: GetListingsParams = {
           sortBy,
           page,
@@ -70,32 +81,18 @@ export function useCatalogListings() {
           params.badgeType = selectedBadge;
         }
 
-        const data = await fetchMarketplaceListings(params);
+        return fetchMarketplaceListings(params);
+      },
+      placeholderData: keepPreviousData,
+    },
+    queryClient
+  );
 
-        if (!cancelled) {
-          setListings(data.listings || []);
-          setTotalCount(data.total ?? data.listings?.length ?? 0);
-          setTotalPages(data.totalPages ?? (data.total ? Math.ceil(data.total / (data.limit || limit)) : 1));
-        }
-      } catch {
-        if (!cancelled) {
-          setListings([]);
-          setTotalCount(0);
-          setTotalPages(1);
-        }
-      } finally {
-        if (!cancelled) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    void load();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [debouncedQuery, selectedRanks, minPrice, maxPrice, selectedBadge, sortBy, page]);
+  const listings: MarketplaceListingItem[] = data?.listings || [];
+  const totalCount = data?.total ?? data?.listings?.length ?? 0;
+  const totalPages =
+    data?.totalPages ??
+    (data?.total ? Math.ceil(data.total / (data.limit || limit)) : 1);
 
   const toggleRank = (tier: string) => {
     setSelectedRanks((prev) =>

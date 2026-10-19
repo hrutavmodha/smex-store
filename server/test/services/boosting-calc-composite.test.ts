@@ -1,6 +1,6 @@
 import { describe, it } from 'vitest';
 import assert from 'node:assert/strict';
-import { calculateBoostingPrice } from '../../src/services/boosting-calc.service.js';
+import { calculateBoostingPrice } from '@smex/shared';
 
 describe('Composite Cross-Regime Progression Suite (LLT 2.3)', () => {
   it('Test 13: Cross-regime progression: Legend to Mythical Honor 30★', () => {

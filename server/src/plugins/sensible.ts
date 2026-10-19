@@ -24,16 +24,17 @@ export default fp<FastifySensibleOptions>(async (fastify) => {
   // Hook onSend to enforce Content-Type: application/problem+json on all 4xx and 5xx errors
   fastify.addHook('onSend', async (request, reply, payload) => {
     if (reply.statusCode >= 400 && typeof payload === 'string') {
-      reply.header('content-type', 'application/problem+json; charset=utf-8');
-
       try {
         const parsed = JSON.parse(payload);
-        if (typeof parsed === 'object' && parsed !== null && !parsed.instance) {
-          parsed.instance = request.url;
-          return JSON.stringify(parsed);
+        if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
+          reply.header('content-type', 'application/problem+json; charset=utf-8');
+          if (!parsed.instance) {
+            parsed.instance = request.url;
+            return JSON.stringify(parsed);
+          }
         }
       } catch {
-        // payload is not json
+        // payload is not json; preserve original content-type
       }
     }
     return payload;

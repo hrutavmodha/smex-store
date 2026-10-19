@@ -1,7 +1,7 @@
-export type BadgeType = 'none' | 'good_deal' | 'hot';
+import { type ListingBadgeType } from '@smex/shared';
 
 export interface BadgeComputationResult {
-  badgeType: BadgeType;
+  badgeType: ListingBadgeType;
   discountPct: number;
   baselinePriceInr: number;
 }

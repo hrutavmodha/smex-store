@@ -52,20 +52,20 @@ export function SellerContactModal({ listing, isOpen, onClose }: SellerContactMo
       aria-labelledby="contact-modal-title"
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80"
     >
-      <div className="relative w-full max-w-md rounded-2xl bg-[#121C19] border border-[#223530] p-6 shadow-2xl transition-all duration-120 ease-out">
+      <div className="relative w-full max-w-md rounded-2xl bg-bg-surface border border-border-subtle p-6 shadow-2xl transition-all duration-120 ease-out">
         {/* Close Button */}
         <button
           type="button"
           aria-label="Close dialog"
           onClick={onClose}
-          className="absolute top-4 right-4 text-[#8FA39C] hover:text-[#E9F5F1] p-1.5 rounded-lg hover:bg-[#16211D] transition-colors duration-120 cursor-pointer"
+          className="absolute top-4 right-4 text-text-secondary hover:text-text-primary p-1.5 rounded-lg hover:bg-bg-surface-elevated transition-colors duration-120 cursor-pointer"
         >
           <X className="w-5 h-5" />
         </button>
 
         {/* Modal Header */}
         <div className="flex items-center gap-3 mb-4">
-          <div className="p-2.5 rounded-xl bg-[#0B0F12] border border-[#223530]">
+          <div className="p-2.5 rounded-xl bg-bg-canvas border border-border-subtle">
             {contactChannel === 'whatsapp' ? (
               <MessageCircle className="w-5 h-5 text-[#25D366]" />
             ) : (
@@ -73,36 +73,36 @@ export function SellerContactModal({ listing, isOpen, onClose }: SellerContactMo
             )}
           </div>
           <div>
-            <h3 id="contact-modal-title" className="text-lg font-bold text-[#E9F5F1]">
+            <h3 id="contact-modal-title" className="text-lg font-bold text-text-primary">
               Contact Seller
             </h3>
-            <p className="text-xs text-[#8FA39C]">Direct external peer-to-peer negotiation</p>
+            <p className="text-xs text-text-secondary">Direct external peer-to-peer negotiation</p>
           </div>
         </div>
 
         {/* Listing Summary Card */}
-        <div className="p-3.5 rounded-xl bg-[#0B0F12] border border-[#223530] mb-5 flex flex-col gap-1.5">
-          <span className="text-xs font-semibold text-[#1FAE7A] uppercase tracking-wider">
+        <div className="p-3.5 rounded-xl bg-bg-canvas border border-border-subtle mb-5 flex flex-col gap-1.5">
+          <span className="text-xs font-semibold text-emerald-primary uppercase tracking-wider">
             Listing Target
           </span>
-          <p className="text-sm font-semibold text-[#E9F5F1] line-clamp-2">{title}</p>
-          <p className="text-sm font-bold text-[#1FAE7A]">₹{priceInr} INR</p>
+          <p className="text-sm font-semibold text-text-primary line-clamp-2">{title}</p>
+          <p className="text-sm font-bold text-emerald-primary">₹{priceInr} INR</p>
         </div>
 
         {/* Contact Handle Details */}
         <div className="mb-5 flex flex-col gap-2">
-          <span className="text-xs font-medium text-[#8FA39C]">Preferred Communication Channel</span>
-          <div className="flex items-center justify-between p-3 rounded-xl bg-[#16211D] border border-[#223530]">
+          <span className="text-xs font-medium text-text-secondary">Preferred Communication Channel</span>
+          <div className="flex items-center justify-between p-3 rounded-xl bg-bg-surface-elevated border border-border-subtle">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-bold text-[#E9F5F1] capitalize">{contactChannel}:</span>
-              <span className="text-sm font-mono text-[#8FA39C]">{contactHandle}</span>
+              <span className="text-sm font-bold text-text-primary capitalize">{contactChannel}:</span>
+              <span className="text-sm font-mono text-text-secondary">{contactHandle}</span>
             </div>
             {contactUrl && (
               <a
                 href={contactUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-xs font-semibold text-[#1FAE7A] hover:underline flex items-center gap-1"
+                className="text-xs font-semibold text-emerald-primary hover:underline flex items-center gap-1"
               >
                 Open <ExternalLink className="w-3.5 h-3.5" />
               </a>
@@ -111,8 +111,8 @@ export function SellerContactModal({ listing, isOpen, onClose }: SellerContactMo
         </div>
 
         {/* Safety Disclaimer */}
-        <div className="p-3 rounded-xl bg-[#0B0F12]/60 border border-[#223530]/50 mb-5 flex items-start gap-2.5 text-xs text-[#8FA39C]">
-          <ShieldCheck className="w-4 h-4 text-[#1FAE7A] shrink-0 mt-0.5" />
+        <div className="p-3 rounded-xl bg-bg-canvas border border-border-subtle mb-5 flex items-start gap-2.5 text-xs text-text-secondary">
+          <ShieldCheck className="w-4 h-4 text-emerald-primary shrink-0 mt-0.5" />
           <span>
             Smex Store charges zero commission on ID trading. Never share account passwords or login codes before securing payment confirmation.
           </span>
@@ -125,7 +125,7 @@ export function SellerContactModal({ listing, isOpen, onClose }: SellerContactMo
             target="_blank"
             rel="noopener noreferrer"
             onClick={onClose}
-            className="w-full py-3 px-4 rounded-xl font-bold text-center text-[#0B1A15] bg-[#1FAE7A] hover:bg-[#22C58F] transition-all duration-120 ease-out active:scale-98 flex items-center justify-center gap-2 cursor-pointer shadow-lg"
+            className="w-full py-3 px-4 rounded-xl font-bold text-center text-[#0B1A15] bg-emerald-primary hover:bg-[#22C58F] transition-all duration-120 ease-out active:scale-98 flex items-center justify-center gap-2 cursor-pointer shadow-lg"
           >
             Launch {contactChannel.toUpperCase()} <ExternalLink className="w-4 h-4" />
           </a>
@@ -133,7 +133,7 @@ export function SellerContactModal({ listing, isOpen, onClose }: SellerContactMo
           <button
             type="button"
             onClick={onClose}
-            className="w-full py-3 px-4 rounded-xl font-bold text-[#E9F5F1] bg-[#16211D] hover:bg-[#223530] border border-[#223530] transition-all duration-120 ease-out active:scale-98 cursor-pointer"
+            className="w-full py-3 px-4 rounded-xl font-bold text-text-primary bg-bg-surface-elevated hover:bg-bg-canvas border border-border-subtle transition-all duration-120 ease-out active:scale-98 cursor-pointer"
           >
             Done
           </button>

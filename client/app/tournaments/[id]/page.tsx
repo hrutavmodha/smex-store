@@ -85,20 +85,20 @@ function TournamentDetailContent() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#000000] text-[#E9F5F1]">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#1FAE7A] border-t-transparent" />
+      <div className="flex min-h-screen items-center justify-center bg-bg-canvas text-text-primary">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-emerald-primary border-t-transparent" />
       </div>
     );
   }
 
   if (error || !tournament) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-[#000000] text-[#E9F5F1] p-4">
+      <div className="flex min-h-screen flex-col items-center justify-center bg-bg-canvas text-text-primary p-4">
         <h2 className="text-xl font-bold text-red-400">Error Loading Tournament</h2>
-        <p className="mt-2 text-sm text-[#8FA39C]">{error || 'Tournament not found'}</p>
+        <p className="mt-2 text-sm text-text-secondary">{error || 'Tournament not found'}</p>
         <Link
           href="/tournaments"
-          className="mt-6 flex items-center gap-2 rounded bg-[#121C19] px-4 py-2 text-xs font-bold text-[#1FAE7A] hover:bg-[#16211D]"
+          className="mt-6 flex items-center gap-2 rounded bg-bg-surface-elevated px-4 py-2 text-xs font-bold text-emerald-primary hover:bg-bg-surface"
         >
           <ArrowLeft className="h-4 w-4" /> Back to Tournaments
         </Link>
@@ -109,68 +109,68 @@ function TournamentDetailContent() {
   const isOngoing = tournament.status === 'ongoing';
 
   return (
-    <div className="min-h-screen bg-[#000000] text-[#E9F5F1] py-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-bg-canvas text-text-primary py-8 px-4 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
         {/* Back Link */}
         <Link
           href="/tournaments"
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#8FA39C] hover:text-[#1FAE7A] mb-6 transition-colors duration-[120ms]"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-text-secondary hover:text-emerald-primary mb-6 transition-colors duration-[120ms]"
         >
           <ArrowLeft className="h-4 w-4" /> Back to Tournaments
         </Link>
 
         {/* Tournament Hero Card */}
-        <div className="rounded-2xl border border-[#1A2A25] bg-[#0B0F12] p-6 sm:p-8 mb-8">
+        <div className="rounded-2xl border border-border-subtle bg-bg-surface p-6 sm:p-8 mb-8">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div>
               <div className="flex items-center gap-2 mb-3">
-                <span className="rounded bg-[#121C19] px-2.5 py-0.5 text-xs font-mono font-bold uppercase text-[#1FAE7A] border border-[#1A2A25]">
+                <span className="rounded bg-bg-surface-elevated px-2.5 py-0.5 text-xs font-mono font-bold uppercase text-emerald-primary border border-border-subtle">
                   {tournament.gameSlug.toUpperCase()}
                 </span>
-                <span className="rounded bg-[#16211D] px-2.5 py-0.5 text-xs font-medium text-[#8FA39C]">
+                <span className="rounded bg-bg-surface-elevated px-2.5 py-0.5 text-xs font-medium text-text-secondary">
                   {tournament.format.replace(/_/g, ' ')}
                 </span>
                 {isOngoing && (
-                  <span className="flex items-center gap-1.5 rounded-full border border-[#1FAE7A]/40 bg-[#121C19] px-2.5 py-0.5 text-xs font-bold text-[#1FAE7A]">
-                    <span className="h-2 w-2 rounded-full bg-[#1FAE7A] animate-pulse" />
+                  <span className="flex items-center gap-1.5 rounded-full border border-emerald-primary/40 bg-bg-surface-elevated px-2.5 py-0.5 text-xs font-bold text-emerald-primary">
+                    <span className="h-2 w-2 rounded-full bg-emerald-primary animate-pulse" />
                     LIVE
                   </span>
                 )}
               </div>
 
-              <h1 className="text-2xl sm:text-3xl font-black text-[#E9F5F1]">
+              <h1 className="text-2xl sm:text-3xl font-black text-text-primary">
                 {tournament.title}
               </h1>
 
-              <div className="mt-4 flex flex-wrap items-center gap-6 text-xs text-[#8FA39C]">
+              <div className="mt-4 flex flex-wrap items-center gap-6 text-xs text-text-secondary">
                 <div className="flex items-center gap-1.5">
-                  <IndianRupee className="h-4 w-4 text-[#1FAE7A]" />
-                  <span className="font-mono text-sm font-bold text-[#1FAE7A]">
+                  <IndianRupee className="h-4 w-4 text-emerald-primary" />
+                  <span className="font-mono text-sm font-bold text-emerald-primary">
                     ₹{Number(tournament.prizePoolInr).toLocaleString('en-IN')}
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <Users className="h-4 w-4 text-[#1B8F97]" />
+                  <Users className="h-4 w-4 text-cyan-depth" />
                   <span>
                     {tournament.participants?.length ?? 0} / {tournament.maxTeams} Teams
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <Calendar className="h-4 w-4 text-[#8FA39C]" />
+                  <Calendar className="h-4 w-4 text-text-muted" />
                   <span>{new Date(tournament.startTime).toLocaleString()}</span>
                 </div>
               </div>
             </div>
 
             {/* View Switcher Tabs */}
-            <div className="flex rounded-lg border border-[#1A2A25] bg-[#070A0C] p-1 self-start md:self-auto">
+            <div className="flex rounded-lg border border-border-subtle bg-bg-surface-elevated p-1 self-start md:self-auto">
               <button
                 type="button"
                 onClick={() => setActiveTab('bracket')}
                 className={`flex items-center gap-2 rounded-md px-4 py-2 text-xs font-bold uppercase transition-all duration-[120ms] ${
                   activeTab === 'bracket'
-                    ? 'bg-[#1FAE7A] text-[#000000]'
-                    : 'text-[#8FA39C] hover:text-[#E9F5F1]'
+                    ? 'bg-emerald-primary text-[#0B1A15]'
+                    : 'text-text-secondary hover:text-text-primary'
                 }`}
               >
                 <Trophy className="h-4 w-4" />
@@ -181,8 +181,8 @@ function TournamentDetailContent() {
                 onClick={() => setActiveTab('lobby')}
                 className={`flex items-center gap-2 rounded-md px-4 py-2 text-xs font-bold uppercase transition-all duration-[120ms] ${
                   activeTab === 'lobby'
-                    ? 'bg-[#1FAE7A] text-[#000000]'
-                    : 'text-[#8FA39C] hover:text-[#E9F5F1]'
+                    ? 'bg-emerald-primary text-[#0B1A15]'
+                    : 'text-text-secondary hover:text-text-primary'
                 }`}
               >
                 <Swords className="h-4 w-4" />
@@ -193,7 +193,7 @@ function TournamentDetailContent() {
         </div>
 
         {/* Dynamic Tab Views */}
-        <div className="rounded-2xl border border-[#1A2A25] bg-[#0B0F12] overflow-hidden">
+        <div className="rounded-2xl border border-border-subtle bg-bg-surface overflow-hidden">
           {activeTab === 'bracket' ? (
             <BracketVisualizer
               tournamentId={id}
@@ -217,7 +217,7 @@ export default function TournamentDetailPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-[#07090E] p-6 text-sm text-[#8FA39C] flex items-center justify-center">
+        <div className="min-h-screen bg-bg-canvas p-6 text-sm text-text-secondary flex items-center justify-center">
           Loading tournament...
         </div>
       }

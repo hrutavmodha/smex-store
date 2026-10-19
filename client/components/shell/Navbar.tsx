@@ -188,7 +188,7 @@ export function Navbar({ user, onLogout, onOpenAuthModal }: NavbarProps) {
           <button
             type="button"
             onClick={handleCycleTheme}
-            className="flex items-center justify-center p-2.5 text-text-secondary hover:text-text-primary bg-bg-surface-elevated rounded-lg min-w-[44px] min-h-[44px]"
+            className="flex items-center justify-center p-2.5 text-text-secondary hover:text-text-primary bg-bg-surface-elevated rounded-lg min-w-[44px] min-h-[44px] touch-manipulation active:scale-95 transition-transform"
             aria-label={`Toggle theme (current: ${theme})`}
             data-testid="mobile-theme-toggle"
           >
@@ -202,7 +202,7 @@ export function Navbar({ user, onLogout, onOpenAuthModal }: NavbarProps) {
           <button
             type="button"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="flex items-center justify-center p-2.5 text-text-secondary hover:text-text-primary bg-bg-surface-elevated rounded-lg min-w-[44px] min-h-[44px]"
+            className="flex items-center justify-center p-2.5 text-text-secondary hover:text-text-primary bg-bg-surface-elevated rounded-lg min-w-[44px] min-h-[44px] touch-manipulation active:scale-95 transition-transform"
             aria-label={isMobileMenuOpen ? 'Close Navigation Menu' : 'Open Navigation Menu'}
             aria-expanded={isMobileMenuOpen}
           >

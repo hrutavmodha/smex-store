@@ -1,7 +1,7 @@
 import { type FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { NotificationService } from '../services/notification.service.js';
-import { formatRfc7807 } from '../utils/errors.js';
+import { formatRfc7807 } from '@smex/shared';
 
 const getNotificationsQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),

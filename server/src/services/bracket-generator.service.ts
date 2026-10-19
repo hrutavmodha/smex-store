@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm';
-import { type SmexDatabase } from '../db/index.js';
+import { type DbOrTx } from '../db/index.js';
 import {
   tournamentMatches,
   type NewTournamentMatch,
@@ -18,7 +18,7 @@ export class BracketGeneratorService {
     tournamentId: string,
     format: 'single_elimination' | 'double_elimination' | 'round_robin',
     participants: ParticipantSeed[],
-    db: SmexDatabase
+    db: DbOrTx
   ) {
     // Delete existing matches for clean regeneration
     await db.delete(tournamentMatches).where(eq(tournamentMatches.tournamentId, tournamentId));
@@ -40,7 +40,7 @@ export class BracketGeneratorService {
   static async generateSingleElimination(
     tournamentId: string,
     participants: ParticipantSeed[],
-    db: SmexDatabase
+    db: DbOrTx
   ) {
     const N = participants.length;
     if (N < 2) {
@@ -161,7 +161,7 @@ export class BracketGeneratorService {
   static async generateDoubleElimination(
     tournamentId: string,
     participants: ParticipantSeed[],
-    db: SmexDatabase
+    db: DbOrTx
   ) {
     const N = participants.length;
     if (N < 2) {
@@ -314,7 +314,7 @@ export class BracketGeneratorService {
   static async generateRoundRobin(
     tournamentId: string,
     participants: ParticipantSeed[],
-    db: SmexDatabase
+    db: DbOrTx
   ) {
     const N = participants.length;
     if (N < 2) {

@@ -14,6 +14,8 @@ export interface DbPoolConfig {
 }
 
 export type SmexDatabase = NodePgDatabase<typeof schema>;
+export type SmexTransaction = Parameters<Parameters<SmexDatabase['transaction']>[0]>[0];
+export type DbOrTx = SmexDatabase | SmexTransaction;
 
 export function getDbPoolConfig(
   envConfig?: EnvConfig,

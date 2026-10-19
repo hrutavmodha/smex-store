@@ -188,8 +188,8 @@ describe('Marketplace Presentation UI & Media Carousel Suite (LLT 2.5)', () => {
     const mainElement = pageRender.container.querySelector('main');
     expect(mainElement).toBeTruthy();
 
-    // Background is AMOLED True-Black #000000
-    expect(mainElement?.style.backgroundColor).toBe('rgb(0, 0, 0)');
+    // Background is semantic canvas
+    expect(mainElement?.className).toContain('bg-bg-canvas');
 
     // Render marketplace presentation components to verify actual rendered DOM trees
     const carouselRender = render(

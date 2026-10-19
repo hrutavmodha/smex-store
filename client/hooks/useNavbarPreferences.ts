@@ -2,12 +2,34 @@
 
 import { useEffect, useSyncExternalStore } from 'react';
 
-export type ThemeMode = 'dark' | 'light';
+export type ThemeMode = 'dark' | 'light' | 'amoled';
 export type DensityMode = 'compact' | 'comfortable' | 'spacious';
 
+const preferenceListeners = new Set<() => void>();
+
+function notifyPreferenceListeners() {
+  preferenceListeners.forEach((callback) => {
+    try {
+      callback();
+    } catch {
+      // ignore callback error
+    }
+  });
+}
+
 function subscribeStorage(callback: () => void) {
-  window.addEventListener('storage', callback);
-  return () => window.removeEventListener('storage', callback);
+  preferenceListeners.add(callback);
+  if (typeof window !== 'undefined') {
+    window.addEventListener('storage', callback);
+    window.addEventListener('smex:preferences-change', callback);
+  }
+  return () => {
+    preferenceListeners.delete(callback);
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('storage', callback);
+      window.removeEventListener('smex:preferences-change', callback);
+    }
+  };
 }
 
 export function useNavbarPreferences() {
@@ -16,7 +38,7 @@ export function useNavbarPreferences() {
     () => {
       if (typeof window === 'undefined' || !window.localStorage) return 'dark';
       const stored = window.localStorage.getItem('smex_theme') as ThemeMode;
-      return stored === 'light' ? 'light' : 'dark';
+      return stored === 'light' ? 'light' : stored === 'amoled' ? 'amoled' : 'dark';
     },
     () => 'dark'
   );
@@ -35,7 +57,7 @@ export function useNavbarPreferences() {
   useEffect(() => {
     if (typeof document !== 'undefined') {
       const savedTheme = window.localStorage?.getItem('smex_theme') as ThemeMode;
-      if (savedTheme === 'light' || savedTheme === 'dark') {
+      if (savedTheme === 'light' || savedTheme === 'dark' || savedTheme === 'amoled') {
         document.documentElement.setAttribute('data-theme', savedTheme);
       }
       const savedDensity = window.localStorage?.getItem('smex_density') as DensityMode;
@@ -55,7 +77,9 @@ export function useNavbarPreferences() {
     }
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new Event('storage'));
+      window.dispatchEvent(new CustomEvent('smex:preferences-change', { detail: { theme: nextTheme } }));
     }
+    notifyPreferenceListeners();
   };
 
   const handleCycleDensity = () => {
@@ -73,7 +97,9 @@ export function useNavbarPreferences() {
     }
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new Event('storage'));
+      window.dispatchEvent(new CustomEvent('smex:preferences-change', { detail: { density: nextDensity } }));
     }
+    notifyPreferenceListeners();
   };
 
   return {
@@ -83,3 +109,4 @@ export function useNavbarPreferences() {
     handleCycleDensity,
   };
 }
+

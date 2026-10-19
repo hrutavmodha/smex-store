@@ -135,7 +135,7 @@ export function BracketVisualizer({
 
     if (sortedRounds.length === 0) {
       return (
-        <div className="py-6 text-center text-xs text-[#8FA39C]">
+        <div className="py-6 text-center text-xs text-text-secondary">
           No matches scheduled in {tierName}
         </div>
       );
@@ -161,11 +161,11 @@ export function BracketVisualizer({
                 className="flex flex-1 flex-col justify-around gap-6 min-w-[200px]"
               >
                 {/* Round Header */}
-                <div className="border-b border-[#1A2A25] pb-2 text-center">
-                  <span className="text-xs font-bold uppercase tracking-wider text-[#8FA39C]">
+                <div className="border-b border-border-subtle pb-2 text-center">
+                  <span className="text-xs font-bold uppercase tracking-wider text-text-secondary">
                     {roundTitle}
                   </span>
-                  <span className="ml-2 text-[10px] text-[#1FAE7A]">
+                  <span className="ml-2 text-[10px] text-emerald-primary">
                     ({roundMatches.length} Matches)
                   </span>
                 </div>
@@ -190,26 +190,26 @@ export function BracketVisualizer({
                         key={match.id}
                         aria-label={`Match ${match.matchOrder} ${roundTitle}`}
                         onClick={() => onMatchSelect?.(match)}
-                        className={`group relative flex flex-col overflow-hidden rounded-lg border bg-[#0B0F12] transition-all duration-[120ms] ease-out ${
+                        className={`group relative flex flex-col overflow-hidden rounded-lg border bg-bg-surface transition-all duration-[120ms] ease-out ${
                           match.status === 'live'
-                            ? 'border-[#1FAE7A] shadow-[0_0_12px_rgba(31,174,122,0.2)]'
-                            : 'border-[#1A2A25] hover:border-[#22C58F]'
+                            ? 'border-emerald-primary shadow-[0_0_12px_rgba(31,174,122,0.2)]'
+                            : 'border-border-subtle hover:border-emerald-primary'
                         }`}
                       >
                         {/* Match Status Tag */}
-                        <div className="flex items-center justify-between border-b border-[#1A2A25] bg-[#070A0C] px-3 py-1 text-[10px] font-semibold text-[#8FA39C]">
+                        <div className="flex items-center justify-between border-b border-border-subtle bg-bg-surface-elevated px-3 py-1 text-[10px] font-semibold text-text-secondary">
                           <span>Match #{match.matchOrder}</span>
                           {match.status === 'live' && (
-                            <span className="flex items-center gap-1 font-bold text-[#1FAE7A]">
-                              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#1FAE7A]" />
+                            <span className="flex items-center gap-1 font-bold text-emerald-primary">
+                              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-primary" />
                               LIVE
                             </span>
                           )}
                           {match.status === 'bye' && (
-                            <span className="font-semibold text-[#1B8F97]">BYE ADVANCE</span>
+                            <span className="font-semibold text-cyan-depth">BYE ADVANCE</span>
                           )}
                           {match.status === 'completed' && (
-                            <span className="text-[#8FA39C]">FINAL</span>
+                            <span className="text-text-muted">FINAL</span>
                           )}
                         </div>
 
@@ -218,47 +218,47 @@ export function BracketVisualizer({
                           aria-label={`${teamAName} Score: ${match.teamAScore}`}
                           className={`flex items-center justify-between px-3 py-2 transition-all duration-[120ms] ${
                             isTeamAWinner
-                              ? 'bg-[#121C19] text-[#1FAE7A] font-bold border-l-4 border-l-[#1FAE7A]'
-                              : 'text-[#E9F5F1]'
+                              ? 'bg-bg-surface-elevated text-emerald-primary font-bold border-l-4 border-l-emerald-primary'
+                              : 'text-text-primary'
                           }`}
                         >
                           <div className="flex items-center gap-2 truncate">
-                            {isTeamAWinner && <Trophy className="h-3.5 w-3.5 shrink-0 text-[#1FAE7A]" />}
+                            {isTeamAWinner && <Trophy className="h-3.5 w-3.5 shrink-0 text-emerald-primary" />}
                             <span className="truncate text-xs font-medium">{teamAName}</span>
                           </div>
                           <span
                             aria-label={`Score ${match.teamAScore}`}
                             className={`ml-2 rounded px-1.5 py-0.5 text-xs font-mono font-bold ${
                               isTeamAWinner
-                                ? 'bg-[#1FAE7A] text-[#000000]'
-                                : 'bg-[#16211D] text-[#E9F5F1]'
+                                ? 'bg-emerald-primary text-[#0B1A15]'
+                                : 'bg-bg-surface-elevated text-text-primary'
                             }`}
                           >
                             {match.teamAScore}
                           </span>
                         </div>
 
-                        <div className="h-[1px] w-full bg-[#1A2A25]" />
+                        <div className="h-[1px] w-full bg-border-subtle" />
 
                         {/* Team B Row */}
                         <div
                           aria-label={`${teamBName} Score: ${match.teamBScore}`}
                           className={`flex items-center justify-between px-3 py-2 transition-all duration-[120ms] ${
                             isTeamBWinner
-                              ? 'bg-[#121C19] text-[#1FAE7A] font-bold border-l-4 border-l-[#1FAE7A]'
-                              : 'text-[#E9F5F1]'
+                              ? 'bg-bg-surface-elevated text-emerald-primary font-bold border-l-4 border-l-emerald-primary'
+                              : 'text-text-primary'
                           }`}
                         >
                           <div className="flex items-center gap-2 truncate">
-                            {isTeamBWinner && <Trophy className="h-3.5 w-3.5 shrink-0 text-[#1FAE7A]" />}
+                            {isTeamBWinner && <Trophy className="h-3.5 w-3.5 shrink-0 text-emerald-primary" />}
                             <span className="truncate text-xs font-medium">{teamBName}</span>
                           </div>
                           <span
                             aria-label={`Score ${match.teamBScore}`}
                             className={`ml-2 rounded px-1.5 py-0.5 text-xs font-mono font-bold ${
                               isTeamBWinner
-                                ? 'bg-[#1FAE7A] text-[#000000]'
-                                : 'bg-[#16211D] text-[#E9F5F1]'
+                                ? 'bg-emerald-primary text-[#0B1A15]'
+                                : 'bg-bg-surface-elevated text-text-primary'
                             }`}
                           >
                             {match.teamBScore}
@@ -300,14 +300,14 @@ export function BracketVisualizer({
                           <path
                             d="M 0 25 C 20 25, 20 50, 40 50"
                             fill="none"
-                            stroke={isFeeder1Winner ? '#1FAE7A' : '#1A2A25'}
+                            stroke={isFeeder1Winner ? 'var(--emerald-primary)' : 'var(--border-subtle)'}
                             strokeWidth="2"
                             className="transition-colors duration-[120ms]"
                           />
                           <path
                             d="M 0 75 C 20 75, 20 50, 40 50"
                             fill="none"
-                            stroke={isFeeder2Winner ? '#1FAE7A' : '#1A2A25'}
+                            stroke={isFeeder2Winner ? 'var(--emerald-primary)' : 'var(--border-subtle)'}
                             strokeWidth="2"
                             className="transition-colors duration-[120ms]"
                           />
@@ -334,13 +334,13 @@ export function BracketVisualizer({
   return (
     <section
       aria-label="Tournament Bracket"
-      className="w-full overflow-x-auto bg-[#000000] p-6 text-[#E9F5F1] select-none"
+      className="w-full overflow-x-auto bg-bg-canvas p-6 text-text-primary select-none"
     >
       {/* Double Elimination Tier Switcher */}
       {isDoubleElim && (
         <nav
           aria-label="Bracket Tier Tabs"
-          className="mb-6 flex flex-wrap gap-1 rounded-lg border border-[#1A2A25] bg-[#070A0C] p-1"
+          className="mb-6 flex flex-wrap gap-1 rounded-lg border border-border-subtle bg-bg-surface p-1"
         >
           <button
             type="button"
@@ -349,8 +349,8 @@ export function BracketVisualizer({
             onClick={() => setActiveTier('all')}
             className={`rounded-md px-3 py-1.5 text-xs font-bold uppercase transition-all duration-[120ms] ${
               activeTier === 'all'
-                ? 'bg-[#1FAE7A] text-[#000000]'
-                : 'text-[#8FA39C] hover:text-[#E9F5F1]'
+                ? 'bg-emerald-primary text-[#0B1A15]'
+                : 'text-text-secondary hover:text-text-primary'
             }`}
           >
             All Brackets
@@ -362,8 +362,8 @@ export function BracketVisualizer({
             onClick={() => setActiveTier('upper')}
             className={`rounded-md px-3 py-1.5 text-xs font-bold uppercase transition-all duration-[120ms] ${
               activeTier === 'upper'
-                ? 'bg-[#1FAE7A] text-[#000000]'
-                : 'text-[#8FA39C] hover:text-[#E9F5F1]'
+                ? 'bg-emerald-primary text-[#0B1A15]'
+                : 'text-text-secondary hover:text-text-primary'
             }`}
           >
             Upper Bracket
@@ -375,8 +375,8 @@ export function BracketVisualizer({
             onClick={() => setActiveTier('lower')}
             className={`rounded-md px-3 py-1.5 text-xs font-bold uppercase transition-all duration-[120ms] ${
               activeTier === 'lower'
-                ? 'bg-[#1FAE7A] text-[#000000]'
-                : 'text-[#8FA39C] hover:text-[#E9F5F1]'
+                ? 'bg-emerald-primary text-[#0B1A15]'
+                : 'text-text-secondary hover:text-text-primary'
             }`}
           >
             Lower Bracket
@@ -388,8 +388,8 @@ export function BracketVisualizer({
             onClick={() => setActiveTier('grand_final')}
             className={`rounded-md px-3 py-1.5 text-xs font-bold uppercase transition-all duration-[120ms] ${
               activeTier === 'grand_final'
-                ? 'bg-[#1FAE7A] text-[#000000]'
-                : 'text-[#8FA39C] hover:text-[#E9F5F1]'
+                ? 'bg-emerald-primary text-[#0B1A15]'
+                : 'text-text-secondary hover:text-text-primary'
             }`}
           >
             Grand Finals
@@ -404,9 +404,9 @@ export function BracketVisualizer({
         <div className="flex flex-col gap-8">
           {(activeTier === 'all' || activeTier === 'upper') && (
             <div className="flex flex-col gap-2">
-              <div className="flex items-center gap-2 border-b border-[#1A2A25] pb-2">
-                <Trophy className="h-4 w-4 text-[#1FAE7A]" />
-                <h3 className="text-sm font-bold uppercase tracking-wider text-[#1FAE7A]">
+              <div className="flex items-center gap-2 border-b border-border-subtle pb-2">
+                <Trophy className="h-4 w-4 text-emerald-primary" />
+                <h3 className="text-sm font-bold uppercase tracking-wider text-emerald-primary">
                   Upper Bracket (Championship Path)
                 </h3>
               </div>
@@ -416,9 +416,9 @@ export function BracketVisualizer({
 
           {(activeTier === 'all' || activeTier === 'lower') && (
             <div className="flex flex-col gap-2">
-              <div className="flex items-center gap-2 border-b border-[#1A2A25] pb-2">
-                <ShieldAlert className="h-4 w-4 text-[#1B8F97]" />
-                <h3 className="text-sm font-bold uppercase tracking-wider text-[#1B8F97]">
+              <div className="flex items-center gap-2 border-b border-border-subtle pb-2">
+                <ShieldAlert className="h-4 w-4 text-cyan-depth" />
+                <h3 className="text-sm font-bold uppercase tracking-wider text-cyan-depth">
                   Lower Bracket (Elimination Path)
                 </h3>
               </div>
@@ -428,9 +428,9 @@ export function BracketVisualizer({
 
           {(activeTier === 'all' || activeTier === 'grand_final') && (
             <div className="flex flex-col gap-2">
-              <div className="flex items-center gap-2 border-b border-[#1A2A25] pb-2">
-                <Crown className="h-4 w-4 text-[#22C58F]" />
-                <h3 className="text-sm font-bold uppercase tracking-wider text-[#22C58F]">
+              <div className="flex items-center gap-2 border-b border-border-subtle pb-2">
+                <Crown className="h-4 w-4 text-emerald-primary" />
+                <h3 className="text-sm font-bold uppercase tracking-wider text-emerald-primary">
                   Grand Championship Final
                 </h3>
               </div>

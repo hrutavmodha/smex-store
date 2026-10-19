@@ -8,7 +8,8 @@ import {
 } from '../db/schema/marketplace.js';
 import { profiles } from '../db/schema/users.js';
 import { sellerRatings } from '../db/schema/reviews.js';
-import { BadgeService, type BadgeType } from './badge.service.js';
+import { BadgeService } from './badge.service.js';
+import { type ListingBadgeType } from '@smex/shared';
 import { StorageService } from './storage.service.js';
 
 export interface ListingServiceError extends Error {
@@ -60,7 +61,7 @@ export interface ListingFilterOptions {
   rankTier?: string | string[];
   minPrice?: number;
   maxPrice?: number;
-  badgeType?: BadgeType;
+  badgeType?: ListingBadgeType;
   status?: 'active' | 'sold' | 'deleted' | 'all';
   limit?: number;
   offset?: number;

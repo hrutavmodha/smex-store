@@ -184,16 +184,14 @@ describe('Client Root Layout and AMOLED Shell Test Suite', () => {
 
     // 4. Color contrast tokens in globals.css adhere to WCAG AA:
     // Dark mode: #EDEDED on #0B0F12 ratio is > 16:1 (passes >= 4.5:1)
-    // AMOLED mode: #EDEDED on #000000 ratio is > 18:1 (passes >= 4.5:1)
     // Light mode: #0B1A15 on #F4FAF8 ratio is > 15:1 (passes >= 4.5:1)
     expect(globalsCssSource.includes('#EDEDED')).toBe(true);
     expect(globalsCssSource.includes('#0B0F12')).toBe(true);
-    expect(globalsCssSource.includes('#000000')).toBe(true);
     expect(globalsCssSource.includes('#0B1A15')).toBe(true);
     expect(globalsCssSource.includes('#F4FAF8')).toBe(true);
 
-    // 5. AMOLED surface token constraints (BUG-M2-004): Prohibit #0A0A0A, enforce pure true black #000000
+    // 5. Dark mode surface token constraints: Prohibit #0A0A0A, enforce obsidian #12181D
     expect(globalsCssSource.includes('#0A0A0A')).toBe(false);
-    expect(globalsCssSource.includes('--bg-surface: #000000;')).toBe(true);
+    expect(globalsCssSource.includes('--bg-surface: #12181D;')).toBe(true);
   });
 });

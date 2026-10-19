@@ -185,11 +185,11 @@ describe('Milestone 9: Client Presentation UI & Admin Guard (LLT 2.6 Tests 22-25
     });
 
     const root = getByTestId('admin-portal-root');
-    expect(root.style.backgroundColor).toBe('rgb(0, 0, 0)');
+    expect(root.className).toContain('bg-bg-canvas');
 
     const activeUsersCard = getByTestId('metric-active-users');
-    expect(activeUsersCard.style.backgroundColor).toBe('rgb(18, 28, 25)');
-    expect(activeUsersCard.style.borderColor).toBe('rgb(34, 53, 48)');
+    expect(activeUsersCard.className).toContain('bg-bg-surface');
+    expect(activeUsersCard.className).toContain('border-border-subtle');
 
     // Hardware transitions must be duration 120ms
     expect(root.className).toContain('duration-120');

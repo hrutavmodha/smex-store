@@ -1,6 +1,7 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { X } from 'lucide-react';
 import { type UserProfile } from '@smex/shared';
@@ -27,24 +28,56 @@ export function NavMobileDrawer({
   onLogout,
   onOpenAuthModal,
 }: NavMobileDrawerProps) {
-  return (
-    <div
-      className={`fixed inset-y-0 right-0 z-50 w-72 bg-bg-surface border-l border-border-subtle p-6 transition-transform duration-[120ms] ease-out sm:hidden ${
-        isOpen ? 'translate-x-0' : 'translate-x-full'
-      }`}
-      aria-hidden={!isOpen}
-    >
-      <div className="flex items-center justify-between pb-6 border-b border-border-subtle">
-        <span className="font-bold text-sm tracking-wide uppercase text-text-primary">Menu</span>
-        <button
-          type="button"
-          onClick={onClose}
-          className="p-2 text-text-secondary hover:text-text-primary min-w-[44px] min-h-[44px] flex items-center justify-center"
-          aria-label="Close Drawer"
-        >
-          <X className="h-5 w-5" />
-        </button>
-      </div>
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Lock body scroll when drawer is open on mobile
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
+
+  const content = (
+    <div className="sm:hidden">
+      {/* Full-Screen Backdrop Overlay */}
+      <div
+        className={`fixed inset-0 bg-black/60 z-40 transition-opacity duration-[120ms] ${
+          isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        }`}
+        onClick={onClose}
+        aria-hidden="true"
+        data-testid="mobile-drawer-backdrop"
+      />
+
+      {/* Slide-Out Drawer Panel */}
+      <div
+        className={`fixed inset-y-0 right-0 z-50 w-72 bg-bg-surface border-l border-border-subtle p-6 transition-transform duration-[120ms] ease-out flex flex-col ${
+          isOpen ? 'translate-x-0' : 'translate-x-full'
+        }`}
+        aria-hidden={!isOpen}
+      >
+        <div className="flex items-center justify-between pb-6 border-b border-border-subtle shrink-0">
+          <span className="font-bold text-sm tracking-wide uppercase text-text-primary">Menu</span>
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-2 text-text-secondary hover:text-text-primary min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation active:scale-95 transition-transform"
+            aria-label="Close Drawer"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
 
       {/* User banner in drawer if logged in */}
       {user && (
@@ -120,5 +153,13 @@ export function NavMobileDrawer({
         )}
       </div>
     </div>
+  </div>
   );
+
+  if (!mounted || typeof document === 'undefined' || !document.body) {
+    return null;
+  }
+
+  return createPortal(content, document.body);
 }
+

@@ -11,6 +11,7 @@ export interface CookieConsentPreferences {
 export const COOKIE_CONSENT_KEY = 'smex_cookie_consent';
 export const AUTH_COOKIE_NAME = 'smex_access_token';
 export const REFRESH_COOKIE_NAME = '__Host-refresh-token';
+export const DEV_REFRESH_COOKIE_NAME = 'smex_refresh_token';
 export const THEME_STORAGE_KEY = 'smex_theme';
 export const DENSITY_STORAGE_KEY = 'smex_density';
 

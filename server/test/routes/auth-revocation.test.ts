@@ -52,7 +52,7 @@ describe('Disambiguated Session Revocation and Fast-Path Tombstones (LLT 2.3)', 
     const cookieHeader = Array.isArray(loginRes2.headers['set-cookie'])
       ? loginRes2.headers['set-cookie'][0]
       : (loginRes2.headers['set-cookie'] as string);
-    const sessionId2 = cookieHeader.match(/__Host-refresh-token=([^;]+)/)![1].split('.')[0];
+    const sessionId2 = cookieHeader.match(/(?:__Host-refresh-token|smex_refresh_token)=([^;]+)/)![1].split('.')[0];
 
     // Verify device 2 works before eviction
     const meBefore = await app.inject({
@@ -244,7 +244,7 @@ describe('Disambiguated Session Revocation and Fast-Path Tombstones (LLT 2.3)', 
     const cookieHeader = Array.isArray(loginRes.headers['set-cookie'])
       ? loginRes.headers['set-cookie'][0]
       : (loginRes.headers['set-cookie'] as string);
-    const sid = cookieHeader.match(/__Host-refresh-token=([^;]+)/)![1].split('.')[0];
+    const sid = cookieHeader.match(/(?:__Host-refresh-token|smex_refresh_token)=([^;]+)/)![1].split('.')[0];
 
     const logoutRes = await app.inject({
       method: 'POST',
@@ -291,7 +291,7 @@ describe('Disambiguated Session Revocation and Fast-Path Tombstones (LLT 2.3)', 
     const cookieHeader = Array.isArray(loginRes.headers['set-cookie'])
       ? loginRes.headers['set-cookie'][0]
       : (loginRes.headers['set-cookie'] as string);
-    const cookieVal = cookieHeader.match(/__Host-refresh-token=([^;]+)/)![1];
+    const cookieVal = cookieHeader.match(/(?:__Host-refresh-token|smex_refresh_token)=([^;]+)/)![1];
     const sid = cookieVal.split('.')[0];
     const userId = JSON.parse(loginRes.body).user.id;
 
@@ -384,7 +384,7 @@ describe('Disambiguated Session Revocation and Fast-Path Tombstones (LLT 2.3)', 
     const cookieHeader1 = Array.isArray(log1.headers['set-cookie'])
       ? log1.headers['set-cookie'][0]
       : (log1.headers['set-cookie'] as string);
-    const sessionId1 = cookieHeader1.match(/__Host-refresh-token=([^;]+)/)![1].split('.')[0];
+    const sessionId1 = cookieHeader1.match(/(?:__Host-refresh-token|smex_refresh_token)=([^;]+)/)![1].split('.')[0];
 
     // Login from Device 2 (Mobile)
     const log2 = await app.inject({
@@ -398,7 +398,7 @@ describe('Disambiguated Session Revocation and Fast-Path Tombstones (LLT 2.3)', 
     const cookieHeader2 = Array.isArray(log2.headers['set-cookie'])
       ? log2.headers['set-cookie'][0]
       : (log2.headers['set-cookie'] as string);
-    const sessionId2 = cookieHeader2.match(/__Host-refresh-token=([^;]+)/)![1].split('.')[0];
+    const sessionId2 = cookieHeader2.match(/(?:__Host-refresh-token|smex_refresh_token)=([^;]+)/)![1].split('.')[0];
 
     // Query active sessions using Device 1 token
     const devicesRes = await app.inject({
@@ -509,7 +509,7 @@ describe('Disambiguated Session Revocation and Fast-Path Tombstones (LLT 2.3)', 
     const cookieHeaderB = Array.isArray(loginB.headers['set-cookie'])
       ? loginB.headers['set-cookie'][0]
       : (loginB.headers['set-cookie'] as string);
-    const sessionIdB = cookieHeaderB.match(/__Host-refresh-token=([^;]+)/)![1].split('.')[0];
+    const sessionIdB = cookieHeaderB.match(/(?:__Host-refresh-token|smex_refresh_token)=([^;]+)/)![1].split('.')[0];
 
     // User A attempts to evict User B's session via IDOR: DELETE /api/v1/devices/sessions/:sessionIdB
     const idorRes = await app.inject({
@@ -649,7 +649,7 @@ describe('Disambiguated Session Revocation and Fast-Path Tombstones (LLT 2.3)', 
     const cookieHeader = Array.isArray(loginRes.headers['set-cookie'])
       ? loginRes.headers['set-cookie'][0]
       : (loginRes.headers['set-cookie'] as string);
-    const sessionId = cookieHeader.match(/__Host-refresh-token=([^;]+)/)![1].split('.')[0];
+    const sessionId = cookieHeader.match(/(?:__Host-refresh-token|smex_refresh_token)=([^;]+)/)![1].split('.')[0];
 
     // Register a live mock WebSocket connection for this user and session
     let wsClosed = false;

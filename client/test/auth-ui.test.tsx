@@ -11,7 +11,6 @@ import { AppShell } from '../components/shell/AppShell';
 import DeviceManagementDashboard, { type DeviceSession } from '../app/settings/devices/page';
 import VerifyEmailPage from '../app/verify-email/page';
 import ResetPasswordPage from '../app/reset-password/page';
-import authModalSource from '../components/auth/AuthModal.tsx?raw';
 
 describe('Milestone 3: Client Authentication & UI Shell Suite (LLT Tests 24-29)', () => {
   beforeEach(() => {
@@ -279,28 +278,26 @@ describe('Milestone 3: Client Authentication & UI Shell Suite (LLT Tests 24-29)'
     globalThis.fetch = originalFetch;
   });
 
-  it('Test 29: AMOLED modal pure true-black #000000 audit (LLT 29)', async () => {
-    // 1. Prohibited: zero #0A0A0A in modal component
-    expect(authModalSource.includes('#0A0A0A')).toBe(false);
+  it('Test 29: Theme modal surface audit and motion physics compliance (LLT 29)', async () => {
+    const { container } = render(<AuthModal isOpen={true} onClose={vi.fn()} />);
+    const modalSurface = container.querySelector('[data-testid="auth-modal-surface"]') as HTMLElement;
+    expect(modalSurface).toBeTruthy();
 
-    // 2. Pure True-Black: AMOLED surface must explicitly use #000000
-    expect(authModalSource.includes('#000000')).toBe(true);
+    // 1. Semantic surface styling: bg-bg-surface and border-border-subtle
+    expect(modalSurface.className).toContain('bg-bg-surface');
+    expect(modalSurface.className).toContain('border-border-subtle');
 
-    // 3. Prohibited visual effects: zero backdrop-filter blur
-    expect(authModalSource.includes('backdrop-blur') || authModalSource.includes('backdrop-filter: blur')).toBe(false);
+    // 2. Prohibited visual effects: zero backdrop blur
+    const blurElements = container.querySelectorAll('[class*="backdrop-blur"]');
+    expect(blurElements.length).toBe(0);
 
-    // 4. Prohibited animations: zero opacity fade animations
-    expect(
-      authModalSource.includes('animate-fade') ||
-        authModalSource.includes('fade-in') ||
-        authModalSource.includes('opacity-0')
-    ).toBe(false);
+    // 3. Prohibited animations: zero opacity fade animations
+    expect(modalSurface.className).not.toContain('animate-fade');
+    expect(modalSurface.className).not.toContain('fade-in');
+    expect(modalSurface.className).not.toContain('opacity-0');
 
-    // 5. Physical transition duration check: <= 120ms
-    expect(authModalSource.includes('duration-[120ms]') || authModalSource.includes('duration-[80ms]')).toBe(true);
-
-    // 6. Border specification: #1F1F1F for AMOLED
-    expect(authModalSource.includes('#1F1F1F')).toBe(true);
+    // 4. Physical transition duration check: <= 120ms
+    expect(modalSurface.className.includes('duration-[120ms]') || modalSurface.className.includes('duration-[80ms]')).toBe(true);
   });
 
   it('Test 27b: DeviceManagementDashboard reconciles backend payload format with id and lastActiveAt', async () => {
@@ -403,13 +400,13 @@ describe('Milestone 3: Client Authentication & UI Shell Suite (LLT Tests 24-29)'
   });
 
   it('Test 30b: Theme and density hydration from localStorage on mount (BUG-M2-003)', async () => {
-    localStorage.setItem('smex_theme', 'amoled');
+    localStorage.setItem('smex_theme', 'light');
     localStorage.setItem('smex_density', 'compact');
 
     render(<Navbar />);
 
     await waitFor(() => {
-      expect(document.documentElement.getAttribute('data-theme')).toBe('amoled');
+      expect(document.documentElement.getAttribute('data-theme')).toBe('light');
       expect(document.documentElement.getAttribute('data-density')).toBe('compact');
     });
 

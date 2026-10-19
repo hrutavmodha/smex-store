@@ -96,10 +96,10 @@ export default function AdminDashboardPage() {
     >
       {/* Title */}
       <div>
-        <h1 className="text-xl font-bold tracking-tight text-white mb-1">
+        <h1 className="text-xl font-bold tracking-tight text-text-primary mb-1">
           Platform Health & Governance
         </h1>
-        <p className="text-xs text-gray-400 font-mono">
+        <p className="text-xs text-text-secondary font-mono">
           System telemetry and pending administrative moderation queues
         </p>
       </div>
@@ -107,7 +107,7 @@ export default function AdminDashboardPage() {
       {actionMessage && (
         <div
           data-testid="action-notification"
-          className="bg-emerald-950/70 border border-[#22C58F]/40 text-[#22C58F] px-4 py-3 rounded-lg text-xs font-mono flex items-center gap-2 transition-all duration-120 ease-out"
+          className="bg-emerald-950/70 border border-[#22C58F]/40 text-emerald-primary px-4 py-3 rounded-lg text-xs font-mono flex items-center gap-2 transition-all duration-120 ease-out"
         >
           <CheckCircle size={14} />
           <span>{actionMessage}</span>
@@ -119,101 +119,96 @@ export default function AdminDashboardPage() {
         {/* Metric: Active Users */}
         <div
           data-testid="metric-active-users"
-          className="bg-[#121C19] border border-[#223530] rounded-xl p-5 transition-all duration-120 ease-out hover:border-[#1FAE7A]/50"
-          style={{ backgroundColor: '#121C19', borderColor: '#223530' }}
+          className="bg-bg-surface border border-border-subtle rounded-xl p-5 transition-all duration-120 ease-out hover:border-emerald-primary/50"
         >
-          <div className="flex items-center justify-between text-gray-400 mb-2">
+          <div className="flex items-center justify-between text-text-secondary mb-2">
             <span className="text-[11px] font-mono font-bold tracking-wider uppercase">
               ACTIVE USERS
             </span>
-            <Users size={16} className="text-[#22C58F]" />
+            <Users size={16} className="text-emerald-primary" />
           </div>
-          <div className="text-2xl font-black text-white font-mono">
+          <div className="text-2xl font-black text-text-primary font-mono">
             {metrics.activeUsers.toLocaleString()}
           </div>
-          <div className="text-[10px] text-gray-500 font-mono mt-1">Non-suspended accounts</div>
+          <div className="text-[10px] text-text-muted font-mono mt-1">Non-suspended accounts</div>
         </div>
 
         {/* Metric: Active Listings */}
         <div
           data-testid="metric-active-listings"
-          className="bg-[#121C19] border border-[#223530] rounded-xl p-5 transition-all duration-120 ease-out hover:border-[#1FAE7A]/50"
-          style={{ backgroundColor: '#121C19', borderColor: '#223530' }}
+          className="bg-bg-surface border border-border-subtle rounded-xl p-5 transition-all duration-120 ease-out hover:border-emerald-primary/50"
         >
-          <div className="flex items-center justify-between text-gray-400 mb-2">
+          <div className="flex items-center justify-between text-text-secondary mb-2">
             <span className="text-[11px] font-mono font-bold tracking-wider uppercase">
               ACTIVE LISTINGS
             </span>
-            <ShoppingBag size={16} className="text-emerald-400" />
+            <ShoppingBag size={16} className="text-emerald-primary" />
           </div>
-          <div className="text-2xl font-black text-white font-mono">
+          <div className="text-2xl font-black text-text-primary font-mono">
             {metrics.activeListings.toLocaleString()}
           </div>
-          <div className="text-[10px] text-gray-500 font-mono mt-1">Marketplace gaming IDs</div>
+          <div className="text-[10px] text-text-muted font-mono mt-1">Marketplace gaming IDs</div>
         </div>
 
         {/* Metric: Live Tournaments */}
         <div
           data-testid="metric-live-tournaments"
-          className="bg-[#121C19] border border-[#223530] rounded-xl p-5 transition-all duration-120 ease-out hover:border-[#1FAE7A]/50"
-          style={{ backgroundColor: '#121C19', borderColor: '#223530' }}
+          className="bg-bg-surface border border-border-subtle rounded-xl p-5 transition-all duration-120 ease-out hover:border-emerald-primary/50"
         >
-          <div className="flex items-center justify-between text-gray-400 mb-2">
+          <div className="flex items-center justify-between text-text-secondary mb-2">
             <span className="text-[11px] font-mono font-bold tracking-wider uppercase">
               TOURNAMENTS (LIVE)
             </span>
             <Trophy size={16} className="text-amber-400" />
           </div>
-          <div className="text-2xl font-black text-white font-mono">
+          <div className="text-2xl font-black text-text-primary font-mono">
             {metrics.liveTournaments.toLocaleString()}
           </div>
-          <div className="text-[10px] text-gray-500 font-mono mt-1">Ongoing & active brackets</div>
+          <div className="text-[10px] text-text-muted font-mono mt-1">Ongoing & active brackets</div>
         </div>
 
         {/* Metric: Database Latency */}
         <div
           data-testid="metric-db-latency"
-          className="bg-[#121C19] border border-[#223530] rounded-xl p-5 transition-all duration-120 ease-out hover:border-[#1FAE7A]/50"
-          style={{ backgroundColor: '#121C19', borderColor: '#223530' }}
+          className="bg-bg-surface border border-border-subtle rounded-xl p-5 transition-all duration-120 ease-out hover:border-emerald-primary/50"
         >
-          <div className="flex items-center justify-between text-gray-400 mb-2">
+          <div className="flex items-center justify-between text-text-secondary mb-2">
             <span className="text-[11px] font-mono font-bold tracking-wider uppercase">
               DB LATENCY
             </span>
-            <Activity size={16} className="text-[#22C58F]" />
+            <Activity size={16} className="text-emerald-primary" />
           </div>
-          <div className="text-2xl font-black text-white font-mono flex items-center gap-2">
+          <div className="text-2xl font-black text-text-primary font-mono flex items-center gap-2">
             <span>{metrics.dbLatencyMs}ms</span>
-            <span className="text-xs px-2 py-0.5 rounded bg-emerald-950 text-[#22C58F] border border-[#22C58F]/30 uppercase font-sans font-bold">
+            <span className="text-xs px-2 py-0.5 rounded bg-emerald-950 text-emerald-primary border border-emerald-primary/30 uppercase font-sans font-bold">
               {metrics.databaseStatus.toUpperCase()}
             </span>
           </div>
-          <div className="text-[10px] text-gray-500 font-mono mt-1">PostgreSQL pool probe</div>
+          <div className="text-[10px] text-text-muted font-mono mt-1">PostgreSQL pool probe</div>
         </div>
       </div>
 
       {/* Urgent Action / Moderation Queue */}
       <section
         data-testid="moderation-queue-section"
-        className="bg-[#121C19] border border-[#223530] rounded-xl p-6 transition-all duration-120 ease-out"
-        style={{ backgroundColor: '#121C19', borderColor: '#223530' }}
+        className="bg-bg-surface border border-border-subtle rounded-xl p-6 transition-all duration-120 ease-out"
       >
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-2.5">
             <AlertTriangle size={18} className="text-amber-400" />
-            <h2 className="text-sm font-bold tracking-wider uppercase font-mono text-white">
+            <h2 className="text-sm font-bold tracking-wider uppercase font-mono text-text-primary">
               URGENT ACTION QUEUE ({queue.length} PENDING)
             </h2>
           </div>
         </div>
 
         {loading ? (
-          <div className="py-12 text-center text-xs font-mono text-gray-400">
+          <div className="py-12 text-center text-xs font-mono text-text-muted">
             Loading moderation items...
           </div>
         ) : queue.length === 0 ? (
-          <div className="py-12 text-center text-xs font-mono text-gray-500 flex flex-col items-center gap-2">
-            <CheckCircle size={28} className="text-[#22C58F]/60" />
+          <div className="py-12 text-center text-xs font-mono text-text-muted flex flex-col items-center gap-2">
+            <CheckCircle size={28} className="text-emerald-primary/60" />
             <span>Zero pending reports in moderation queue. Platform clean.</span>
           </div>
         ) : (
@@ -222,20 +217,19 @@ export default function AdminDashboardPage() {
               <div
                 key={item.id}
                 data-testid={`queue-item-${item.id}`}
-                className="bg-[#0B0F12] border border-[#223530] rounded-lg p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all duration-120 ease-out"
-                style={{ backgroundColor: '#0B0F12', borderColor: '#223530' }}
+                className="bg-bg-canvas border border-border-subtle rounded-lg p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all duration-120 ease-out"
               >
                 <div className="space-y-1.5 flex-1">
                   <div className="flex items-center gap-2">
                     <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-red-950 text-red-400 border border-red-800/40">
                       FLAGGED LISTING
                     </span>
-                    <span className="text-xs font-mono text-gray-400">ID: {item.id}</span>
+                    <span className="text-xs font-mono text-text-muted">ID: {item.id}</span>
                   </div>
-                  <h3 className="text-sm font-bold text-white tracking-wide">{item.title}</h3>
-                  <div className="text-xs text-gray-400 font-mono">
-                    Price: <span className="text-[#22C58F] font-bold">₹{item.priceInr} INR</span> •
-                    Seller: <span className="text-gray-200">{item.sellerUsername || item.sellerId}</span>
+                  <h3 className="text-sm font-bold text-text-primary tracking-wide">{item.title}</h3>
+                  <div className="text-xs text-text-secondary font-mono">
+                    Price: <span className="text-emerald-primary font-bold">₹{item.priceInr} INR</span> •
+                    Seller: <span className="text-text-primary">{item.sellerUsername || item.sellerId}</span>
                   </div>
                 </div>
 
@@ -249,7 +243,7 @@ export default function AdminDashboardPage() {
                   </button>
                   <button
                     onClick={() => handleSuspendSeller(item.sellerId)}
-                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[#16211D] hover:bg-[#223530] text-gray-300 border border-[#223530] text-xs font-bold transition-all duration-120 ease-out min-h-[38px]"
+                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-bg-surface-elevated hover:bg-bg-canvas text-text-secondary border border-border-subtle text-xs font-bold transition-all duration-120 ease-out min-h-[38px]"
                   >
                     <UserX size={14} />
                     <span>Suspend Seller</span>

@@ -3,8 +3,6 @@ import React from 'react';
 import { render, fireEvent, cleanup, waitFor } from '@testing-library/react';
 import BoostingPage from '../../app/boosting/page';
 import { Calculator } from '../../components/boosting/Calculator';
-import calculatorSource from '../../components/boosting/Calculator.tsx?raw';
-import boostingPageSource from '../../app/boosting/page.tsx?raw';
 
 describe('Milestone 6: Client Presentation Tier & AMOLED Boosting UI Suite (LLT 2.7)', () => {
   beforeEach(() => {
@@ -49,33 +47,28 @@ describe('Milestone 6: Client Presentation Tier & AMOLED Boosting UI Suite (LLT 
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
-  it('Test 30: AMOLED #000000 surface and motion physics compliance', async () => {
-    // 1. Audit Calculator source code
-    expect(calculatorSource.includes('backdrop-blur')).toBe(false);
-    expect(calculatorSource.includes('backdrop-filter')).toBe(false);
-    expect(calculatorSource.includes('fade-in')).toBe(false);
-    expect(calculatorSource.includes('opacity-0')).toBe(false);
-    expect(
-      calculatorSource.includes('duration-[120ms]') || calculatorSource.includes('duration-120')
-    ).toBe(true);
-    expect(calculatorSource.includes('#000000')).toBe(true);
-
-    // 2. Audit BoostingPage source code
-    expect(boostingPageSource.includes('backdrop-blur')).toBe(false);
-    expect(boostingPageSource.includes('backdrop-filter')).toBe(false);
-    expect(boostingPageSource.includes('fade-in')).toBe(false);
-    expect(boostingPageSource.includes('opacity-0')).toBe(false);
-    expect(boostingPageSource.includes('#000000')).toBe(true);
-
-    // 3. Render and inspect DOM
+  it('Test 30: Semantic surface and motion physics compliance', async () => {
     const { container } = render(<BoostingPage />);
     const main = container.querySelector('[data-testid="boosting-page-container"]') as HTMLElement;
     expect(main).toBeTruthy();
-    expect(main.style.backgroundColor).toBe('rgb(0, 0, 0)');
+    expect(main.className).toContain('bg-bg-canvas');
+    expect(main.className).toContain('text-text-primary');
 
     const calcCard = container.querySelector('[data-testid="boosting-calculator"]') as HTMLElement;
     expect(calcCard).toBeTruthy();
-    expect(calcCard.style.backgroundColor).toBe('rgb(0, 0, 0)');
+    expect(calcCard.className).toContain('bg-bg-surface');
+    expect(calcCard.className).toContain('border-border-subtle');
+
+    // Forbidden visual effects: zero backdrop blur
+    const blurElements = container.querySelectorAll('[class*="backdrop-blur"]');
+    expect(blurElements.length).toBe(0);
+
+    // Forbidden animations: zero opacity fade animations
+    const fadeElements = container.querySelectorAll('[class*="fade-in"], [class*="animate-fade"], [class*="opacity-0"]');
+    expect(fadeElements.length).toBe(0);
+
+    // Snappy physical transitions <= 120ms
+    expect(calcCard.className.includes('duration-[120ms]') || calcCard.className.includes('duration-120')).toBe(true);
   });
 
   it('Test 31: Dispatch buttons disabled when IGN is missing', async () => {

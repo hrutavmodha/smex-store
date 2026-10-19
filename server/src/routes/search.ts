@@ -1,9 +1,8 @@
 import { type FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { SearchService } from '../services/search.service.js';
-import { type SearchCategory } from '@smex/shared';
+import { type SearchCategory, formatRfc7807 } from '@smex/shared';
 import { searchRateLimitConfig } from '../plugins/rate-limit.js';
-import { formatRfc7807 } from '../utils/errors.js';
 
 const searchQuerySchema = z.object({
   q: z.string().default(''),

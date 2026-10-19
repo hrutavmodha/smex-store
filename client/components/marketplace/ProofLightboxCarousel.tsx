@@ -15,8 +15,8 @@ export function ProofLightboxCarousel({ proofImages = [], title = 'Listing Proof
 
   if (!proofImages || proofImages.length === 0) {
     return (
-      <div className="w-full h-80 rounded-xl bg-[#121C19] border border-[#223530] flex flex-col items-center justify-center text-[#8FA39C] gap-2 select-none">
-        <ImageIcon className="w-12 h-12 stroke-[1.5] text-[#1FAE7A]" />
+      <div className="w-full h-80 rounded-xl bg-bg-surface border border-border-subtle flex flex-col items-center justify-center text-text-secondary gap-2 select-none">
+        <ImageIcon className="w-12 h-12 stroke-[1.5] text-emerald-primary" />
         <span className="text-sm font-medium">No screenshot proofs uploaded</span>
       </div>
     );
@@ -33,7 +33,7 @@ export function ProofLightboxCarousel({ proofImages = [], title = 'Listing Proof
   return (
     <div className="w-full flex flex-col gap-3">
       {/* Main Viewport Container */}
-      <div className="relative w-full h-80 md:h-96 rounded-xl overflow-hidden bg-[#121C19] border border-[#223530] flex items-center justify-center">
+      <div className="relative w-full h-80 md:h-96 rounded-xl overflow-hidden bg-bg-surface border border-border-subtle flex items-center justify-center">
         {/* Hardware-accelerated sliding carousel container */}
         <div
           className="w-full h-full flex transition-transform duration-120 ease-out"
@@ -59,7 +59,7 @@ export function ProofLightboxCarousel({ proofImages = [], title = 'Listing Proof
         </div>
 
         {/* Counter Badge */}
-        <div className="absolute top-3 right-3 px-2.5 py-1 rounded-md bg-[#0B0F12] border border-[#223530] text-xs font-semibold text-[#E9F5F1] z-10 select-none">
+        <div className="absolute top-3 right-3 px-2.5 py-1 rounded-md bg-bg-canvas border border-border-subtle text-xs font-semibold text-text-primary z-10 select-none">
           Proof {activeIndex + 1} of {proofImages.length}
         </div>
 
@@ -69,7 +69,7 @@ export function ProofLightboxCarousel({ proofImages = [], title = 'Listing Proof
             type="button"
             aria-label="Previous screenshot"
             onClick={handlePrev}
-            className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-lg bg-[#0B0F12] border border-[#223530] text-[#E9F5F1] hover:text-[#1FAE7A] hover:border-[#1FAE7A] flex items-center justify-center transition-all duration-120 ease-out active:scale-95 z-10 cursor-pointer"
+            className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-lg bg-bg-canvas border border-border-subtle text-text-primary hover:text-emerald-primary hover:border-emerald-primary flex items-center justify-center transition-all duration-120 ease-out active:scale-95 z-10 cursor-pointer"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
@@ -81,7 +81,7 @@ export function ProofLightboxCarousel({ proofImages = [], title = 'Listing Proof
             type="button"
             aria-label="Next screenshot"
             onClick={handleNext}
-            className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-lg bg-[#0B0F12] border border-[#223530] text-[#E9F5F1] hover:text-[#1FAE7A] hover:border-[#1FAE7A] flex items-center justify-center transition-all duration-120 ease-out active:scale-95 z-10 cursor-pointer"
+            className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-lg bg-bg-canvas border border-border-subtle text-text-primary hover:text-emerald-primary hover:border-emerald-primary flex items-center justify-center transition-all duration-120 ease-out active:scale-95 z-10 cursor-pointer"
           >
             <ChevronRight className="w-5 h-5" />
           </button>
@@ -101,8 +101,8 @@ export function ProofLightboxCarousel({ proofImages = [], title = 'Listing Proof
                 onClick={() => setActiveIndex(idx)}
                 className={`relative w-16 h-16 rounded-lg overflow-hidden border shrink-0 transition-all duration-120 ease-out cursor-pointer ${
                   isActive
-                    ? 'border-[#1FAE7A] ring-2 ring-[#1FAE7A]/30 scale-102'
-                    : 'border-[#223530] hover:border-[#8FA39C] opacity-70 hover:opacity-100'
+                    ? 'border-emerald-primary ring-2 ring-emerald-primary/30 scale-102'
+                    : 'border-border-subtle hover:border-text-secondary opacity-70 hover:opacity-100'
                 }`}
               >
                 <Image

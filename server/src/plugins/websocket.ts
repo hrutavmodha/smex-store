@@ -5,6 +5,7 @@ import crypto from 'node:crypto';
 import { eq } from 'drizzle-orm';
 import { type AccessTokenPayload } from '@smex/shared';
 import { users } from '../db/schema/users.js';
+import { getCookie } from '../utils/cookies.js';
 
 export interface WebSocketClientMeta {
   id: string;
@@ -150,14 +151,7 @@ const websocketPlugin: FastifyPluginAsync = async (fastify) => {
     let userId: string | null = null;
     let sessionId: string | null = null;
 
-    const cookieToken =
-      req.cookies?.['smex_access_token'] ||
-      (req.headers.cookie &&
-        req.headers.cookie
-          .split(';')
-          .map((c) => c.trim())
-          .find((c) => c.startsWith('smex_access_token='))
-          ?.split('=')[1]);
+    const cookieToken = getCookie(req, 'smex_access_token');
 
     const token = query.token || cookieToken;
 

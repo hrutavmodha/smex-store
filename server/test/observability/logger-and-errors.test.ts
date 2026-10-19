@@ -151,4 +151,41 @@ describe('Structured Observability & RFC 7807 Error Suite (LLT 2.4)', () => {
 
     await app.close();
   });
+
+  test('Test 8b: Sensible onSend hook preserves original Content-Type on non-JSON payloads (Bug 23)', async () => {
+    const app = Fastify({ logger: false });
+    await app.register(sensiblePlugin);
+
+    // Route returning plain text error
+    app.get('/api/v1/test-text-error', async (_request, reply) => {
+      return reply.code(404).type('text/plain').send('Resource does not exist');
+    });
+
+    // Route returning HTML error (e.g. gateway error)
+    app.get('/api/v1/test-html-error', async (_request, reply) => {
+      return reply.code(502).type('text/html').send('<html><body>502 Bad Gateway</body></html>');
+    });
+
+    await app.ready();
+
+    // 1. Verify plain text response preserves text/plain
+    const textRes = await app.inject({
+      method: 'GET',
+      url: '/api/v1/test-text-error',
+    });
+    assert.equal(textRes.statusCode, 404);
+    assert.equal(textRes.body, 'Resource does not exist');
+    assert.match(textRes.headers['content-type'] || '', /^text\/plain/);
+
+    // 2. Verify HTML response preserves text/html
+    const htmlRes = await app.inject({
+      method: 'GET',
+      url: '/api/v1/test-html-error',
+    });
+    assert.equal(htmlRes.statusCode, 502);
+    assert.equal(htmlRes.body, '<html><body>502 Bad Gateway</body></html>');
+    assert.match(htmlRes.headers['content-type'] || '', /^text\/html/);
+
+    await app.close();
+  });
 });

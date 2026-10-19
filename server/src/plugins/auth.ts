@@ -6,6 +6,7 @@ import { eq } from 'drizzle-orm';
 import { type AccessTokenPayload } from '@smex/shared';
 import { users } from '../db/schema/users.js';
 import { loadEnv } from '../config/env.js';
+import { getCookie } from '../utils/cookies.js';
 
 declare module 'fastify' {
   interface FastifyInstance {
@@ -35,14 +36,7 @@ const authPlugin: FastifyPluginAsync = async (fastify) => {
 
   const authenticate = async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const cookieToken =
-        request.cookies?.['smex_access_token'] ||
-        (request.headers.cookie &&
-          request.headers.cookie
-            .split(';')
-            .map((c) => c.trim())
-            .find((c) => c.startsWith('smex_access_token='))
-            ?.split('=')[1]);
+      const cookieToken = getCookie(request, 'smex_access_token');
 
       let payload: AccessTokenPayload;
       if (cookieToken) {

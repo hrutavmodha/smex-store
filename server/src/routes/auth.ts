@@ -1,5 +1,5 @@
 import crypto from 'node:crypto';
-import { type FastifyPluginAsync } from 'fastify';
+import { type FastifyPluginAsync, type FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { eq, and } from 'drizzle-orm';
 import { users, profiles } from '../db/schema/users.js';
@@ -9,6 +9,7 @@ import { hashPassword, verifyPassword, passwordSchema } from '../utils/crypto.js
 import { parseDeviceMetadata } from '../utils/fingerprint.js';
 import { SessionService } from '../services/session.service.js';
 import { emailService } from '../services/email.service.js';
+import { getCookie, getAnyCookie } from '../utils/cookies.js';
 import {
   registerRateLimitConfig,
   loginRateLimitConfig,
@@ -38,6 +39,15 @@ const resetPasswordBodySchema = z.object({
   token: z.string().min(10),
   newPassword: passwordSchema,
 });
+
+function getCookieConfig(fastify: FastifyInstance) {
+  const isSecure = fastify.config?.COOKIE_SECURE ?? (fastify.config?.NODE_ENV === 'production');
+  return {
+    isSecure,
+    refreshTokenName: isSecure ? '__Host-refresh-token' : 'smex_refresh_token',
+    cookieSameSite: (isSecure ? 'strict' : 'lax') as 'strict' | 'lax',
+  };
+}
 
 const authRoutes: FastifyPluginAsync = async (fastify) => {
   // 1. POST /api/v1/auth/register
@@ -215,20 +225,22 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
         sessionId: session.sessionId,
       });
 
+      const { isSecure, refreshTokenName, cookieSameSite } = getCookieConfig(fastify);
+
       // Set cookie adhering to RFC 6265bis
-      reply.setCookie('__Host-refresh-token', session.cookieValue, {
+      reply.setCookie(refreshTokenName, session.cookieValue, {
         path: '/',
         httpOnly: true,
-        secure: true,
-        sameSite: 'strict',
+        secure: isSecure,
+        sameSite: cookieSameSite,
         maxAge: 2592000,
       });
 
       reply.setCookie('smex_access_token', accessToken, {
         path: '/',
         httpOnly: true,
-        secure: true,
-        sameSite: 'strict',
+        secure: isSecure,
+        sameSite: cookieSameSite,
         maxAge: 900,
       });
 
@@ -258,6 +270,7 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
 
   // 3. POST /api/v1/auth/logout
   fastify.post('/api/v1/auth/logout', async (request, reply) => {
+    const { isSecure, refreshTokenName, cookieSameSite } = getCookieConfig(fastify);
     const sessionsToRevoke: Array<{ userId: string; sessionId: string }> = [];
 
     // 1. Extract from Authorization header or smex_access_token cookie (accept expired JWT for logout)
@@ -265,13 +278,8 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
     let token: string | undefined;
     if (authHeader?.startsWith('Bearer ')) {
       token = authHeader.slice(7);
-    } else if (request.cookies?.['smex_access_token']) {
-      token = request.cookies['smex_access_token'];
-    } else if (request.headers.cookie) {
-      token = request.headers.cookie
-        .split(';')
-        .find((c) => c.trim().startsWith('smex_access_token='))
-        ?.split('=')[1];
+    } else {
+      token = getCookie(request, 'smex_access_token');
     }
 
     if (token) {
@@ -287,14 +295,13 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
       }
     }
 
-    // 2. Extract from __Host-refresh-token cookie
-    const rawCookie =
-      request.cookies['__Host-refresh-token'] ||
-      (request.headers.cookie &&
-        request.headers.cookie
-          .split(';')
-          .find((c) => c.trim().startsWith('__Host-refresh-token='))
-          ?.split('=')[1]);
+    // 2. Extract from refresh token cookie
+    const rawCookie = getAnyCookie(
+      request,
+      refreshTokenName,
+      '__Host-refresh-token',
+      'smex_refresh_token'
+    );
 
     if (rawCookie) {
       const [cookieSessionId] = rawCookie.split('.');
@@ -331,14 +338,20 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
     reply.clearCookie('__Host-refresh-token', {
       path: '/',
       httpOnly: true,
-      secure: true,
-      sameSite: 'strict',
+      secure: isSecure,
+      sameSite: cookieSameSite,
+    });
+    reply.clearCookie('smex_refresh_token', {
+      path: '/',
+      httpOnly: true,
+      secure: isSecure,
+      sameSite: cookieSameSite,
     });
     reply.clearCookie('smex_access_token', {
       path: '/',
       httpOnly: true,
-      secure: true,
-      sameSite: 'strict',
+      secure: isSecure,
+      sameSite: cookieSameSite,
     });
 
     return reply.code(200).send({
@@ -349,13 +362,13 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
 
   // 4. POST /api/v1/auth/refresh
   fastify.post('/api/v1/auth/refresh', async (request, reply) => {
-    const rawCookie =
-      request.cookies['__Host-refresh-token'] ||
-      (request.headers.cookie &&
-        request.headers.cookie
-          .split(';')
-          .find((c) => c.trim().startsWith('__Host-refresh-token='))
-          ?.split('=')[1]);
+    const { isSecure, refreshTokenName, cookieSameSite } = getCookieConfig(fastify);
+    const rawCookie = getAnyCookie(
+      request,
+      refreshTokenName,
+      '__Host-refresh-token',
+      'smex_refresh_token'
+    );
 
     if (!rawCookie) {
       return reply.code(401).send({
@@ -380,19 +393,19 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
         sessionId: refreshed.sessionId,
       });
 
-      reply.setCookie('__Host-refresh-token', refreshed.newCookieValue, {
+      reply.setCookie(refreshTokenName, refreshed.newCookieValue, {
         path: '/',
         httpOnly: true,
-        secure: true,
-        sameSite: 'strict',
+        secure: isSecure,
+        sameSite: cookieSameSite,
         maxAge: 2592000,
       });
 
       reply.setCookie('smex_access_token', newAccessToken, {
         path: '/',
         httpOnly: true,
-        secure: true,
-        sameSite: 'strict',
+        secure: isSecure,
+        sameSite: cookieSameSite,
         maxAge: 900,
       });
 
@@ -615,6 +628,7 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
       preHandler: [fastify.authenticate],
     },
     async (request, reply) => {
+      const { isSecure, cookieSameSite } = getCookieConfig(fastify);
       await SessionService.revokeAllSessions(
         request.user.sub,
         fastify.db,
@@ -625,8 +639,20 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
       reply.clearCookie('__Host-refresh-token', {
         path: '/',
         httpOnly: true,
-        secure: true,
-        sameSite: 'strict',
+        secure: isSecure,
+        sameSite: cookieSameSite,
+      });
+      reply.clearCookie('smex_refresh_token', {
+        path: '/',
+        httpOnly: true,
+        secure: isSecure,
+        sameSite: cookieSameSite,
+      });
+      reply.clearCookie('smex_access_token', {
+        path: '/',
+        httpOnly: true,
+        secure: isSecure,
+        sameSite: cookieSameSite,
       });
 
       return reply.code(200).send({

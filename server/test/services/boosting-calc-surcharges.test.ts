@@ -1,6 +1,6 @@
 import { describe, it } from 'vitest';
 import assert from 'node:assert/strict';
-import { calculateBoostingPrice } from '../../src/services/boosting-calc.service.js';
+import { calculateBoostingPrice } from '@smex/shared';
 
 describe('Role Priority and Hero Surcharge Engine Suite (LLT 2.4)', () => {
   it('Test 15: Role priority percentage surcharge calculation', () => {

@@ -7,7 +7,7 @@ import {
   type UpdateListingInput,
 } from '../../services/listing.service.js';
 import { StorageService } from '../../services/storage.service.js';
-import { formatRfc7807 } from '../../utils/errors.js';
+import { formatRfc7807 } from '@smex/shared';
 
 const proofImageSchema = z.object({
   s3Key: z.string().trim().min(1, 's3Key is required'),
