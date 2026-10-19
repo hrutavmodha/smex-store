@@ -4,6 +4,7 @@ import { StorageService, StorageError } from '../../services/storage.service.js'
 import { MediaInspectorService, MediaInspectionError } from '../../services/media-inspector.service.js';
 import { presignedUploadRateLimitConfig } from '../../plugins/rate-limit.js';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
+import { formatRfc7807 } from '../../utils/errors.js';
 
 const presignedUrlBodySchema = z.object({
   fileName: z.string().trim().min(1, 'File name is required').max(255),
@@ -151,6 +152,125 @@ export const marketplaceUploadsRoutes: FastifyPluginAsync = async (fastify) => {
     }
   );
 
+  const deleteUploadBodySchema = z.object({
+    s3Key: z.string().trim().min(1, 'S3 key is required'),
+  });
+
+  /**
+   * DELETE /api/v1/marketplace/uploads
+   * Authenticated endpoint to clean up uncommitted or abandoned uploaded proofs
+   */
+  fastify.delete(
+    '/api/v1/marketplace/uploads',
+    {
+      onRequest: [fastify.authenticate],
+    },
+    async (request, reply) => {
+      const parseResult = deleteUploadBodySchema.safeParse(request.body);
+      if (!parseResult.success) {
+        return reply.code(400).send({
+          type: 'https://api.smexstore.com/errors/validation-error',
+          title: 'Bad Request',
+          status: 400,
+          detail: parseResult.error.issues[0]?.message || 'Invalid payload',
+          code: 'VALIDATION_ERROR',
+        });
+      }
+
+      const { s3Key } = parseResult.data;
+
+      if (!S3_KEY_REGEX.test(s3Key) || s3Key.includes('..')) {
+        return reply.code(400).send({
+          type: 'https://api.smexstore.com/errors/validation-error',
+          title: 'Bad Request',
+          status: 400,
+          detail: 'Invalid S3 key format',
+          code: 'VALIDATION_ERROR',
+        });
+      }
+
+      const userId = request.user.sub;
+      const isAdmin = request.user.role === 'admin';
+      const expectedPrefix = `marketplace/proofs/${userId}/`;
+
+      if (!isAdmin && !s3Key.startsWith(expectedPrefix)) {
+        return reply.code(403).send({
+          type: 'https://api.smexstore.com/errors/forbidden',
+          title: 'Forbidden',
+          status: 403,
+          detail: 'You are not authorized to delete objects outside your upload directory',
+          code: 'UNAUTHORIZED_OBJECT_ACCESS',
+        });
+      }
+
+      try {
+        await storageService.deleteObject(s3Key);
+        return reply.code(200).send({ success: true, s3Key });
+      } catch (err: unknown) {
+        request.log.error(err, 'Failed to delete S3 object');
+        return reply.code(500).send({
+          type: 'https://api.smexstore.com/errors/internal-server-error',
+          title: 'Internal Server Error',
+          status: 500,
+          detail: 'Failed to delete object from storage',
+          code: 'STORAGE_DELETE_FAILED',
+        });
+      }
+    }
+  );
+
+  const cleanupUploadsBodySchema = z.object({
+    maxAgeHours: z.number().int().positive().optional(),
+  });
+
+  /**
+   * POST /api/v1/marketplace/uploads/cleanup
+   * Admin-only endpoint to purge orphaned uncommitted drafts older than maxAgeHours
+   */
+  fastify.post(
+    '/api/v1/marketplace/uploads/cleanup',
+    {
+      onRequest: [fastify.authenticate],
+    },
+    async (request, reply) => {
+      if (request.user.role !== 'admin') {
+        return reply.code(403).send({
+          type: 'https://api.smexstore.com/errors/forbidden',
+          title: 'Forbidden',
+          status: 403,
+          detail: 'Admin privileges required for storage maintenance',
+          code: 'ADMIN_REQUIRED',
+        });
+      }
+
+      const parseResult = cleanupUploadsBodySchema.safeParse(request.body || {});
+      const maxAgeHours = parseResult.success && parseResult.data.maxAgeHours ? parseResult.data.maxAgeHours : 24;
+      const maxAgeMs = maxAgeHours * 60 * 60 * 1000;
+
+      try {
+        const { listingProofs } = await import('../../db/schema/marketplace.js');
+        const activeProofs = await fastify.db.select({ s3Key: listingProofs.s3Key }).from(listingProofs);
+        const activeKeys = new Set(activeProofs.map((p) => p.s3Key));
+
+        const purgedKeys = await storageService.cleanupOrphanedUploads(activeKeys, maxAgeMs);
+        return reply.code(200).send({
+          success: true,
+          purgedCount: purgedKeys.length,
+          purgedKeys,
+        });
+      } catch (err: unknown) {
+        request.log.error(err, 'Failed to run orphaned uploads cleanup');
+        return reply.code(500).send({
+          type: 'https://api.smexstore.com/errors/internal-server-error',
+          title: 'Internal Server Error',
+          status: 500,
+          detail: 'Failed to clean up orphaned uploads',
+          code: 'STORAGE_CLEANUP_FAILED',
+        });
+      }
+    }
+  );
+
   const ALLOWED_MEDIA_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
   const EXTENSION_MIME_MAP: Record<string, string> = {
     jpg: 'image/jpeg',
@@ -166,14 +286,9 @@ export const marketplaceUploadsRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.get('/api/v1/media/*', async (request, reply) => {
     const s3Key = (request.params as { '*': string })['*'];
     if (!s3Key || !S3_KEY_REGEX.test(s3Key) || s3Key.includes('..')) {
-      return reply.code(400).send({
-        type: 'https://api.smexstore.com/errors/bad-request',
-        title: 'Bad Request',
-        status: 400,
-        detail: 'Invalid media key format',
-        code: 'INVALID_MEDIA_KEY',
-        error: 'Invalid media key',
-      });
+      return reply.code(400).send(
+        formatRfc7807(400, 'INVALID_MEDIA_KEY', 'Bad Request', 'Invalid media key format', request.url)
+      );
     }
 
     try {
@@ -195,14 +310,9 @@ export const marketplaceUploadsRoutes: FastifyPluginAsync = async (fastify) => {
       reply.header('Cache-Control', 'public, max-age=31536000, immutable');
       return reply.send(s3Res.Body);
     } catch {
-      return reply.code(404).send({
-        type: 'https://api.smexstore.com/errors/not-found',
-        title: 'Not Found',
-        status: 404,
-        detail: 'Media not found',
-        code: 'MEDIA_NOT_FOUND',
-        error: 'Media not found',
-      });
+      return reply.code(404).send(
+        formatRfc7807(404, 'MEDIA_NOT_FOUND', 'Not Found', 'Media not found', request.url)
+      );
     }
   });
 };

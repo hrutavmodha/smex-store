@@ -126,3 +126,25 @@ export async function uploadScreenshotProof(
 
   return { s3Key, cdnUrl };
 }
+
+/**
+ * Deletes an uploaded proof from storage (e.g. when removed from draft or page unmounts)
+ */
+export async function deleteUploadedProof(
+  s3Key: string,
+  apiBaseUrl: string = ''
+): Promise<void> {
+  const res = await fetchWithAuth(`${apiBaseUrl}/api/v1/marketplace/uploads`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ s3Key }),
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new UploadError(
+      errorData.code || 'DELETE_FAILED',
+      errorData.detail || 'Failed to delete uploaded proof.'
+    );
+  }
+}

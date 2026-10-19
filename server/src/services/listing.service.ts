@@ -121,7 +121,7 @@ export class ListingService {
     const initialBadge = BadgeService.computeInitialBadge({ priceInr, rankTier });
     const formattedPrice = priceInr.toFixed(2);
 
-    return await db.transaction(async (tx) => {
+    const result = await db.transaction(async (tx) => {
       const [listing] = await tx
         .insert(marketplaceListings)
         .values({
@@ -158,6 +158,15 @@ export class ListingService {
         proofImages: createdProofs.sort((a, b) => a.displayOrder - b.displayOrder),
       };
     });
+
+    if (proofImages.length > 0) {
+      const storage = new StorageService();
+      for (const proof of proofImages) {
+        await storage.tagObject(proof.s3Key, 'status', 'committed').catch(() => {});
+      }
+    }
+
+    return result;
   }
 
   public static async getListings(
@@ -507,6 +516,13 @@ export class ListingService {
       const storage = storageService || new StorageService();
       for (const key of oldS3Keys) {
         await storage.deleteObject(key).catch(() => {});
+      }
+    }
+
+    if (input.proofImages && input.proofImages.length > 0) {
+      const storage = storageService || new StorageService();
+      for (const proof of input.proofImages) {
+        await storage.tagObject(proof.s3Key, 'status', 'committed').catch(() => {});
       }
     }
 

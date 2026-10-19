@@ -4,6 +4,7 @@ import {
   UserModerationService,
   UserModerationError,
 } from '../../services/user-moderation.service.js';
+import { formatRfc7807 } from '../../utils/errors.js';
 
 const banUserSchema = z.object({
   reason: z.string().min(1, 'Ban reason is required'),
@@ -59,13 +60,14 @@ const adminUsersRoutes: FastifyPluginAsync = async (fastify) => {
     const { id } = request.params as { id: string };
     const parseResult = banUserSchema.safeParse(request.body);
     if (!parseResult.success) {
-      return reply.code(400).send({
-        statusCode: 400,
-        error: 'Bad Request',
-        code: 'VALIDATION_FAILED',
-        message: 'Ban reason is required',
-        issues: parseResult.error.issues,
-      });
+      return reply.code(422).send(
+        formatRfc7807(
+          422,
+          'VALIDATION_FAILED',
+          'Validation Failed',
+          parseResult.error.issues.map((i) => i.message).join(', ')
+        )
+      );
     }
 
     try {
@@ -81,12 +83,9 @@ const adminUsersRoutes: FastifyPluginAsync = async (fastify) => {
       return reply.code(200).send(result);
     } catch (err) {
       if (err instanceof UserModerationError) {
-        return reply.code(err.statusCode).send({
-          statusCode: err.statusCode,
-          error: err.code,
-          code: err.code,
-          message: err.message,
-        });
+        return reply.code(err.statusCode).send(
+          formatRfc7807(err.statusCode, err.code, 'Moderation Error', err.message)
+        );
       }
       throw err;
     }
@@ -110,12 +109,9 @@ const adminUsersRoutes: FastifyPluginAsync = async (fastify) => {
       return reply.code(200).send(result);
     } catch (err) {
       if (err instanceof UserModerationError) {
-        return reply.code(err.statusCode).send({
-          statusCode: err.statusCode,
-          error: err.code,
-          code: err.code,
-          message: err.message,
-        });
+        return reply.code(err.statusCode).send(
+          formatRfc7807(err.statusCode, err.code, 'Moderation Error', err.message)
+        );
       }
       throw err;
     }

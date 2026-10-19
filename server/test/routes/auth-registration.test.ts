@@ -19,7 +19,7 @@ describe('User Registration Username Validation Suite (BUG-M2-002)', () => {
       },
     });
 
-    assert.equal(res.statusCode, 400);
+    assert.equal(res.statusCode, 422);
     const body = JSON.parse(res.body);
     assert.equal(body.code, 'VALIDATION_FAILED');
     assert.equal(body.detail, 'Username must only contain alphanumeric characters and underscores');
@@ -39,7 +39,7 @@ describe('User Registration Username Validation Suite (BUG-M2-002)', () => {
       },
     });
 
-    assert.equal(res.statusCode, 400);
+    assert.equal(res.statusCode, 422);
     const body = JSON.parse(res.body);
     assert.equal(body.code, 'VALIDATION_FAILED');
     assert.equal(body.detail, 'Username must only contain alphanumeric characters and underscores');
@@ -59,7 +59,7 @@ describe('User Registration Username Validation Suite (BUG-M2-002)', () => {
       },
     });
 
-    assert.equal(res.statusCode, 400);
+    assert.equal(res.statusCode, 422);
     const body = JSON.parse(res.body);
     assert.equal(body.code, 'VALIDATION_FAILED');
   });
@@ -78,7 +78,7 @@ describe('User Registration Username Validation Suite (BUG-M2-002)', () => {
       },
     });
 
-    assert.equal(res.statusCode, 400);
+    assert.equal(res.statusCode, 422);
     const body = JSON.parse(res.body);
     assert.equal(body.code, 'VALIDATION_FAILED');
     assert.equal(body.detail, 'Username must be at least 3 characters');

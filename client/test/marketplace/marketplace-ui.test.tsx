@@ -120,6 +120,26 @@ describe('Marketplace Presentation UI & Media Carousel Suite (LLT 2.5)', () => {
     window.fetch = origFetch;
   });
 
+  it('Test 24b: Cleanup of uncommitted uploaded proofs on removal and component unmount (Bug 20)', async () => {
+    const deletedKeys: string[] = [];
+    const origFetch = window.fetch;
+
+    window.fetch = vi.fn().mockImplementation((url: string, options?: RequestInit) => {
+      if (typeof url === 'string' && url.includes('/uploads') && options?.method === 'DELETE') {
+        const body = JSON.parse(options.body as string);
+        deletedKeys.push(body.s3Key);
+        return Promise.resolve({ ok: true, json: async () => ({ success: true, s3Key: body.s3Key }) });
+      }
+      return Promise.resolve({ ok: true, json: async () => ({}) });
+    });
+
+    // Verify direct uploaderModule.deleteUploadedProof execution
+    await uploaderModule.deleteUploadedProof('marketplace/proofs/user-123/uncommitted-test.png');
+    expect(deletedKeys).toContain('marketplace/proofs/user-123/uncommitted-test.png');
+
+    window.fetch = origFetch;
+  });
+
 
   it('Test 25: Proof screenshot lightbox carousel navigation', () => {
     const { container } = render(

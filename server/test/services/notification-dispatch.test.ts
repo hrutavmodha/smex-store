@@ -108,6 +108,9 @@ describe('Notification Persistence and Real-Time Dispatch Suite (LLT 2.1)', () =
       app.wsGateway
     );
 
+    // Await async pub/sub delivery
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
     assert.ok(receivedFrames.length >= 1, 'WebSocket client must receive notification envelope');
     const parsed = JSON.parse(receivedFrames[0]);
     assert.equal(parsed.event, 'notification:new');

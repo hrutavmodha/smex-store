@@ -110,9 +110,7 @@ export class NotificationService {
 
     if (redis) {
       await redis.publish(channel, JSON.stringify(wsFrame));
-    }
-
-    if (wsGateway) {
+    } else if (wsGateway) {
       wsGateway.broadcastToChannel(channel, wsFrame);
     }
 
@@ -314,9 +312,7 @@ export class NotificationService {
 
     if (redis) {
       await redis.publish(channel, JSON.stringify(envelope));
-    }
-
-    if (wsGateway) {
+    } else if (wsGateway) {
       wsGateway.broadcastToChannel(channel, envelope);
     }
 
@@ -370,9 +366,7 @@ export class NotificationService {
 
     if (redis) {
       await redis.publish(channel, JSON.stringify(envelope));
-    }
-
-    if (wsGateway) {
+    } else if (wsGateway) {
       wsGateway.broadcastToChannel(channel, envelope);
     }
 
@@ -449,8 +443,7 @@ export class NotificationService {
 
     if (redis) {
       await redis.publish(channel, JSON.stringify(envelope)).catch(() => {});
-    }
-    if (wsGateway) {
+    } else if (wsGateway) {
       wsGateway.broadcastToChannel(channel, envelope);
     }
   }
@@ -479,8 +472,7 @@ export class NotificationService {
 
     if (redis) {
       await redis.publish(channel, JSON.stringify(envelope)).catch(() => {});
-    }
-    if (wsGateway) {
+    } else if (wsGateway) {
       wsGateway.broadcastToChannel(channel, envelope);
     }
 

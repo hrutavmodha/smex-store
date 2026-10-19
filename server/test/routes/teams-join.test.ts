@@ -469,4 +469,52 @@ describe('Join Request Submission Suite (LLT 2.3)', () => {
     assert.ok(dbReq1);
     assert.equal(dbReq1.status, 'cancelled');
   });
+
+  test('Test 18: Join request acceptance successfully adds member and closes squad when cap reached without duplicate count query (Bug 19)', async (t) => {
+    const app = await build(t);
+    const { user: captain, token: captToken } = await createVerifiedUser(app, 'c18_bug19');
+    const { user: applicant, token: appToken } = await createVerifiedUser(app, 'a18_bug19');
+
+    // Squad with cap: 2 (captain + 1 new member = full)
+    const { team } = await TeamService.createTeam(
+      captain.id,
+      { name: `Cap2Squad_${Date.now()}`, tag: 'CP2', memberCap: 2 },
+      app.db
+    );
+
+    const joinRes = await app.inject({
+      method: 'POST',
+      url: `/api/v1/teams/${team.id}/join-requests`,
+      headers: { authorization: `Bearer ${appToken}` },
+      payload: { playerIgn: 'NewMember1', playerRole: 'Gold' },
+    });
+    assert.equal(joinRes.statusCode, 201);
+    const joinReq = JSON.parse(joinRes.body).joinRequest;
+
+    const acceptRes = await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/teams/${team.id}/join-requests/${joinReq.id}`,
+      headers: { authorization: `Bearer ${captToken}` },
+      payload: { action: 'accept' },
+    });
+
+    assert.equal(acceptRes.statusCode, 200);
+    const acceptBody = JSON.parse(acceptRes.body);
+    assert.equal(acceptBody.success, true);
+    assert.equal(acceptBody.status, 'accepted');
+
+    // Verify member added
+    const members = await app.db
+      .select()
+      .from(teamMembers)
+      .where(eq(teamMembers.teamId, team.id));
+    assert.equal(members.length, 2);
+
+    // Verify squad auto-closed
+    const [dbTeam] = await app.db
+      .select()
+      .from(teams)
+      .where(eq(teams.id, team.id));
+    assert.equal(dbTeam.status, 'closed');
+  });
 });

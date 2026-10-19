@@ -69,8 +69,8 @@ export const marketplaceRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.get('/api/v1/marketplace/listings', async (request, reply) => {
     const parseResult = getListingsQuerySchema.safeParse(request.query);
     if (!parseResult.success) {
-      return reply.code(400).send(
-        formatRfc7807(400, 'VALIDATION_ERROR', 'Bad Request', parseResult.error.issues[0]?.message || 'Invalid query parameters')
+      return reply.code(422).send(
+        formatRfc7807(422, 'VALIDATION_FAILED', 'Validation Failed', parseResult.error.issues.map((i) => i.message).join(', '))
       );
     }
 
@@ -128,8 +128,8 @@ export const marketplaceRoutes: FastifyPluginAsync = async (fastify) => {
     async (request, reply) => {
       const parseResult = createListingSchema.safeParse(request.body);
       if (!parseResult.success) {
-        return reply.code(400).send(
-          formatRfc7807(400, 'VALIDATION_ERROR', 'Bad Request', parseResult.error.issues[0]?.message || 'Invalid payload')
+        return reply.code(422).send(
+          formatRfc7807(422, 'VALIDATION_FAILED', 'Validation Failed', parseResult.error.issues.map((i) => i.message).join(', '))
         );
       }
 
@@ -170,8 +170,8 @@ export const marketplaceRoutes: FastifyPluginAsync = async (fastify) => {
       const { id } = request.params as { id: string };
       const parseResult = updateListingSchema.safeParse(request.body);
       if (!parseResult.success) {
-        return reply.code(400).send(
-          formatRfc7807(400, 'VALIDATION_ERROR', 'Bad Request', parseResult.error.issues[0]?.message || 'Invalid payload')
+        return reply.code(422).send(
+          formatRfc7807(422, 'VALIDATION_FAILED', 'Validation Failed', parseResult.error.issues.map((i) => i.message).join(', '))
         );
       }
 
@@ -216,8 +216,8 @@ export const marketplaceRoutes: FastifyPluginAsync = async (fastify) => {
       const { id } = request.params as { id: string };
       const parseResult = updateStatusSchema.safeParse(request.body);
       if (!parseResult.success) {
-        return reply.code(400).send(
-          formatRfc7807(400, 'VALIDATION_ERROR', 'Bad Request', parseResult.error.issues[0]?.message || 'Invalid payload')
+        return reply.code(422).send(
+          formatRfc7807(422, 'VALIDATION_FAILED', 'Validation Failed', parseResult.error.issues.map((i) => i.message).join(', '))
         );
       }
 

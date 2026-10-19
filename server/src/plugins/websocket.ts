@@ -113,6 +113,7 @@ const websocketPlugin: FastifyPluginAsync = async (fastify) => {
   // Redis Pub/Sub Subscriber for horizontal multi-instance synchronization
   if (fastify.redis) {
     const redisSubscriber = fastify.redis.duplicate();
+    await redisSubscriber.connect();
     redisSubscriber.psubscribe('tournament:*', 'user:*', 'system:*', (err) => {
       if (err) {
         fastify.log.error({ err }, 'Failed to psubscribe to tournament:*, user:*, system:* channel patterns');

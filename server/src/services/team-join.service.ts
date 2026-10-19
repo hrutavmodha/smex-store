@@ -238,6 +238,8 @@ export class TeamJoinService {
         throw createServiceError(`Request has already been resolved (${joinReq.status})`, 400, 'REQUEST_ALREADY_RESOLVED');
       }
 
+      let activeCount = 0;
+
       // If action is accept, check roster capacity first under the lock
       if (action === 'accept') {
         const [countResult] = await tx
@@ -245,7 +247,7 @@ export class TeamJoinService {
           .from(teamMembers)
           .where(eq(teamMembers.teamId, teamId));
 
-        const activeCount = countResult?.count ?? 0;
+        activeCount = countResult?.count ?? 0;
 
         if (activeCount >= lockedTeam.memberCap) {
           await tx
@@ -271,13 +273,7 @@ export class TeamJoinService {
         };
       }
 
-      // Action is 'accept'
-      const [countResult] = await tx
-        .select({ count: sql<number>`COUNT(*)::int` })
-        .from(teamMembers)
-        .where(eq(teamMembers.teamId, teamId));
-
-      const activeCount = countResult?.count ?? 0;
+      // Action is 'accept' - reuse activeCount computed above without redundant tx re-query
 
       // 5. MLBB Single Squad check for applicant
       const [otherSquad] = await tx

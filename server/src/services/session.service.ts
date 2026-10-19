@@ -292,10 +292,21 @@ export class SessionService {
       await redis.set(`revoked_token:${s.id}`, '1', 'EX', TOMBSTONE_TTL_SECONDS);
     }
 
-    // Also scan and purge any orphaned session keys in Redis
-    const keys = await redis.keys(`session:${userId}:*`);
-    if (keys.length > 0) {
-      await redis.del(...keys);
+    // Non-blocking cursor iteration to purge any orphaned session keys in Redis
+    const stream = redis.scanStream({
+      match: `session:${userId}:*`,
+      count: 100,
+    });
+
+    const keysToDelete: string[] = [];
+    for await (const chunk of stream) {
+      if (Array.isArray(chunk) && chunk.length > 0) {
+        keysToDelete.push(...chunk);
+      }
+    }
+
+    if (keysToDelete.length > 0) {
+      await redis.del(...keysToDelete);
     }
 
     await db

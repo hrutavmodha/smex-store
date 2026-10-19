@@ -100,6 +100,30 @@ describe('Containerization & Graceful Shutdown Suite (LLT 2.2)', () => {
     );
   });
 
+  test('Test 3d: Nginx production SSL/TLS termination and certificate volume validation (Bug 21)', () => {
+    const composePath = path.resolve(rootDir, 'docker-compose.prod.yml');
+    const nginxConfPath = path.resolve(rootDir, 'nginx.prod.conf');
+
+    assert.ok(fs.existsSync(composePath), 'docker-compose.prod.yml must exist');
+    assert.ok(fs.existsSync(nginxConfPath), 'nginx.prod.conf must exist');
+
+    const composeContent = fs.readFileSync(composePath, 'utf8');
+    const compose = YAML.parse(composeContent);
+    const nginxVolumes = compose.services?.nginx?.volumes;
+
+    assert.ok(Array.isArray(nginxVolumes), 'nginx volumes must be defined');
+    assert.ok(
+      nginxVolumes.some((v: string) => v.includes('/etc/nginx/certs')),
+      'nginx service must mount /etc/nginx/certs volume'
+    );
+
+    const nginxContent = fs.readFileSync(nginxConfPath, 'utf8');
+    assert.ok(nginxContent.includes('listen 443 ssl'), 'nginx.prod.conf must have listen 443 ssl');
+    assert.ok(nginxContent.includes('ssl_certificate'), 'nginx.prod.conf must specify ssl_certificate');
+    assert.ok(nginxContent.includes('ssl_certificate_key'), 'nginx.prod.conf must specify ssl_certificate_key');
+    assert.ok(nginxContent.includes('return 301 https://'), 'nginx.prod.conf must redirect HTTP to HTTPS');
+  });
+
   test('Test 4: Container health probe endpoint response', async (t) => {
     const app = await build(t);
 

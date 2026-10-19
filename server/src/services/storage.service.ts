@@ -3,6 +3,10 @@ import {
   PutObjectCommand,
   GetObjectCommand,
   DeleteObjectCommand,
+  PutObjectTaggingCommand,
+  GetObjectTaggingCommand,
+  PutBucketLifecycleConfigurationCommand,
+  ListObjectsV2Command,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { randomUUID } from 'node:crypto';
@@ -116,6 +120,7 @@ export class StorageService {
       Key: s3Key,
       ContentType: contentType,
       ContentLength: fileSize,
+      Tagging: 'status=uncommitted',
     });
 
     const uploadUrl = await getSignedUrl(this.s3Client, command, { expiresIn });
@@ -151,5 +156,79 @@ export class StorageService {
       Key: s3Key,
     });
     await this.s3Client.send(command);
+  }
+
+  public async tagObject(s3Key: string, key: string, value: string): Promise<void> {
+    const command = new PutObjectTaggingCommand({
+      Bucket: this.bucket,
+      Key: s3Key,
+      Tagging: {
+        TagSet: [{ Key: key, Value: value }],
+      },
+    });
+    await this.s3Client.send(command);
+  }
+
+  public async getObjectTagging(s3Key: string): Promise<Record<string, string>> {
+    const command = new GetObjectTaggingCommand({
+      Bucket: this.bucket,
+      Key: s3Key,
+    });
+    const res = await this.s3Client.send(command);
+    const tags: Record<string, string> = {};
+    for (const tag of res.TagSet || []) {
+      if (tag.Key && tag.Value) {
+        tags[tag.Key] = tag.Value;
+      }
+    }
+    return tags;
+  }
+
+  public async configureLifecyclePolicy(expirationDays: number = 2): Promise<void> {
+    const command = new PutBucketLifecycleConfigurationCommand({
+      Bucket: this.bucket,
+      LifecycleConfiguration: {
+        Rules: [
+          {
+            ID: 'purge-uncommitted-proofs',
+            Status: 'Enabled',
+            Filter: {
+              Prefix: 'marketplace/proofs/',
+              Tag: {
+                Key: 'status',
+                Value: 'uncommitted',
+              },
+            },
+            Expiration: {
+              Days: expirationDays,
+            },
+          },
+        ],
+      },
+    });
+    await this.s3Client.send(command);
+  }
+
+  public async cleanupOrphanedUploads(
+    activeKeys: Set<string>,
+    maxAgeMs: number = 24 * 60 * 60 * 1000
+  ): Promise<string[]> {
+    const deletedKeys: string[] = [];
+    const command = new ListObjectsV2Command({
+      Bucket: this.bucket,
+      Prefix: 'marketplace/proofs/',
+    });
+    const response = await this.s3Client.send(command);
+    const now = Date.now();
+    for (const obj of response.Contents || []) {
+      if (!obj.Key) continue;
+      const isReferenced = activeKeys.has(obj.Key);
+      const isExpired = obj.LastModified ? now - obj.LastModified.getTime() > maxAgeMs : false;
+      if (!isReferenced && isExpired) {
+        await this.deleteObject(obj.Key);
+        deletedKeys.push(obj.Key);
+      }
+    }
+    return deletedKeys;
   }
 }

@@ -5,6 +5,7 @@ export interface Rfc7807Error {
   detail: string;
   code: string;
   instance?: string;
+  invalid_params?: Array<{ name: string; reason: string }>;
 }
 
 /**
@@ -15,14 +16,18 @@ export function formatRfc7807(
   code: string,
   title: string,
   detail: string,
-  instance?: string
+  instance?: string,
+  invalidParams?: Array<{ name: string; reason: string }>,
+  type?: string
 ): Rfc7807Error {
-  return {
-    type: `https://api.smexstore.com/errors/${code.toLowerCase().replace(/_/g, '-')}`,
+  const error: Rfc7807Error = {
+    type: type || `https://api.smexstore.com/errors/${code.toLowerCase().replace(/_/g, '-')}`,
     title,
     status: statusCode,
     detail,
     code,
-    ...(instance ? { instance } : {}),
   };
+  if (instance) error.instance = instance;
+  if (invalidParams && invalidParams.length > 0) error.invalid_params = invalidParams;
+  return error;
 }

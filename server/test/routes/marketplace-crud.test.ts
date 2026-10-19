@@ -438,21 +438,21 @@ describe('Marketplace Listing CRUD Lifecycle Suite (LLT 2.3)', () => {
     });
     assert.equal(notFoundDelete.statusCode, 404);
 
-    // 400 Invalid body on create
+    // 422 Invalid body on create
     const invalidCreate = await app.inject({
       method: 'POST',
       url: '/api/v1/marketplace/listings',
       headers: { authorization: `Bearer ${token}` },
       payload: { title: 'x' }, // missing required fields
     });
-    assert.equal(invalidCreate.statusCode, 400);
+    assert.equal(invalidCreate.statusCode, 422);
 
-    // 400 Invalid query on catalog
+    // 422 Invalid query on catalog
     const invalidQuery = await app.inject({
       method: 'GET',
       url: '/api/v1/marketplace/listings?page=-1',
     });
-    assert.equal(invalidQuery.statusCode, 400);
+    assert.equal(invalidQuery.statusCode, 422);
   });
 
   it('Test 18c: Catalog sorting and price update floor constraint', async (t) => {

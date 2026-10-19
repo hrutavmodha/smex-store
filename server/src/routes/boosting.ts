@@ -10,7 +10,7 @@ import {
   BoostingDispatchService,
   generateOrderRef,
 } from '../services/boosting-dispatch.service.js';
-import { type AccessTokenPayload, DEFAULT_SURCHARGES } from '@smex/shared';
+import { type AccessTokenPayload, DEFAULT_SURCHARGES, formatRfc7807 } from '@smex/shared';
 
 const calculateSchema = z.object({
   pricingMode: z.enum(['fixed_tier', 'per_star', 'composite']).optional().default('per_star'),
@@ -68,12 +68,14 @@ const boostingRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.post('/api/v1/boosting/calculate', async (request, reply) => {
     const parseResult = calculateSchema.safeParse(request.body);
     if (!parseResult.success) {
-      return reply.code(400).send({
-        statusCode: 400,
-        error: 'Bad Request',
-        message: 'Invalid calculation parameters',
-        issues: parseResult.error.issues,
-      });
+      return reply.code(422).send(
+        formatRfc7807(
+          422,
+          'VALIDATION_FAILED',
+          'Validation Failed',
+          parseResult.error.issues.map((i) => i.message).join(', ')
+        )
+      );
     }
 
     const rates = await BoostingRateService.getActiveRates(fastify.db, fastify.redis);
@@ -87,12 +89,9 @@ const boostingRoutes: FastifyPluginAsync = async (fastify) => {
       return reply.code(200).send(calculation);
     } catch (err: unknown) {
       if (err instanceof ValidationError) {
-        return reply.code(err.statusCode).send({
-          statusCode: err.statusCode,
-          error: 'Unprocessable Entity',
-          message: err.message,
-          code: err.code,
-        });
+        return reply.code(err.statusCode).send(
+          formatRfc7807(err.statusCode, err.code, 'Validation Error', err.message)
+        );
       }
       throw err;
     }
@@ -105,12 +104,14 @@ const boostingRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.post('/api/v1/boosting/orders', async (request, reply) => {
     const parseResult = createOrderSchema.safeParse(request.body);
     if (!parseResult.success) {
-      return reply.code(400).send({
-        statusCode: 400,
-        error: 'Bad Request',
-        message: 'Invalid order input data',
-        issues: parseResult.error.issues,
-      });
+      return reply.code(422).send(
+        formatRfc7807(
+          422,
+          'VALIDATION_FAILED',
+          'Validation Failed',
+          parseResult.error.issues.map((i) => i.message).join(', ')
+        )
+      );
     }
 
     const data = parseResult.data;
@@ -145,12 +146,9 @@ const boostingRoutes: FastifyPluginAsync = async (fastify) => {
       });
     } catch (err: unknown) {
       if (err instanceof ValidationError) {
-        return reply.code(err.statusCode).send({
-          statusCode: err.statusCode,
-          error: 'Unprocessable Entity',
-          message: err.message,
-          code: err.code,
-        });
+        return reply.code(err.statusCode).send(
+          formatRfc7807(err.statusCode, err.code, 'Validation Error', err.message)
+        );
       }
       throw err;
     }

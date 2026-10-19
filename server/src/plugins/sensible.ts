@@ -1,36 +1,7 @@
 import fp from 'fastify-plugin';
 import sensible, { type FastifySensibleOptions } from '@fastify/sensible';
 
-export interface Rfc7807Problem {
-  type: string;
-  title: string;
-  status: number;
-  detail: string;
-  instance?: string;
-  code?: string;
-  invalid_params?: Array<{ name: string; reason: string }>;
-}
-
-export function formatRfc7807Problem(
-  statusCode: number,
-  code: string,
-  title: string,
-  detail: string,
-  instance?: string,
-  invalidParams?: Array<{ name: string; reason: string }>,
-  type?: string
-): Rfc7807Problem {
-  const problem: Rfc7807Problem = {
-    type: type || `https://api.smexstore.com/errors/${code.toLowerCase().replace(/_/g, '-')}`,
-    title,
-    status: statusCode,
-    detail,
-    code,
-  };
-  if (instance) problem.instance = instance;
-  if (invalidParams && invalidParams.length > 0) problem.invalid_params = invalidParams;
-  return problem;
-}
+import { formatRfc7807 } from '@smex/shared';
 
 export interface AppError extends Partial<Error> {
   statusCode?: number;
@@ -85,7 +56,7 @@ export default fp<FastifySensibleOptions>(async (fastify) => {
       invalidParams = error.invalid_params;
     }
 
-    const problem = formatRfc7807Problem(
+    const problem = formatRfc7807(
       statusCode,
       code,
       title,

@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { eq, and } from 'drizzle-orm';
 import { users, profiles } from '../db/schema/users.js';
 import { sessions } from '../db/schema/sessions.js';
-import { type AccessTokenPayload } from '@smex/shared';
+import { type AccessTokenPayload, formatRfc7807 } from '@smex/shared';
 import { hashPassword, verifyPassword, passwordSchema } from '../utils/crypto.js';
 import { parseDeviceMetadata } from '../utils/fingerprint.js';
 import { SessionService } from '../services/session.service.js';
@@ -51,13 +51,14 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
     async (request, reply) => {
       const parsed = registerBodySchema.safeParse(request.body);
       if (!parsed.success) {
-        return reply.code(400).send({
-          type: 'https://api.smexstore.com/errors/validation-failed',
-          title: 'Validation Error',
-          status: 400,
-          detail: parsed.error.issues[0]?.message || 'Invalid registration parameters',
-          code: 'VALIDATION_FAILED',
-        });
+        return reply.code(422).send(
+          formatRfc7807(
+            422,
+            'VALIDATION_FAILED',
+            'Validation Failed',
+            parsed.error.issues[0]?.message || 'Invalid registration parameters'
+          )
+        );
       }
 
       const { email, password, username, inGameId } = parsed.data;
@@ -155,13 +156,14 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
     async (request, reply) => {
       const parsed = loginBodySchema.safeParse(request.body);
       if (!parsed.success) {
-        return reply.code(400).send({
-          type: 'https://api.smexstore.com/errors/validation-failed',
-          title: 'Validation Error',
-          status: 400,
-          detail: 'Invalid credentials format',
-          code: 'VALIDATION_FAILED',
-        });
+        return reply.code(422).send(
+          formatRfc7807(
+            422,
+            'VALIDATION_FAILED',
+            'Validation Failed',
+            'Invalid credentials format'
+          )
+        );
       }
 
       const { email, password } = parsed.data;
@@ -561,13 +563,14 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.post('/api/v1/auth/reset-password', async (request, reply) => {
     const parsed = resetPasswordBodySchema.safeParse(request.body);
     if (!parsed.success) {
-      return reply.code(400).send({
-        type: 'https://api.smexstore.com/errors/bad-request',
-        title: 'Bad Request',
-        status: 400,
-        detail: parsed.error.issues[0]?.message || 'Invalid reset parameters',
-        code: 'VALIDATION_FAILED',
-      });
+      return reply.code(422).send(
+        formatRfc7807(
+          422,
+          'VALIDATION_FAILED',
+          'Validation Failed',
+          parsed.error.issues[0]?.message || 'Invalid reset parameters'
+        )
+      );
     }
 
     const { token, newPassword } = parsed.data;

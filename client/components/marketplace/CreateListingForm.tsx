@@ -1,9 +1,14 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ShieldAlert, AlertCircle, Loader2 } from 'lucide-react';
-import { uploadScreenshotProof, MAX_UPLOAD_SIZE, ALLOWED_UPLOAD_TYPES } from '../../lib/marketplace/uploader';
+import {
+  uploadScreenshotProof,
+  deleteUploadedProof,
+  MAX_UPLOAD_SIZE,
+  ALLOWED_UPLOAD_TYPES,
+} from '../../lib/marketplace/uploader';
 import { createMarketplaceListing } from '../../lib/marketplace/api';
 import { ProofUploadGrid } from './ProofUploadGrid';
 import type { ProofImageItem } from '@smex/shared';
@@ -90,12 +95,33 @@ export function CreateListingForm() {
     }
   };
 
+  // Track submission and uploaded proofs for unmount cleanup
+  const isSubmittedRef = useRef(false);
+  const uploadedProofsRef = useRef<ProofImageItem[]>([]);
+  uploadedProofsRef.current = uploadedProofs;
+
+  useEffect(() => {
+    return () => {
+      if (!isSubmittedRef.current && uploadedProofsRef.current.length > 0) {
+        for (const proof of uploadedProofsRef.current) {
+          deleteUploadedProof(proof.s3Key).catch(() => {});
+        }
+      }
+    };
+  }, []);
+
   const removeProof = (indexToRemove: number) => {
+    const proofToRemove = uploadedProofs[indexToRemove];
     setUploadedProofs((prev) =>
       prev
         .filter((_, idx) => idx !== indexToRemove)
         .map((proof, idx) => ({ ...proof, displayOrder: idx }))
     );
+    if (proofToRemove?.s3Key) {
+      deleteUploadedProof(proofToRemove.s3Key).catch((err) => {
+        console.error('Failed to cleanup uncommitted proof:', err);
+      });
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -136,6 +162,7 @@ export function CreateListingForm() {
         proofImages: uploadedProofs,
       });
 
+      isSubmittedRef.current = true;
       router.push(`/marketplace/${newListing.id}`);
     } catch (err: unknown) {
       setFormError((err as Error).message || 'Failed to publish listing. Please try again.');
