@@ -2,6 +2,7 @@ import { type FastifyPluginAsync } from 'fastify';
 
 export interface DataLayerHealthResponse {
   status: 'ok' | 'degraded';
+  version?: string;
   uptime: number;
   timestamp: string;
   environment: string;
@@ -73,6 +74,7 @@ const health: FastifyPluginAsync = async (fastify, _opts): Promise<void> => {
 
     const response: DataLayerHealthResponse & { type?: string; title?: string; detail?: string } = {
       status: isHealthy ? 'ok' : 'degraded',
+      version: process.env.COMMIT_SHA || process.env.APP_VERSION || 'dev',
       uptime: process.uptime(),
       timestamp: new Date().toISOString(),
       environment: fastify.config?.NODE_ENV ?? 'development',

@@ -1,10 +1,12 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { X } from 'lucide-react';
 import { type UserProfile } from '@smex/shared';
+
+const emptySubscribe = () => () => {};
 
 export interface NavLinkItem {
   readonly href: string;
@@ -28,11 +30,11 @@ export function NavMobileDrawer({
   onLogout,
   onOpenAuthModal,
 }: NavMobileDrawerProps) {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false
+  );
 
   // Lock body scroll when drawer is open on mobile
   useEffect(() => {
@@ -47,13 +49,15 @@ export function NavMobileDrawer({
     };
   }, [isOpen]);
 
+  if (!isOpen || !mounted || typeof document === 'undefined' || !document.body) {
+    return null;
+  }
+
   const content = (
-    <div className="sm:hidden">
+    <div className="sm:hidden fixed inset-0 z-50">
       {/* Full-Screen Backdrop Overlay */}
       <div
-        className={`fixed inset-0 bg-black/60 z-40 transition-opacity duration-[120ms] ${
-          isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-        }`}
+        className="fixed inset-0 bg-black/60 z-40 transition-opacity duration-[120ms] opacity-100"
         onClick={onClose}
         aria-hidden="true"
         data-testid="mobile-drawer-backdrop"
@@ -61,10 +65,8 @@ export function NavMobileDrawer({
 
       {/* Slide-Out Drawer Panel */}
       <div
-        className={`fixed inset-y-0 right-0 z-50 w-72 bg-bg-surface border-l border-border-subtle p-6 transition-transform duration-[120ms] ease-out flex flex-col ${
-          isOpen ? 'translate-x-0' : 'translate-x-full'
-        }`}
-        aria-hidden={!isOpen}
+        className="fixed inset-y-0 right-0 z-50 w-72 bg-bg-surface border-l border-border-subtle p-6 transition-transform duration-[120ms] ease-out flex flex-col translate-x-0"
+        aria-hidden="false"
       >
         <div className="flex items-center justify-between pb-6 border-b border-border-subtle shrink-0">
           <span className="font-bold text-sm tracking-wide uppercase text-text-primary">Menu</span>
@@ -85,7 +87,7 @@ export function NavMobileDrawer({
           <span className="font-bold text-sm text-text-primary">{user.ign || user.email}</span>
           <span className="text-xs text-text-muted">{user.email}</span>
           <span data-testid="mobile-user-uid" className="font-mono text-[10px] text-text-muted">
-            UID: {user.uid}
+            UID: {user.inGameId || user.uid}
           </span>
           {!user.emailVerified && (
             <span className="text-[10px] text-amber-400 font-semibold mt-1">⚠️ Email unverified</span>
@@ -155,10 +157,6 @@ export function NavMobileDrawer({
     </div>
   </div>
   );
-
-  if (!mounted || typeof document === 'undefined' || !document.body) {
-    return null;
-  }
 
   return createPortal(content, document.body);
 }

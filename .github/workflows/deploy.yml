@@ -1,9 +1,12 @@
 name: Continuous Deployment & Rollback
 
 on:
-  push:
+  workflow_run:
+    workflows: ["CI"]
     branches:
       - main
+    types:
+      - completed
   workflow_dispatch:
 
 concurrency:
@@ -19,6 +22,7 @@ jobs:
   deploy:
     name: Build, Publish, Deploy & Healthcheck
     runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     permissions:
       contents: read
       packages: write
@@ -42,6 +46,8 @@ jobs:
           context: .
           file: server/Dockerfile
           push: true
+          build-args: |
+            COMMIT_SHA=${{ github.sha }}
           tags: |
             ${{ env.SERVER_IMAGE }}:${{ github.sha }}
             ${{ env.SERVER_IMAGE }}:latest
@@ -54,19 +60,45 @@ jobs:
           context: .
           file: client/Dockerfile
           push: true
+          build-args: |
+            NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
+            NEXT_PUBLIC_WS_URL=${{ secrets.NEXT_PUBLIC_WS_URL }}
           tags: |
             ${{ env.CLIENT_IMAGE }}:${{ github.sha }}
             ${{ env.CLIENT_IMAGE }}:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Trigger Rolling Deployment & Health Probe
-        id: deploy_probe
+      - name: Trigger Remote Rolling Deployment
+        id: trigger_deploy
         run: |
           echo "Initiating rolling deployment for commit ${{ github.sha }}..."
+          if [ -n "${{ secrets.PRODUCTION_DEPLOY_WEBHOOK }}" ]; then
+            echo "Dispatching deployment webhook..."
+            HTTP_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${{ secrets.PRODUCTION_DEPLOY_WEBHOOK }}" \
+              -H "Content-Type: application/json" \
+              -d "{\"sha\":\"${{ github.sha }}\",\"server_image\":\"${{ env.SERVER_IMAGE }}:${{ github.sha }}\",\"client_image\":\"${{ env.CLIENT_IMAGE }}:${{ github.sha }}\"}")
+            if [ "$HTTP_RESPONSE" -ge 200 ] && [ "$HTTP_RESPONSE" -lt 300 ]; then
+              echo "Deployment trigger acknowledged with HTTP $HTTP_RESPONSE."
+            else
+              echo "Deployment webhook failed with HTTP $HTTP_RESPONSE."
+              exit 1
+            fi
+          elif [ -n "${{ secrets.SSH_HOST }}" ]; then
+            echo "Deploying via SSH remote runner..."
+            # Remote docker compose pull and restart
+            ssh -o StrictHostKeyChecking=no "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
+              "cd ${{ secrets.SSH_DEPLOY_DIR:-/opt/smex-store }} && docker compose -f docker-compose.prod.yml pull && docker compose -f docker-compose.prod.yml up -d --remove-orphans"
+          else
+            echo "Notice: PRODUCTION_DEPLOY_WEBHOOK or SSH_HOST not configured. Container images published to GHCR. Manual deployment pull required on target host."
+          fi
+
+      - name: Verify Deployment Health Probe
+        id: deploy_probe
+        run: |
           TARGET_URL="${{ secrets.PRODUCTION_HEALTH_URL }}"
           MAX_ATTEMPTS=10
-          INTERVAL=3
+          INTERVAL=5
           DEPLOY_SUCCESS=false
 
           if [ -n "$TARGET_URL" ]; then
@@ -84,25 +116,33 @@ jobs:
               sleep $INTERVAL
             done
           else
-            echo "PRODUCTION_HEALTH_URL not configured. Container images successfully verified and published to GHCR."
+            echo "PRODUCTION_HEALTH_URL not configured. Image publication complete."
             DEPLOY_SUCCESS=true
           fi
 
           if [ "$DEPLOY_SUCCESS" = "false" ]; then
             echo "HEALTH_CHECK_FAILED=true" >> "$GITHUB_OUTPUT"
-            echo "Critical: Post-deployment health check failed after 30 seconds."
+            echo "Critical: Post-deployment health check failed after ${MAX_ATTEMPTS} attempts."
+            exit 1
           else
             echo "HEALTH_CHECK_FAILED=false" >> "$GITHUB_OUTPUT"
-            echo "Deployment successfully finalized."
+            echo "Deployment successfully verified."
           fi
 
       - name: Automated Rollback on Health Probe Failure
-        if: steps.deploy_probe.outputs.HEALTH_CHECK_FAILED == 'true'
+        if: failure() && steps.trigger_deploy.outcome == 'success'
         run: |
-          echo "::error title=Deployment Failed::Health check timed out. Executing automatic rollback to previous stable image..."
-          PREVIOUS_IMAGE="${{ env.SERVER_IMAGE }}:previous-stable"
-          echo "Rolling back container runtime to $PREVIOUS_IMAGE..."
-          # Command to restore previous image tag
-          # docker service update --image "$PREVIOUS_IMAGE" smex_api
-          echo "Rollback successfully completed."
+          echo "::error title=Deployment Failed::Health check failed. Executing automated rollback..."
+          if [ -n "${{ secrets.PRODUCTION_ROLLBACK_WEBHOOK }}" ]; then
+            curl -s -X POST "${{ secrets.PRODUCTION_ROLLBACK_WEBHOOK }}" \
+              -H "Content-Type: application/json" \
+              -d '{"action":"rollback","reason":"health_check_failed"}'
+            echo "Rollback webhook dispatched."
+          elif [ -n "${{ secrets.SSH_HOST }}" ]; then
+            ssh -o StrictHostKeyChecking=no "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
+              "cd ${{ secrets.SSH_DEPLOY_DIR:-/opt/smex-store }} && docker compose -f docker-compose.prod.yml rollback || docker compose -f docker-compose.prod.yml down"
+            echo "Remote rollback executed via SSH."
+          else
+            echo "Warning: Automated rollback handler requires PRODUCTION_ROLLBACK_WEBHOOK or SSH_HOST to be configured."
+          fi
           exit 1

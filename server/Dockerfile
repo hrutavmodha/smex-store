@@ -32,6 +32,8 @@ RUN pnpm --filter @smex/server build
 FROM node:22-alpine AS runner
 WORKDIR /app
 
+ARG COMMIT_SHA
+ENV COMMIT_SHA=$COMMIT_SHA
 ENV NODE_ENV=production
 ENV PORT=3001
 ENV HOST=0.0.0.0
@@ -40,6 +42,7 @@ ENV HOST=0.0.0.0
 USER node:node
 
 COPY --chown=node:node --from=builder /app/server/dist ./dist
+COPY --chown=node:node --from=builder /app/server/src/db/migrations ./dist/migrations
 COPY --chown=node:node --from=builder /app/server/package.json ./package.json
 COPY --chown=node:node --from=dependencies /app/node_modules ./node_modules
 COPY --chown=node:node --from=dependencies /app/server/node_modules ./server_node_modules

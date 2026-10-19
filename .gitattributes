@@ -1,3 +1,0 @@
-# Configure GitHub Linguist to include Markdown in language statistics graph
-*.md linguist-detectable=true
-*.md linguist-documentation=false

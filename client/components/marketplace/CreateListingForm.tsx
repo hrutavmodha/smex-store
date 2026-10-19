@@ -98,7 +98,10 @@ export function CreateListingForm() {
   // Track submission and uploaded proofs for unmount cleanup
   const isSubmittedRef = useRef(false);
   const uploadedProofsRef = useRef<ProofImageItem[]>([]);
-  uploadedProofsRef.current = uploadedProofs;
+
+  useEffect(() => {
+    uploadedProofsRef.current = uploadedProofs;
+  }, [uploadedProofs]);
 
   useEffect(() => {
     return () => {

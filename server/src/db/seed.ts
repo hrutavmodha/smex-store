@@ -40,16 +40,19 @@ export async function seed(db: SmexDatabase): Promise<SeedResult> {
     CREATE INDEX IF NOT EXISTS marketplace_title_trgm_idx ON marketplace_listings USING gin (title gin_trgm_ops);
   `);
 
-  // 1. Upsert Default Admin Account
-  const adminEmail = 'admin@smexstore.com';
+  // 1. Provision Default Admin Account if not existing
+  const adminEmail = process.env.ADMIN_EMAIL || 'admin@smexstore.com';
   const existingAdmin = await db.select().from(users).where(eq(users.email, adminEmail));
-
-  // Standard precomputed Argon2id hash for development/seed password 'Admin@123456'
-  const passwordHash =
-    '$argon2id$v=19$m=65536,p=4,t=3$wOaU+cpxCu59q6dBChpuEw$nlSV74uZdt3L6DedvkUcZIYrkk3dVepmqgwMfIJ1PGk';
 
   let adminId: string;
   if (existingAdmin.length === 0) {
+    let passwordHash =
+      '$argon2id$v=19$m=65536,p=4,t=3$wOaU+cpxCu59q6dBChpuEw$nlSV74uZdt3L6DedvkUcZIYrkk3dVepmqgwMfIJ1PGk';
+    if (process.env.ADMIN_INITIAL_PASSWORD) {
+      const argon2 = await import('argon2');
+      passwordHash = await argon2.hash(process.env.ADMIN_INITIAL_PASSWORD);
+    }
+
     const [newAdmin] = await db
       .insert(users)
       .values({
@@ -64,7 +67,7 @@ export async function seed(db: SmexDatabase): Promise<SeedResult> {
 
     await db.insert(profiles).values({
       userId: adminId,
-      username: 'smex_admin',
+      username: process.env.ADMIN_USERNAME || 'smex_admin',
       avatarPreset: 'preset_admin_01',
       bio: 'Official Smex Store Platform Administrator',
       themePref: 'dark',
@@ -72,8 +75,8 @@ export async function seed(db: SmexDatabase): Promise<SeedResult> {
       activityPrivacy: 'public',
     });
   } else {
+    // Security: Do NOT overwrite an existing administrator's password during seeding
     adminId = existingAdmin[0].id;
-    await db.update(users).set({ passwordHash }).where(eq(users.id, adminId));
   }
 
   // 2. Verified Preset Avatars Catalog

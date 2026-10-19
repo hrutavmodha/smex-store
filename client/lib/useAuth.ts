@@ -27,6 +27,7 @@ export function useAuth(): UseAuthReturn {
             const raw = data.user || data;
             setUser({
               uid: raw.uid || raw.id,
+              inGameId: raw.inGameId || raw.profile?.inGameId || null,
               email: raw.email,
               ign: raw.ign || raw.profile?.username || raw.username || '',
               avatarPreset: raw.avatarPreset || raw.profile?.avatarPreset || 'preset_default_01',

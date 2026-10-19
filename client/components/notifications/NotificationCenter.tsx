@@ -54,7 +54,11 @@ export function NotificationCenter({ user }: NotificationCenterProps) {
   useEffect(() => {
     if (!accountId) return;
 
-    const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:3001';
+    const defaultWsUrl =
+      typeof window !== 'undefined'
+        ? `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}`
+        : 'ws://localhost:3001';
+    const wsUrl = process.env.NEXT_PUBLIC_WS_URL || defaultWsUrl;
     const targetUrl = `${wsUrl}/ws`;
 
     let socket: WebSocket | null = null;

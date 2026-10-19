@@ -1,7 +1,11 @@
 import { defineConfig } from 'tsdown'
 
 export default defineConfig({
-  entry: ['src/server.ts', 'src/app.ts'],
+  entry: {
+    server: 'src/server.ts',
+    app: 'src/app.ts',
+    migrate: 'src/db/migrate.ts',
+  },
   format: ['esm'],
   clean: true,
   minify: true,

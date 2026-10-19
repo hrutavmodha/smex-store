@@ -25,8 +25,6 @@ export const NAV_LINKS = [
   { href: '/teams', label: 'Teams & Groups' },
   { href: '/marketplace', label: 'ID Marketplace' },
   { href: '/boosting', label: 'Rank Boosting' },
-  { href: '/leaderboard', label: 'Leaderboards' },
-  { href: '/about', label: 'About Us' },
 ] as const;
 
 export type { ThemeMode, DensityMode };
@@ -184,29 +182,33 @@ export function Navbar({ user, onLogout, onOpenAuthModal }: NavbarProps) {
         </div>
 
         {/* Mobile Hamburger & Controls Trigger */}
-        <div className="flex items-center gap-2 sm:hidden">
+        <div className="flex items-center gap-2 sm:hidden relative z-50">
           <button
             type="button"
             onClick={handleCycleTheme}
-            className="flex items-center justify-center p-2.5 text-text-secondary hover:text-text-primary bg-bg-surface-elevated rounded-lg min-w-[44px] min-h-[44px] touch-manipulation active:scale-95 transition-transform"
+            className="flex items-center justify-center p-2.5 text-text-secondary hover:text-text-primary bg-bg-surface-elevated rounded-lg min-w-[44px] min-h-[44px] cursor-pointer touch-manipulation active:scale-95 transition-transform"
             aria-label={`Toggle theme (current: ${theme})`}
             data-testid="mobile-theme-toggle"
           >
             {theme === 'dark' ? (
-              <Moon className="h-5 w-5" />
+              <Moon className="h-5 w-5 pointer-events-none" />
             ) : (
-              <Sun className="h-5 w-5 text-cyan-depth" />
+              <Sun className="h-5 w-5 text-cyan-depth pointer-events-none" />
             )}
           </button>
 
           <button
             type="button"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="flex items-center justify-center p-2.5 text-text-secondary hover:text-text-primary bg-bg-surface-elevated rounded-lg min-w-[44px] min-h-[44px] touch-manipulation active:scale-95 transition-transform"
+            className="flex items-center justify-center p-2.5 text-text-secondary hover:text-text-primary bg-bg-surface-elevated rounded-lg min-w-[44px] min-h-[44px] cursor-pointer touch-manipulation active:scale-95 transition-transform"
             aria-label={isMobileMenuOpen ? 'Close Navigation Menu' : 'Open Navigation Menu'}
             aria-expanded={isMobileMenuOpen}
           >
-            {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            {isMobileMenuOpen ? (
+              <X className="h-5 w-5 pointer-events-none" />
+            ) : (
+              <Menu className="h-5 w-5 pointer-events-none" />
+            )}
           </button>
         </div>
       </div>

@@ -141,6 +141,7 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
       return reply.code(201).send({
         id: newUser.id,
         uid: newUser.id,
+        inGameId: inGameId || null,
         ign: username,
         avatarPreset: 'preset_default_01',
         email: newUser.email,
@@ -257,6 +258,7 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
         user: {
           id: userRecord.id,
           uid: userRecord.id,
+          inGameId: profileRecord?.inGameId || null,
           ign: profileRecord?.username || userRecord.email,
           avatarPreset: profileRecord?.avatarPreset || 'preset_default_01',
           email: userRecord.email,
@@ -457,6 +459,7 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
       return reply.code(200).send({
         id: userRecord.id,
         uid: userRecord.id,
+        inGameId: profileRecord?.inGameId || null,
         ign: profileRecord?.username || userRecord.email,
         avatarPreset: profileRecord?.avatarPreset || 'preset_default_01',
         email: userRecord.email,

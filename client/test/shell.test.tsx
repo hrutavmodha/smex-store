@@ -41,22 +41,20 @@ describe('Client Root Layout and AMOLED Shell Test Suite', () => {
     expect(html.includes('href="/"')).toBe(true);
     expect(html.includes('Smex Store')).toBe(true);
 
-    // 6 primary navigation links
+    // 4 primary navigation links
     const expectedLinks = [
       '/tournaments',
       '/teams',
       '/marketplace',
       '/boosting',
-      '/leaderboard',
-      '/about',
     ];
 
     for (const expectedHref of expectedLinks) {
       expect(html.includes(`href="${expectedHref}"`)).toBe(true);
     }
 
-    // 6 links match NAV_LINKS specification
-    expect(NAV_LINKS.length).toBe(6);
+    // 4 links match NAV_LINKS specification
+    expect(NAV_LINKS.length).toBe(4);
   });
 
   it('Test 30: AMOLED and Dark mode runtime theme switching', async () => {

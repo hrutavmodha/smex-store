@@ -5,6 +5,7 @@ export type PrivacyPreference = 'public' | 'friends' | 'private';
 
 export interface UserProfile {
   uid: string;
+  inGameId?: string | null;
   email: string;
   ign: string;
   avatarPreset?: string;

@@ -84,7 +84,7 @@ export function NavUserMenu({
               Signed in as <span className="font-semibold text-text-primary">{user.email}</span>
             </div>
             <div data-testid="user-uid" className="font-mono text-[10px] text-text-muted">
-              UID: <span className="text-text-secondary">{user.uid}</span>
+              UID: <span className="text-text-secondary">{user.inGameId || user.uid}</span>
             </div>
           </div>
 

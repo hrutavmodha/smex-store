@@ -103,9 +103,11 @@ export function UniversalSearchModal({
     if (!isOpen) return;
     const trimmed = query.trim();
     if (trimmed.length < 2) {
-      setResults({});
-      setIsLoading(false);
-      return;
+      const resetTimer = setTimeout(() => {
+        setResults({});
+        setIsLoading(false);
+      }, 0);
+      return () => clearTimeout(resetTimer);
     }
 
     const handler = setTimeout(async () => {

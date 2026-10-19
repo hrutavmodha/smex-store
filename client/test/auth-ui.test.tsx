@@ -136,6 +136,32 @@ describe('Milestone 3: Client Authentication & UI Shell Suite (LLT Tests 24-29)'
     });
   });
 
+  it('Test 26d: Navbar user profile dropdown displays in-game ID as UID when present', async () => {
+    const mockUserWithInGameId: UserProfile = {
+      uid: 'usr_test_123',
+      inGameId: 'ML_998877',
+      email: 'gamer@smex.gg',
+      ign: 'VortexStriker',
+      avatarPreset: 'preset_default_01',
+      emailVerified: true,
+    };
+
+    const { container } = render(
+      <Navbar
+        user={mockUserWithInGameId}
+        onLogout={() => {}}
+      />
+    );
+
+    const profileBtn = container.querySelector('[data-testid="user-profile-button"]') as HTMLButtonElement;
+    expect(profileBtn).toBeTruthy();
+    fireEvent.click(profileBtn);
+
+    const uidDisplay = container.querySelector('[data-testid="user-uid"]');
+    expect(uidDisplay).toBeTruthy();
+    expect(uidDisplay?.textContent?.includes('ML_998877')).toBe(true);
+  });
+
   it('Test 27: Device management active sessions rendering (LLT 27)', async () => {
     const mockSessions: DeviceSession[] = [
       {
