@@ -105,6 +105,19 @@ export class ListingService {
       );
     }
 
+    if (proofImages.length > 0) {
+      const expectedPrefix = `marketplace/proofs/${userId}/`;
+      for (const proof of proofImages) {
+        if (!proof.s3Key.startsWith(expectedPrefix) || proof.s3Key.includes('..')) {
+          throw createListingError(
+            'Unauthorized proof image key',
+            403,
+            'UNAUTHORIZED_PROOF_KEY'
+          );
+        }
+      }
+    }
+
     const initialBadge = BadgeService.computeInitialBadge({ priceInr, rankTier });
     const formattedPrice = priceInr.toFixed(2);
 
@@ -427,6 +440,23 @@ export class ListingService {
       updates.priceInr = input.priceInr.toFixed(2);
       updates.baselinePriceInr = badgeCalc.baselinePriceInr.toFixed(2);
       updates.badgeType = badgeCalc.badgeType;
+    }
+
+    if (input.proofImages && input.proofImages.length > 0) {
+      const allowedPrefixes = [`marketplace/proofs/${existing.sellerId}/`];
+      if (isAdmin && userId !== existing.sellerId) {
+        allowedPrefixes.push(`marketplace/proofs/${userId}/`);
+      }
+      for (const proof of input.proofImages) {
+        const isAllowed = allowedPrefixes.some((pfx) => proof.s3Key.startsWith(pfx));
+        if (!isAllowed || proof.s3Key.includes('..')) {
+          throw createListingError(
+            'Unauthorized proof image key',
+            403,
+            'UNAUTHORIZED_PROOF_KEY'
+          );
+        }
+      }
     }
 
     let oldS3Keys: string[] = [];

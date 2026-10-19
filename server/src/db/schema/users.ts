@@ -1,4 +1,5 @@
-import { pgEnum, pgTable, uuid, varchar, text, boolean, timestamp } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
+import { pgEnum, pgTable, uuid, varchar, text, boolean, timestamp, index } from 'drizzle-orm/pg-core';
 
 export const userRoleEnum = pgEnum('user_role', ['user', 'admin']);
 export const themePrefEnum = pgEnum('theme_preference', ['dark', 'amoled', 'light']);
@@ -18,20 +19,27 @@ export const users = pgTable('users', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const profiles = pgTable('profiles', {
-  userId: uuid('user_id')
-    .primaryKey()
-    .references(() => users.id, { onDelete: 'cascade' }),
-  username: varchar('username', { length: 50 }).notNull().unique('profiles_username_unique_idx'),
-  inGameId: varchar('in_game_id', { length: 50 }),
-  avatarPreset: varchar('avatar_preset', { length: 50 }).notNull().default('preset_default_01'),
-  playstyle: varchar('playstyle', { length: 50 }),
-  bio: text('bio'),
-  themePref: themePrefEnum('theme_pref').notNull().default('dark'),
-  densityPref: densityPrefEnum('density_pref').notNull().default('comfortable'),
-  activityPrivacy: privacyPrefEnum('activity_privacy').notNull().default('public'),
-  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-});
+export const profiles = pgTable(
+  'profiles',
+  {
+    userId: uuid('user_id')
+      .primaryKey()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    username: varchar('username', { length: 50 }).notNull().unique('profiles_username_unique_idx'),
+    inGameId: varchar('in_game_id', { length: 50 }),
+    avatarPreset: varchar('avatar_preset', { length: 50 }).notNull().default('preset_default_01'),
+    playstyle: varchar('playstyle', { length: 50 }),
+    bio: text('bio'),
+    themePref: themePrefEnum('theme_pref').notNull().default('dark'),
+    densityPref: densityPrefEnum('density_pref').notNull().default('comfortable'),
+    activityPrivacy: privacyPrefEnum('activity_privacy').notNull().default('public'),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index('profiles_username_trgm_idx').using('gin', sql`${t.username} gin_trgm_ops`),
+    index('profiles_in_game_id_trgm_idx').using('gin', sql`${t.inGameId} gin_trgm_ops`),
+  ]
+);
 
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;

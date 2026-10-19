@@ -151,14 +151,29 @@ export const marketplaceUploadsRoutes: FastifyPluginAsync = async (fastify) => {
     }
   );
 
+  const ALLOWED_MEDIA_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+  const EXTENSION_MIME_MAP: Record<string, string> = {
+    jpg: 'image/jpeg',
+    jpeg: 'image/jpeg',
+    png: 'image/png',
+    webp: 'image/webp',
+  };
+
   /**
    * GET /api/v1/media/*
    * Serves public media streams from object storage
    */
   fastify.get('/api/v1/media/*', async (request, reply) => {
     const s3Key = (request.params as { '*': string })['*'];
-    if (!s3Key) {
-      return reply.code(404).send({ error: 'Media key missing' });
+    if (!s3Key || !S3_KEY_REGEX.test(s3Key) || s3Key.includes('..')) {
+      return reply.code(400).send({
+        type: 'https://api.smexstore.com/errors/bad-request',
+        title: 'Bad Request',
+        status: 400,
+        detail: 'Invalid media key format',
+        code: 'INVALID_MEDIA_KEY',
+        error: 'Invalid media key',
+      });
     }
 
     try {
@@ -167,13 +182,27 @@ export const marketplaceUploadsRoutes: FastifyPluginAsync = async (fastify) => {
         Key: s3Key,
       });
       const s3Res = await storageService.getClient().send(command);
-      if (s3Res.ContentType) {
-        reply.header('Content-Type', s3Res.ContentType);
-      }
+
+      const ext = s3Key.split('.').pop()?.toLowerCase() || '';
+      const fallbackMime = EXTENSION_MIME_MAP[ext] || 'image/jpeg';
+      const resolvedContentType =
+        s3Res.ContentType && ALLOWED_MEDIA_MIME_TYPES.has(s3Res.ContentType)
+          ? s3Res.ContentType
+          : fallbackMime;
+
+      reply.header('Content-Type', resolvedContentType);
+      reply.header('X-Content-Type-Options', 'nosniff');
       reply.header('Cache-Control', 'public, max-age=31536000, immutable');
       return reply.send(s3Res.Body);
     } catch {
-      return reply.code(404).send({ error: 'Media not found' });
+      return reply.code(404).send({
+        type: 'https://api.smexstore.com/errors/not-found',
+        title: 'Not Found',
+        status: 404,
+        detail: 'Media not found',
+        code: 'MEDIA_NOT_FOUND',
+        error: 'Media not found',
+      });
     }
   });
 };

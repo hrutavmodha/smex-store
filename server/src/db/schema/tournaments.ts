@@ -46,6 +46,7 @@ export const tournaments = pgTable(
   },
   (t) => [
     check('tournaments_max_teams_chk', sql`${t.maxTeams} >= 2 AND ${t.maxTeams} <= 128`),
+    index('tournaments_title_trgm_idx').using('gin', sql`${t.title} gin_trgm_ops`),
   ]
 );
 

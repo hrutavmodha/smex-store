@@ -49,4 +49,4 @@ EXPOSE 3001
 HEALTHCHECK --interval=15s --timeout=5s --retries=3 \
   CMD node -e "const http = require('http'); const req = http.request({ hostname: '127.0.0.1', port: 3001, path: '/health', method: 'GET' }, (res) => process.exit(res.statusCode === 200 ? 0 : 1)); req.on('error', () => process.exit(1)); req.end();"
 
-CMD ["node", "dist/app.mjs"]
+CMD ["node", "dist/server.mjs"]

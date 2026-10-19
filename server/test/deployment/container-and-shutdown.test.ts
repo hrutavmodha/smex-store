@@ -2,14 +2,19 @@ import { describe, test } from 'vitest';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import YAML from 'yaml';
 import { build } from '../helper.js';
 import { registerSocket, type WebSocketClientMeta } from '../../src/plugins/websocket.js';
 import type { WebSocket } from '@fastify/websocket';
 
 describe('Containerization & Graceful Shutdown Suite (LLT 2.2)', () => {
+  const rootDir = fs.existsSync(path.resolve(process.cwd(), 'server/Dockerfile'))
+    ? process.cwd()
+    : path.resolve(process.cwd(), '..');
+
   test('Test 3: Multi-stage Dockerfile rootless user validation', () => {
-    const serverDockerPath = path.resolve(process.cwd(), 'Dockerfile');
-    const clientDockerPath = path.resolve(process.cwd(), '../client/Dockerfile');
+    const serverDockerPath = path.resolve(rootDir, 'server/Dockerfile');
+    const clientDockerPath = path.resolve(rootDir, 'client/Dockerfile');
 
     assert.ok(fs.existsSync(serverDockerPath), 'server/Dockerfile must exist');
     assert.ok(fs.existsSync(clientDockerPath), 'client/Dockerfile must exist');
@@ -37,6 +42,62 @@ describe('Containerization & Graceful Shutdown Suite (LLT 2.2)', () => {
 
     assert.ok(clientContent.includes('EXPOSE 3000'));
     assert.ok(clientContent.includes('HEALTHCHECK'));
+  });
+
+  test('Test 3b: Server Docker runner entrypoint and bundle target validation (Bug 14)', () => {
+    const serverDockerPath = path.resolve(rootDir, 'server/Dockerfile');
+    const tsdownConfigPath = path.resolve(rootDir, 'server/tsdown.config.ts');
+
+    const dockerContent = fs.readFileSync(serverDockerPath, 'utf8');
+    assert.ok(
+      dockerContent.includes('CMD ["node", "dist/server.mjs"]'),
+      'server/Dockerfile must execute dist/server.mjs directly'
+    );
+
+    const tsdownContent = fs.readFileSync(tsdownConfigPath, 'utf8');
+    assert.ok(
+      tsdownContent.includes('src/server.ts'),
+      'tsdown.config.ts entry must include src/server.ts'
+    );
+  });
+
+  test('Test 3c: Production docker-compose environment topology parity and secret validation (Bug 13)', () => {
+    const composePath = path.resolve(rootDir, 'docker-compose.prod.yml');
+    assert.ok(fs.existsSync(composePath), 'docker-compose.prod.yml must exist');
+
+    const composeContent = fs.readFileSync(composePath, 'utf8');
+    const compose = YAML.parse(composeContent);
+    const serverEnv = compose.services?.server?.environment;
+
+    assert.ok(serverEnv, 'server environment block must exist in docker-compose.prod.yml');
+    assert.ok('JWT_SECRET' in serverEnv, 'server must specify JWT_SECRET');
+    assert.ok('JWT_REFRESH_SECRET' in serverEnv, 'server must specify JWT_REFRESH_SECRET');
+    assert.ok('S3_ENDPOINT' in serverEnv, 'server must specify S3_ENDPOINT');
+    assert.ok('S3_ACCESS_KEY_ID' in serverEnv, 'server must specify S3_ACCESS_KEY_ID');
+    assert.ok('S3_SECRET_ACCESS_KEY' in serverEnv, 'server must specify S3_SECRET_ACCESS_KEY');
+    assert.ok('S3_BUCKET' in serverEnv, 'server must specify S3_BUCKET');
+
+    // Reject legacy divergent STORAGE_* variables
+    assert.strictEqual(
+      'STORAGE_ENDPOINT' in serverEnv,
+      false,
+      'STORAGE_ENDPOINT must not be used in server environment'
+    );
+    assert.strictEqual(
+      'STORAGE_ACCESS_KEY' in serverEnv,
+      false,
+      'STORAGE_ACCESS_KEY must not be used in server environment'
+    );
+    assert.strictEqual(
+      'STORAGE_SECRET_KEY' in serverEnv,
+      false,
+      'STORAGE_SECRET_KEY must not be used in server environment'
+    );
+    assert.strictEqual(
+      'STORAGE_BUCKET' in serverEnv,
+      false,
+      'STORAGE_BUCKET must not be used in server environment'
+    );
   });
 
   test('Test 4: Container health probe endpoint response', async (t) => {

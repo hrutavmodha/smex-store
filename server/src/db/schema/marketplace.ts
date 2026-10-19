@@ -9,6 +9,7 @@ import {
   numeric,
   timestamp,
   check,
+  index,
 } from 'drizzle-orm/pg-core';
 import { users } from './users.js';
 
@@ -38,6 +39,7 @@ export const marketplaceListings = pgTable(
   },
   (t) => [
     check('marketplace_price_floor_chk', sql`${t.priceInr} >= 100`),
+    index('marketplace_title_trgm_idx').using('gin', sql`${t.title} gin_trgm_ops`),
   ]
 );
 

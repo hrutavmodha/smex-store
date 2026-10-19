@@ -12,6 +12,7 @@ import { emailService } from '../services/email.service.js';
 import {
   registerRateLimitConfig,
   loginRateLimitConfig,
+  loginIpRateLimitHook,
   forgotPasswordRateLimitConfig,
   resendVerificationRateLimitConfig,
 } from '../plugins/rate-limit.js';
@@ -146,6 +147,7 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.post(
     '/api/v1/auth/login',
     {
+      onRequest: loginIpRateLimitHook,
       config: {
         rateLimit: loginRateLimitConfig,
       },

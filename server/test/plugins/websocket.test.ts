@@ -103,3 +103,47 @@ test('terminateUserSockets terminates all sockets for user when sessionId is omi
   assert.strictEqual(app.wsGateway.getActiveClientCount(), 1);
   assert.strictEqual(app.wsGateway.clients.has(sOther), true);
 });
+
+test('WebSocket rejects connection with revoked session (Bug 10)', async (t) => {
+  const { createVerifiedUser } = await import('../helper.js');
+  const app = await build(t);
+  const { token } = await createVerifiedUser(app, 'ws_revoked');
+  const decoded = app.jwt.decode(token) as { sessionId: string };
+
+  await app.redis.set(`revoked_token:${decoded.sessionId}`, '1', 'EX', 3600);
+
+  const ws = await app.injectWS(`/ws?token=${token}`, {
+    socket: { remoteAddress: '127.0.0.1' },
+  });
+  const closeEvent = await new Promise<{ code: number; reason: string }>((resolve) => {
+    ws.on('close', (code, reason) => {
+      resolve({ code, reason: reason.toString() });
+    });
+  });
+
+  assert.strictEqual(closeEvent.code, 4401);
+  assert.strictEqual(closeEvent.reason, 'Session revoked');
+  assert.strictEqual(app.wsGateway.getActiveClientCount(), 0);
+});
+
+test('WebSocket rejects connection with banned user (Bug 10)', async (t) => {
+  const { createVerifiedUser } = await import('../helper.js');
+  const app = await build(t);
+  const { user, token } = await createVerifiedUser(app, 'ws_banned');
+
+  await app.redis.set(`banned_user:${user.id}`, '1', 'EX', 3600);
+
+  const ws = await app.injectWS(`/ws?token=${token}`, {
+    socket: { remoteAddress: '127.0.0.1' },
+  });
+  const closeEvent = await new Promise<{ code: number; reason: string }>((resolve) => {
+    ws.on('close', (code, reason) => {
+      resolve({ code, reason: reason.toString() });
+    });
+  });
+
+  assert.strictEqual(closeEvent.code, 4403);
+  assert.strictEqual(closeEvent.reason, 'Account banned');
+  assert.strictEqual(app.wsGateway.getActiveClientCount(), 0);
+});
+

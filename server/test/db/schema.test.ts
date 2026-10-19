@@ -1,6 +1,7 @@
 import { test, describe, beforeAll, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
 import { eq, sql } from 'drizzle-orm';
+import { getTableConfig } from 'drizzle-orm/pg-core';
 import { build } from '../helper.js';
 import {
   users,
@@ -561,5 +562,69 @@ describe('Relational Schema Constraints and Cascades Suite', () => {
       .where(eq(activityLogs.id, log.id));
 
     assert.deepStrictEqual(fetched.metadataJson, testPayload);
+  });
+
+  test('Test 20: GIN trigram indexes defined in Drizzle table schema for fuzzy search parity (Bug 15)', async () => {
+    // 1. Verify TypeScript schema declaration parity using getTableConfig
+    const tourneyIndexes = getTableConfig(tournaments).indexes.map((idx) => idx.config.name);
+    assert.ok(
+      tourneyIndexes.includes('tournaments_title_trgm_idx'),
+      'tournaments schema must declare tournaments_title_trgm_idx'
+    );
+
+    const teamIndexes = getTableConfig(teams).indexes.map((idx) => idx.config.name);
+    assert.ok(
+      teamIndexes.includes('teams_name_trgm_idx'),
+      'teams schema must declare teams_name_trgm_idx'
+    );
+
+    const profileIndexes = getTableConfig(profiles).indexes.map((idx) => idx.config.name);
+    assert.ok(
+      profileIndexes.includes('profiles_username_trgm_idx'),
+      'profiles schema must declare profiles_username_trgm_idx'
+    );
+    assert.ok(
+      profileIndexes.includes('profiles_in_game_id_trgm_idx'),
+      'profiles schema must declare profiles_in_game_id_trgm_idx'
+    );
+
+    const marketplaceIndexes = getTableConfig(marketplaceListings).indexes.map((idx) => idx.config.name);
+    assert.ok(
+      marketplaceIndexes.includes('marketplace_title_trgm_idx'),
+      'marketplaceListings schema must declare marketplace_title_trgm_idx'
+    );
+
+    // 2. Verify physical database indexes exist and use gin_trgm_ops
+    const dbIndexesRes = await db.execute(sql`
+      SELECT indexname, tablename, indexdef
+      FROM pg_indexes
+      WHERE indexname IN (
+        'tournaments_title_trgm_idx',
+        'teams_name_trgm_idx',
+        'profiles_username_trgm_idx',
+        'profiles_in_game_id_trgm_idx',
+        'marketplace_title_trgm_idx'
+      )
+    `);
+
+    const dbIndexRows = dbIndexesRes.rows || dbIndexesRes;
+    const indexNames = dbIndexRows.map((r: any) => r.indexname);
+
+    assert.ok(indexNames.includes('tournaments_title_trgm_idx'));
+    assert.ok(indexNames.includes('teams_name_trgm_idx'));
+    assert.ok(indexNames.includes('profiles_username_trgm_idx'));
+    assert.ok(indexNames.includes('profiles_in_game_id_trgm_idx'));
+    assert.ok(indexNames.includes('marketplace_title_trgm_idx'));
+
+    for (const row of dbIndexRows) {
+      assert.ok(
+        row.indexdef.toLowerCase().includes('using gin'),
+        `Index ${row.indexname} must use GIN access method`
+      );
+      assert.ok(
+        row.indexdef.toLowerCase().includes('gin_trgm_ops'),
+        `Index ${row.indexname} must use gin_trgm_ops operator class`
+      );
+    }
   });
 });

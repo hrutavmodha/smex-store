@@ -2,7 +2,9 @@ import { type FastifyPluginAsync, type FastifyBaseLogger } from 'fastify';
 import fp from 'fastify-plugin';
 import fastifyWebsocket, { type WebSocket } from '@fastify/websocket';
 import crypto from 'node:crypto';
+import { eq } from 'drizzle-orm';
 import { type AccessTokenPayload } from '@smex/shared';
+import { users } from '../db/schema/users.js';
 
 export interface WebSocketClientMeta {
   id: string;
@@ -142,7 +144,7 @@ const websocketPlugin: FastifyPluginAsync = async (fastify) => {
   }
 
   // Register public WebSocket gateway route
-  fastify.get('/ws', { websocket: true }, (socket, req) => {
+  fastify.get('/ws', { websocket: true }, async (socket, req) => {
     const query = (req.query || {}) as { token?: string };
     let userId: string | null = null;
     let sessionId: string | null = null;
@@ -168,6 +170,50 @@ const websocketPlugin: FastifyPluginAsync = async (fastify) => {
       }
     }
 
+    // Guard against revoked sessions and banned users on WebSocket handshake (Bug 10)
+    if (fastify.redis) {
+      if (sessionId) {
+        const isRevoked = await fastify.redis.exists(`revoked_token:${sessionId}`);
+        if (isRevoked) {
+          socket.close(4401, 'Session revoked');
+          return;
+        }
+      }
+      if (userId) {
+        const cachedBan = await fastify.redis.get(`banned_user:${userId}`);
+        let isBanned = cachedBan === '1';
+        if (cachedBan === null && fastify.db) {
+          const [userRow] = await fastify.db
+            .select({ isBanned: users.isBanned })
+            .from(users)
+            .where(eq(users.id, userId))
+            .limit(1);
+
+          if (userRow?.isBanned) {
+            isBanned = true;
+            await fastify.redis.set(`banned_user:${userId}`, '1', 'EX', 3600);
+          } else {
+            await fastify.redis.set(`banned_user:${userId}`, '0', 'EX', 300);
+          }
+        }
+        if (isBanned) {
+          socket.close(4403, 'Account banned');
+          return;
+        }
+      }
+    } else if (fastify.db && userId) {
+      const [userRow] = await fastify.db
+        .select({ isBanned: users.isBanned })
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1);
+
+      if (userRow?.isBanned) {
+        socket.close(4403, 'Account banned');
+        return;
+      }
+    }
+
     const meta = registerSocket(socket, clients, fastify.log, userId, sessionId, req.id);
 
     socket.on('message', (raw: Buffer | string) => {
@@ -181,7 +227,7 @@ const websocketPlugin: FastifyPluginAsync = async (fastify) => {
           if (channel.startsWith('user:')) {
             const targetUserId = channel.slice(5);
             if (!meta.userId || meta.userId !== targetUserId) {
-              if (socket.readyState === socket.OPEN) {
+              if (socket.readyState === 1) {
                 socket.send(
                   JSON.stringify({
                     event: 'error',
@@ -195,7 +241,7 @@ const websocketPlugin: FastifyPluginAsync = async (fastify) => {
           }
 
           meta.subscriptions.add(channel);
-          if (socket.readyState === socket.OPEN) {
+          if (socket.readyState === 1) {
             socket.send(
               JSON.stringify({
                 event: 'subscribed',
@@ -206,7 +252,7 @@ const websocketPlugin: FastifyPluginAsync = async (fastify) => {
           }
         } else if (msg.action === 'unsubscribe' && typeof msg.channel === 'string') {
           meta.subscriptions.delete(msg.channel);
-          if (socket.readyState === socket.OPEN) {
+          if (socket.readyState === 1) {
             socket.send(
               JSON.stringify({
                 event: 'unsubscribed',

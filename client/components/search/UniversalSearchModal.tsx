@@ -102,7 +102,11 @@ export function UniversalSearchModal({
   useEffect(() => {
     if (!isOpen) return;
     const trimmed = query.trim();
-    if (trimmed.length < 2) return;
+    if (trimmed.length < 2) {
+      setResults({});
+      setIsLoading(false);
+      return;
+    }
 
     const handler = setTimeout(async () => {
       setIsLoading(true);
@@ -171,7 +175,7 @@ export function UniversalSearchModal({
       }}
     >
       <div
-        className="w-full max-w-2xl rounded-2xl border border-border-subtle bg-bg-surface shadow-2xl overflow-hidden flex flex-col transition-all duration-[120ms]"
+        className="w-full max-w-2xl rounded-2xl border border-border-subtle bg-[#121C19] shadow-2xl overflow-hidden flex flex-col transition-all duration-[120ms]"
         style={{ backdropFilter: 'none' }}
         onKeyDown={handleKeyDown}
       >

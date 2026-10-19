@@ -146,4 +146,116 @@ describe('Multi-Stage Distributed Rate Limiting (LLT 2.5)', () => {
     const body = JSON.parse(restoredRes.body);
     assert.ok(body.accessToken);
   });
+
+  test('Test 19: trustProxy resolves client IP from X-Forwarded-For header (Bug 11)', async (t) => {
+    const app = await build(t);
+    const clientIp = '198.51.100.22';
+    const proxyIp = '172.18.0.5';
+
+    // Clear any leftover keys
+    const existing = await app.redis.keys(`*${clientIp}*`);
+    if (existing.length > 0) {
+      await app.redis.del(...existing);
+    }
+
+    // Submit 3 registration attempts with clientIp in X-Forwarded-For behind proxy
+    for (let i = 0; i < 3; i++) {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/auth/register',
+        remoteAddress: proxyIp,
+        headers: {
+          'x-forwarded-for': clientIp,
+        },
+        payload: {
+          email: `proxy_reg_${i}_${Date.now()}@smexstore.com`,
+          password: 'ValidPassword123!',
+          username: `px_${i}_${Date.now().toString().slice(-4)}`,
+        },
+      });
+      assert.equal(res.statusCode, 201);
+    }
+
+    // 4th attempt from same clientIp is rate-limited (429)
+    const limitedRes = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/register',
+      remoteAddress: proxyIp,
+      headers: {
+        'x-forwarded-for': clientIp,
+      },
+      payload: {
+        email: `proxy_overflow_${Date.now()}@smexstore.com`,
+        password: 'ValidPassword123!',
+        username: `px_overflow_${Date.now().toString().slice(-4)}`,
+      },
+    });
+    assert.equal(limitedRes.statusCode, 429, 'Client IP exceeding quota must be rate-limited');
+    assert.ok(limitedRes.headers['retry-after']);
+    const limitedBody = JSON.parse(limitedRes.body);
+    assert.equal(limitedBody.code, 'RATE_LIMIT_EXCEEDED');
+
+    // Distinct client IP behind the same proxy is NOT blocked (verifies proxy IP was not pooled)
+    const distinctClientIp = '198.51.100.33';
+    const distinctRes = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/register',
+      remoteAddress: proxyIp,
+      headers: {
+        'x-forwarded-for': distinctClientIp,
+      },
+      payload: {
+        email: `distinct_reg_${Date.now()}@smexstore.com`,
+        password: 'ValidPassword123!',
+        username: `dist_${Date.now().toString().slice(-4)}`,
+      },
+    });
+    assert.equal(distinctRes.statusCode, 201, 'Distinct client IP must not be pooled under proxy IP');
+  });
+
+  test('Test 20: Horizontal password spraying rate limit per IP on login endpoint (Bug 12)', async (t) => {
+    const app = await build(t);
+    const ip = '192.0.2.77';
+
+    // Clear any existing keys
+    const existing = await app.redis.keys(`*${ip}*`);
+    if (existing.length > 0) {
+      await app.redis.del(...existing);
+    }
+
+    // Perform 15 login requests with different emails from the same IP (within 15 req/min IP quota)
+    for (let i = 0; i < 15; i++) {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/auth/login',
+        remoteAddress: ip,
+        payload: {
+          email: `spray_user_${i}_${Date.now()}@smexstore.com`,
+          password: 'CommonPassword123!',
+        },
+      });
+      assert.equal(res.statusCode, 401, `Spray attempt ${i + 1} should evaluate to 401`);
+    }
+
+    // 16th attempt with another distinct email must trigger IP-level 429 RATE_LIMIT_EXCEEDED
+    const overflowRes = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/login',
+      remoteAddress: ip,
+      payload: {
+        email: `spray_user_16_${Date.now()}@smexstore.com`,
+        password: 'CommonPassword123!',
+      },
+    });
+
+    assert.equal(overflowRes.statusCode, 429, '16th attempt from IP must be rate-limited');
+    assert.ok(overflowRes.headers['retry-after']);
+    assert.equal(String(overflowRes.headers['x-ratelimit-limit']), '15');
+    assert.equal(String(overflowRes.headers['x-ratelimit-remaining']), '0');
+
+    const body = JSON.parse(overflowRes.body);
+    assert.equal(body.code, 'RATE_LIMIT_EXCEEDED');
+    assert.equal(body.status, 429);
+  });
 });
+

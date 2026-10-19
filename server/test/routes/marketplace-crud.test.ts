@@ -591,6 +591,68 @@ describe('Marketplace Listing CRUD Lifecycle Suite (LLT 2.3)', () => {
     // Verify new key was pruned on delete
     assert.deepEqual(deletedKeys, [oldKey, newKey]);
   });
+
+  it('Test 27: Reject listing creation and update with unauthorized proof key namespace (Bug 8)', async (t) => {
+    const app = await build(t);
+    const { token: userAToken, user: userA } = await createVerifiedUser(app, 'user_a_victim');
+    const { token: userBToken, user: userB } = await createVerifiedUser(app, 'user_b_attacker');
+
+    // 1. Attacker tries to create listing using victim's S3 key
+    const createRes = await app.inject({
+      method: 'POST',
+      url: '/api/v1/marketplace/listings',
+      headers: { authorization: `Bearer ${userBToken}` },
+      payload: {
+        title: 'Attacker Listing with Victim Key',
+        rankTier: 'Mythic',
+        priceInr: 1500,
+        contactChannel: 'whatsapp',
+        contactHandle: '15550100100',
+        proofImages: [
+          { s3Key: `marketplace/proofs/${userA.id}/victim-proof.png`, cdnUrl: '/media/victim.png' },
+        ],
+      },
+    });
+
+    assert.equal(createRes.statusCode, 403);
+    const createBody = JSON.parse(createRes.payload);
+    assert.equal(createBody.code, 'UNAUTHORIZED_PROOF_KEY');
+
+    // 2. Attacker creates valid listing under their own namespace
+    const validCreateRes = await app.inject({
+      method: 'POST',
+      url: '/api/v1/marketplace/listings',
+      headers: { authorization: `Bearer ${userBToken}` },
+      payload: {
+        title: 'Attacker Valid Listing',
+        rankTier: 'Mythic',
+        priceInr: 1500,
+        contactChannel: 'whatsapp',
+        contactHandle: '15550100100',
+        proofImages: [
+          { s3Key: `marketplace/proofs/${userB.id}/attacker-proof.png`, cdnUrl: '/media/attacker.png' },
+        ],
+      },
+    });
+    assert.equal(validCreateRes.statusCode, 201);
+    const validListing = JSON.parse(validCreateRes.payload);
+
+    // 3. Attacker tries to update listing with victim's S3 key
+    const updateRes = await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/marketplace/listings/${validListing.id}`,
+      headers: { authorization: `Bearer ${userBToken}` },
+      payload: {
+        proofImages: [
+          { s3Key: `marketplace/proofs/${userA.id}/victim-proof2.png`, cdnUrl: '/media/victim2.png' },
+        ],
+      },
+    });
+
+    assert.equal(updateRes.statusCode, 403);
+    const updateBody = JSON.parse(updateRes.payload);
+    assert.equal(updateBody.code, 'UNAUTHORIZED_PROOF_KEY');
+  });
 });
 
 

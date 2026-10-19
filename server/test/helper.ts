@@ -20,6 +20,7 @@ async function build(
 ): Promise<FastifyInstance> {
   const app = Fastify({
     logger: false,
+    trustProxy: true,
   });
 
   // Wrap appPlugin with fastify-plugin to ensure all decorators are exposed at the root instance

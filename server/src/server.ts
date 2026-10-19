@@ -6,6 +6,7 @@ import { loggerOptions } from './plugins/logger.js';
 export async function createServer() {
   const server = Fastify({
     logger: loggerOptions,
+    trustProxy: true,
   });
 
   await server.register(fp(appPlugin, { name: 'smex-app' }), appOptions);
@@ -44,6 +45,12 @@ export async function startServer() {
 }
 
 // Start server if directly invoked
-if (process.argv[1] && process.argv[1].endsWith('server.ts') || process.argv[1]?.endsWith('server.js')) {
+const isMain =
+  Boolean(process.argv[1]) &&
+  (process.argv[1].endsWith('server.ts') ||
+   process.argv[1].endsWith('server.js') ||
+   process.argv[1].endsWith('server.mjs'));
+
+if (isMain) {
   void startServer();
 }

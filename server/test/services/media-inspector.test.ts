@@ -1,5 +1,6 @@
 import { describe, it, beforeEach } from 'vitest';
 import assert from 'node:assert/strict';
+import { Readable } from 'node:stream';
 import { mockClient } from 'aws-sdk-client-mock';
 import { S3Client, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import {
@@ -268,5 +269,49 @@ describe('Binary Magic Byte Media Inspection Suite (LLT 2.2)', () => {
       },
     });
     assert.equal(legitRes.statusCode, 200);
+  });
+
+  it('Test 11: Public media proxy route validation and security headers (Bug 9)', async (t) => {
+    const app = await build(t);
+
+    // 1. Arbitrary key outside marketplace/proofs -> 400 Bad Request
+    const arbitraryRes = await app.inject({
+      method: 'GET',
+      url: '/api/v1/media/backups/db-dump.sql',
+    });
+    assert.equal(arbitraryRes.statusCode, 400);
+    const arbitraryBody = JSON.parse(arbitraryRes.payload);
+    assert.equal(arbitraryBody.code, 'INVALID_MEDIA_KEY');
+
+    // 2. Path traversal attempt -> 400 Bad Request
+    const traversalRes = await app.inject({
+      method: 'GET',
+      url: '/api/v1/media/marketplace/proofs/u1/../../etc/passwd.png',
+    });
+    assert.equal(traversalRes.statusCode, 400);
+
+    // 3. Disallowed extension (e.g. svg, html) -> 400 Bad Request
+    const svgRes = await app.inject({
+      method: 'GET',
+      url: '/api/v1/media/marketplace/proofs/u1/exploit.svg',
+    });
+    assert.equal(svgRes.statusCode, 400);
+
+    // 4. Legitimate proof media stream -> 200 OK with security headers
+    const pngBytes = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+    s3Mock.on(GetObjectCommand).resolves({
+      Body: Readable.from(pngBytes) as any,
+      ContentType: 'image/png',
+    });
+
+    const validRes = await app.inject({
+      method: 'GET',
+      url: '/api/v1/media/marketplace/proofs/user123/screenshot.png',
+    });
+
+    assert.equal(validRes.statusCode, 200);
+    assert.equal(validRes.headers['x-content-type-options'], 'nosniff');
+    assert.equal(validRes.headers['content-type'], 'image/png');
+    assert.equal(validRes.headers['cache-control'], 'public, max-age=31536000, immutable');
   });
 });

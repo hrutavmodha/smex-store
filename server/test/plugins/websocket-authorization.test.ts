@@ -8,20 +8,12 @@ describe('WebSocket Channel Authorization Suite (BUG-M8-005)', () => {
     const { user: victim } = await createVerifiedUser(app, 'ws_victim');
     const { token: attackerToken } = await createVerifiedUser(app, 'ws_attacker');
 
-    await app.listen({ port: 0, host: '127.0.0.1' });
-    const address = app.server.address() as { port: number };
-    const port = address.port;
-
     // 1. Unauthenticated guest attempts to subscribe to victim channel
-    const guestWs = new WebSocket(`ws://127.0.0.1:${port}/ws`);
-    await new Promise<void>((resolve, reject) => {
-      guestWs.addEventListener('open', () => resolve());
-      guestWs.addEventListener('error', (e) => reject(e));
-    });
+    const guestWs = await app.injectWS('/ws', { socket: { remoteAddress: '127.0.0.1' } });
 
     const guestResponsePromise = new Promise<any>((resolve) => {
-      guestWs.addEventListener('message', (event) => {
-        resolve(JSON.parse(event.data.toString()));
+      guestWs.on('message', (data) => {
+        resolve(JSON.parse(data.toString()));
       });
     });
 
@@ -36,18 +28,16 @@ describe('WebSocket Channel Authorization Suite (BUG-M8-005)', () => {
     assert.equal(guestResponse.event, 'error');
     assert.equal(guestResponse.code, 'FORBIDDEN_CHANNEL');
     assert.ok(guestResponse.message.includes('not authorized'));
-    guestWs.close();
+    guestWs.terminate();
 
     // 2. Authenticated attacker attempts to subscribe to victim channel
-    const attackerWs = new WebSocket(`ws://127.0.0.1:${port}/ws?token=${attackerToken}`);
-    await new Promise<void>((resolve, reject) => {
-      attackerWs.addEventListener('open', () => resolve());
-      attackerWs.addEventListener('error', (e) => reject(e));
+    const attackerWs = await app.injectWS(`/ws?token=${attackerToken}`, {
+      socket: { remoteAddress: '127.0.0.1' },
     });
 
     const attackerResponsePromise = new Promise<any>((resolve) => {
-      attackerWs.addEventListener('message', (event) => {
-        resolve(JSON.parse(event.data.toString()));
+      attackerWs.on('message', (data) => {
+        resolve(JSON.parse(data.toString()));
       });
     });
 
@@ -61,19 +51,17 @@ describe('WebSocket Channel Authorization Suite (BUG-M8-005)', () => {
     const attackerResponse = await attackerResponsePromise;
     assert.equal(attackerResponse.event, 'error');
     assert.equal(attackerResponse.code, 'FORBIDDEN_CHANNEL');
-    attackerWs.close();
+    attackerWs.terminate();
 
     // 3. Authorized user can subscribe to their own private channel
     const { user: selfUser, token: selfToken } = await createVerifiedUser(app, 'ws_self');
-    const selfWs = new WebSocket(`ws://127.0.0.1:${port}/ws?token=${selfToken}`);
-    await new Promise<void>((resolve, reject) => {
-      selfWs.addEventListener('open', () => resolve());
-      selfWs.addEventListener('error', (e) => reject(e));
+    const selfWs = await app.injectWS(`/ws?token=${selfToken}`, {
+      socket: { remoteAddress: '127.0.0.1' },
     });
 
     const selfResponsePromise = new Promise<any>((resolve) => {
-      selfWs.addEventListener('message', (event) => {
-        resolve(JSON.parse(event.data.toString()));
+      selfWs.on('message', (data) => {
+        resolve(JSON.parse(data.toString()));
       });
     });
 
@@ -87,6 +75,6 @@ describe('WebSocket Channel Authorization Suite (BUG-M8-005)', () => {
     const selfResponse = await selfResponsePromise;
     assert.equal(selfResponse.event, 'subscribed');
     assert.equal(selfResponse.channel, `user:${selfUser.id}`);
-    selfWs.close();
+    selfWs.terminate();
   });
 });

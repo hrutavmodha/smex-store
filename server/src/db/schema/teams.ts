@@ -22,6 +22,7 @@ export const teams = pgTable(
   },
   (t) => [
     check('teams_member_cap_chk', sql`${t.memberCap} >= 1 AND ${t.memberCap} <= 10`),
+    index('teams_name_trgm_idx').using('gin', sql`${t.name} gin_trgm_ops`),
   ]
 );
 

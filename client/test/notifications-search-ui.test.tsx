@@ -300,6 +300,57 @@ describe('Milestone 8: Client Notifications and Search UI Suite (LLT Tests 20-25
     expect(mockRouter.push).toHaveBeenCalledWith('/teams/team-warriors');
   });
 
+  it('Test 24b: Clearing search query resets results to empty (Bug 7)', async () => {
+    global.fetch = vi.fn().mockImplementation((url: string) => {
+      if (url.includes('/api/v1/search')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve({
+              query: 'warriors',
+              category: 'all',
+              totalMatches: 1,
+              results: {
+                teams: [
+                  {
+                    id: 'team-warriors',
+                    name: 'Warriors MLBB',
+                    tag: 'WAR',
+                    gameSlug: 'mlbb',
+                    url: '/teams/team-warriors',
+                  },
+                ],
+              },
+            }),
+        });
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
+    });
+
+    const { getByPlaceholderText, getAllByTestId, queryAllByTestId } = render(
+      <UniversalSearchModal isOpen={true} onClose={() => {}} />
+    );
+
+    const input = getByPlaceholderText(/search tournaments, teams/i);
+    fireEvent.change(input, { target: { value: 'warriors' } });
+
+    // Wait for search results
+    await waitFor(() => {
+      const items = getAllByTestId('search-result-item');
+      expect(items.length).toBe(1);
+    });
+
+    // Clear search query (backspace down to 0 character)
+    fireEvent.change(input, { target: { value: '' } });
+
+    // Results must immediately be cleared
+    await waitFor(() => {
+      const items = queryAllByTestId('search-result-item');
+      expect(items.length).toBe(0);
+    });
+  });
+
   it('Test 25: AMOLED #000000 surface and zero blur filter compliance', async () => {
     const { getByTestId } = render(
       <UniversalSearchModal isOpen={true} onClose={() => {}} />
