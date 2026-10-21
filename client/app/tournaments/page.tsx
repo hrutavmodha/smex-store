@@ -35,8 +35,7 @@ function TournamentsDirectoryContent() {
   useEffect(() => {
     let isMounted = true;
 
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-    fetch(`${apiUrl}/api/v1/tournaments?status=${activeTab}`)
+    fetch(`/api/v1/tournaments?status=${activeTab}`)
       .then((res) => (res.ok ? res.json() : { tournaments: [] }))
       .then((data) => {
         if (isMounted) {
@@ -89,14 +88,14 @@ function TournamentsDirectoryContent() {
           {/* Segmented Tabs */}
           <nav
             aria-label="Tournament Status Tabs"
-            className="flex rounded-lg border border-border-subtle bg-bg-surface p-1 select-none"
+            className="flex w-full sm:w-auto rounded-lg border border-border-subtle bg-bg-surface p-1 select-none"
           >
             <button
               type="button"
               role="tab"
               aria-selected={activeTab === 'upcoming'}
               onClick={() => handleTabChange('upcoming')}
-              className={`rounded-md px-4 py-2 text-xs font-bold uppercase transition-all duration-[120ms] ${
+              className={`flex-1 sm:flex-initial text-center justify-center rounded-md px-4 py-2 text-xs font-bold uppercase transition-all duration-[120ms] ${
                 activeTab === 'upcoming'
                   ? 'bg-emerald-primary text-[#0B1A15]'
                   : 'text-text-secondary hover:text-text-primary'
@@ -109,7 +108,7 @@ function TournamentsDirectoryContent() {
               role="tab"
               aria-selected={activeTab === 'ongoing'}
               onClick={() => handleTabChange('ongoing')}
-              className={`flex items-center gap-1.5 rounded-md px-4 py-2 text-xs font-bold uppercase transition-all duration-[120ms] ${
+              className={`flex-1 sm:flex-initial justify-center flex items-center gap-1.5 rounded-md px-4 py-2 text-xs font-bold uppercase transition-all duration-[120ms] ${
                 activeTab === 'ongoing'
                   ? 'bg-emerald-primary text-[#0B1A15]'
                   : 'text-text-secondary hover:text-text-primary'
@@ -123,7 +122,7 @@ function TournamentsDirectoryContent() {
               role="tab"
               aria-selected={activeTab === 'past'}
               onClick={() => handleTabChange('past')}
-              className={`rounded-md px-4 py-2 text-xs font-bold uppercase transition-all duration-[120ms] ${
+              className={`flex-1 sm:flex-initial text-center justify-center rounded-md px-4 py-2 text-xs font-bold uppercase transition-all duration-[120ms] ${
                 activeTab === 'past'
                   ? 'bg-emerald-primary text-[#0B1A15]'
                   : 'text-text-secondary hover:text-text-primary'

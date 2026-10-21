@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Bell, CheckCheck, Inbox, ExternalLink } from 'lucide-react';
-import { fetchWithAuth } from '../../lib/api';
+import { fetchWithAuth, getWebSocketUrl } from '../../lib/api';
 import type { NotificationEnvelope } from '@smex/shared';
 
 export interface NotificationCenterProps {
@@ -54,11 +54,7 @@ export function NotificationCenter({ user }: NotificationCenterProps) {
   useEffect(() => {
     if (!accountId) return;
 
-    const defaultWsUrl =
-      typeof window !== 'undefined'
-        ? `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}`
-        : 'ws://localhost:3001';
-    const wsUrl = process.env.NEXT_PUBLIC_WS_URL || defaultWsUrl;
+    const wsUrl = getWebSocketUrl();
     const targetUrl = `${wsUrl}/ws`;
 
     let socket: WebSocket | null = null;

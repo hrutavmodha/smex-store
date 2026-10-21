@@ -37,8 +37,7 @@ function TournamentDetailContent() {
     let isMounted = true;
     const checkRole = async () => {
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-        const res = await fetchWithAuth(`${apiUrl}/api/v1/auth/me`);
+        const res = await fetchWithAuth('/api/v1/auth/me');
         if (res.ok && isMounted) {
           const data = await res.json();
           setIsAdmin(data.role === 'admin');
@@ -59,8 +58,7 @@ function TournamentDetailContent() {
     if (!id) return;
     let isMounted = true;
 
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-    fetch(`${apiUrl}/api/v1/tournaments/${id}`)
+    fetch(`/api/v1/tournaments/${id}`)
       .then((res) => {
         if (!res.ok) throw new Error('Tournament not found');
         return res.json();
@@ -163,11 +161,11 @@ function TournamentDetailContent() {
             </div>
 
             {/* View Switcher Tabs */}
-            <div className="flex rounded-lg border border-border-subtle bg-bg-surface-elevated p-1 self-start md:self-auto">
+            <div className="flex w-full sm:w-auto rounded-lg border border-border-subtle bg-bg-surface-elevated p-1 self-start md:self-auto">
               <button
                 type="button"
                 onClick={() => setActiveTab('bracket')}
-                className={`flex items-center gap-2 rounded-md px-4 py-2 text-xs font-bold uppercase transition-all duration-[120ms] ${
+                className={`flex-1 sm:flex-initial justify-center flex items-center gap-2 rounded-md px-4 py-2 text-xs font-bold uppercase transition-all duration-[120ms] ${
                   activeTab === 'bracket'
                     ? 'bg-emerald-primary text-[#0B1A15]'
                     : 'text-text-secondary hover:text-text-primary'
@@ -179,7 +177,7 @@ function TournamentDetailContent() {
               <button
                 type="button"
                 onClick={() => setActiveTab('lobby')}
-                className={`flex items-center gap-2 rounded-md px-4 py-2 text-xs font-bold uppercase transition-all duration-[120ms] ${
+                className={`flex-1 sm:flex-initial justify-center flex items-center gap-2 rounded-md px-4 py-2 text-xs font-bold uppercase transition-all duration-[120ms] ${
                   activeTab === 'lobby'
                     ? 'bg-emerald-primary text-[#0B1A15]'
                     : 'text-text-secondary hover:text-text-primary'

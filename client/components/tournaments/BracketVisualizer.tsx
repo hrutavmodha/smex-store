@@ -8,6 +8,7 @@ import {
   type BracketUpdatePayload,
   type TournamentFormat,
 } from '@smex/shared';
+import { getWebSocketUrl } from '../../lib/api';
 
 export interface BracketVisualizerProps {
   tournamentId: string;
@@ -68,11 +69,7 @@ export function BracketVisualizer({
       );
     }
 
-    const defaultWsUrl =
-      typeof window !== 'undefined'
-        ? `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}`
-        : 'ws://localhost:3001';
-    const wsUrl = process.env.NEXT_PUBLIC_WS_URL || defaultWsUrl;
+    const wsUrl = getWebSocketUrl();
     let socket: WebSocket | null = null;
     try {
       socket = new WebSocket(`${wsUrl}/ws`);
@@ -338,7 +335,7 @@ export function BracketVisualizer({
   return (
     <section
       aria-label="Tournament Bracket"
-      className="w-full overflow-x-auto bg-bg-canvas p-6 text-text-primary select-none"
+      className="w-full overflow-x-auto touch-pan-x bg-bg-canvas p-4 sm:p-6 text-text-primary select-none [webkit-overflow-scrolling:touch]"
     >
       {/* Double Elimination Tier Switcher */}
       {isDoubleElim && (

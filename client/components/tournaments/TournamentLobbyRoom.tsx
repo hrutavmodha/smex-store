@@ -71,9 +71,8 @@ export function TournamentLobbyRoom({
       if (onScoreUpdate) {
         await onScoreUpdate(activeMatch.id, teamAScore, teamBScore, winnerId);
       } else {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
         const res = await fetchWithAuth(
-          `${apiUrl}/api/v1/tournaments/${tournamentId}/matches/${activeMatch.id}`,
+          `/api/v1/tournaments/${tournamentId}/matches/${activeMatch.id}`,
           {
             method: 'PATCH',
             headers: {
