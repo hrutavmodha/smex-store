@@ -212,15 +212,15 @@ cp .env.example .env
 
 Verify or adjust environment parameters as needed:
 
-| Parameter | Default Value | Purpose |
-| :--- | :--- | :--- |
-| `NODE_ENV` | `development` | Runtime environment mode |
-| `PORT` | `3001` | Fastify backend API port |
-| `DATABASE_URL` | `postgresql://postgres:postgres@localhost:5432/smex_store` | PostgreSQL connection pool |
-| `REDIS_URL` | `redis://localhost:6379` | Redis session and rate limit store |
-| `JWT_SECRET` | `development_jwt_secret_...` | Access token signature key |
-| `CORS_ORIGIN` | `http://localhost:3000` | Allowed client origin |
-| `S3_ENDPOINT` | `http://localhost:9000` | MinIO local S3 storage endpoint |
+| Parameter        | Default Value                                                | Purpose                            |
+| :--------------- | :----------------------------------------------------------- | :--------------------------------- |
+| `NODE_ENV`     | `development`                                              | Runtime environment mode           |
+| `PORT`         | `3001`                                                     | Fastify backend API port           |
+| `DATABASE_URL` | `postgresql://postgres:postgres@localhost:5432/smex_store` | PostgreSQL connection pool         |
+| `REDIS_URL`    | `redis://localhost:6379`                                   | Redis session and rate limit store |
+| `JWT_SECRET`   | `development_jwt_secret_...`                               | Access token signature key         |
+| `CORS_ORIGIN`  | `http://localhost:3000`                                    | Allowed client origin              |
+| `S3_ENDPOINT`  | `http://localhost:9000`                                    | MinIO local S3 storage endpoint    |
 
 ### Step 3 Launch Infrastructure Stack
 
@@ -231,6 +231,7 @@ pnpm services:up
 ```
 
 This starts:
+
 * **PostgreSQL 16**: Port `5432` (database `smex_store`)
 * **Redis 7.2**: Port `6379`
 * **MinIO Storage**: Port `9000` (API) and Port `9001` (Web Console)

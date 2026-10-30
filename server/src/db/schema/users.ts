@@ -11,7 +11,7 @@ export const users = pgTable('users', {
   email: varchar('email', { length: 255 }).notNull().unique('users_email_unique_idx'),
   passwordHash: text('password_hash').notNull(),
   role: userRoleEnum('role').notNull().default('user'),
-  emailVerified: boolean('email_verified').notNull().default(false),
+  emailVerified: boolean('email_verified').notNull().default(true),
   isBanned: boolean('is_banned').notNull().default(false),
   banReason: text('ban_reason'),
   bannedAt: timestamp('banned_at', { withTimezone: true }),

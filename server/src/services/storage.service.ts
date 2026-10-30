@@ -45,30 +45,46 @@ export interface StorageServiceOptions {
   s3Client?: S3Client;
   bucket?: string;
   endpoint?: string;
+  publicEndpoint?: string;
 }
 
 export class StorageService {
   private s3Client: S3Client;
+  private signerClient: S3Client;
   private bucket: string;
-  private endpoint?: string;
 
   constructor(options?: StorageServiceOptions) {
     const env = getEnv();
     this.bucket = options?.bucket || env.S3_BUCKET || 'smex-storage';
-    this.endpoint = options?.endpoint || env.S3_ENDPOINT || 'http://localhost:9000';
+    const endpoint = options?.endpoint || env.S3_ENDPOINT || 'http://localhost:9000';
+    const publicEndpoint = options?.publicEndpoint || env.S3_PUBLIC_ENDPOINT || endpoint;
+
+    const region = env.S3_REGION || 'auto';
+    const credentials = {
+      accessKeyId: env.S3_ACCESS_KEY_ID || 'minioadmin',
+      secretAccessKey: env.S3_SECRET_ACCESS_KEY || 'minioadmin',
+    };
 
     if (options?.s3Client) {
       this.s3Client = options.s3Client;
+      this.signerClient = options.s3Client;
     } else {
       this.s3Client = new S3Client({
-        endpoint: this.endpoint,
-        region: env.S3_REGION || 'auto',
-        credentials: {
-          accessKeyId: env.S3_ACCESS_KEY_ID || 'minioadmin',
-          secretAccessKey: env.S3_SECRET_ACCESS_KEY || 'minioadmin',
-        },
+        endpoint,
+        region,
+        credentials,
         forcePathStyle: true,
       });
+
+      this.signerClient =
+        publicEndpoint === endpoint
+          ? this.s3Client
+          : new S3Client({
+              endpoint: publicEndpoint,
+              region,
+              credentials,
+              forcePathStyle: true,
+            });
     }
   }
 
@@ -123,7 +139,7 @@ export class StorageService {
       Tagging: 'status=uncommitted',
     });
 
-    const uploadUrl = await getSignedUrl(this.s3Client, command, { expiresIn });
+    const uploadUrl = await getSignedUrl(this.signerClient, command, { expiresIn });
     const cdnUrl = `/api/v1/media/${s3Key}`;
 
     return {

@@ -30,7 +30,7 @@ RUN pnpm --filter @smex/server build
 
 # Stage 3: Minimal hardened production runner
 FROM node:22-alpine AS runner
-WORKDIR /app
+WORKDIR /app/server
 
 ARG COMMIT_SHA
 ENV COMMIT_SHA=$COMMIT_SHA
@@ -41,11 +41,11 @@ ENV HOST=0.0.0.0
 # Security: Run as unprivileged node user
 USER node:node
 
-COPY --chown=node:node --from=builder /app/server/dist ./dist
-COPY --chown=node:node --from=builder /app/server/src/db/migrations ./dist/migrations
-COPY --chown=node:node --from=builder /app/server/package.json ./package.json
-COPY --chown=node:node --from=dependencies /app/node_modules ./node_modules
-COPY --chown=node:node --from=dependencies /app/server/node_modules ./server_node_modules
+COPY --chown=node:node --from=dependencies /app/node_modules /app/node_modules
+COPY --chown=node:node --from=dependencies /app/server/node_modules /app/server/node_modules
+COPY --chown=node:node --from=builder /app/server/dist /app/server/dist
+COPY --chown=node:node --from=builder /app/server/src/db/migrations /app/server/dist/migrations
+COPY --chown=node:node --from=builder /app/server/package.json /app/server/package.json
 
 EXPOSE 3001
 

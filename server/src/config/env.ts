@@ -33,6 +33,7 @@ export const envSchema = z.object({
   CORS_ORIGIN: z.string().default('http://localhost:3000'),
   CLIENT_URL: z.string().default('http://localhost:3000'),
   S3_ENDPOINT: z.string().url().optional(),
+  S3_PUBLIC_ENDPOINT: z.string().url().optional(),
   S3_REGION: z.string().default('auto'),
   S3_BUCKET: z.string().default('smex-storage'),
   S3_ACCESS_KEY_ID: z.string().optional(),

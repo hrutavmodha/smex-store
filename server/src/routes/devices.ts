@@ -1,5 +1,7 @@
 import { type FastifyPluginAsync } from 'fastify';
+import { eq, desc } from 'drizzle-orm';
 import { SessionService } from '../services/session.service.js';
+import { loginHistory } from '../db/schema/login-history.js';
 
 const devicesRoutes: FastifyPluginAsync = async (fastify) => {
   // 1. GET /api/v1/devices/sessions
@@ -84,6 +86,33 @@ const devicesRoutes: FastifyPluginAsync = async (fastify) => {
       return reply.code(200).send({
         success: true,
         message: 'Session revoked successfully',
+      });
+    }
+  );
+
+  // 4. GET /api/v1/devices/history
+  fastify.get(
+    '/api/v1/devices/history',
+    {
+      preHandler: [fastify.authenticate],
+    },
+    async (request, reply) => {
+      const history = await fastify.db
+        .select({
+          id: loginHistory.id,
+          ipAddress: loginHistory.ipAddress,
+          userAgent: loginHistory.userAgent,
+          deviceName: loginHistory.deviceName,
+          status: loginHistory.status,
+          createdAt: loginHistory.createdAt,
+        })
+        .from(loginHistory)
+        .where(eq(loginHistory.userId, request.user.sub))
+        .orderBy(desc(loginHistory.createdAt))
+        .limit(50);
+
+      return reply.code(200).send({
+        history,
       });
     }
   );

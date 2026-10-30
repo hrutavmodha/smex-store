@@ -7,7 +7,8 @@ import { execSync } from 'node:child_process';
 
 describe('Continuous Integration & Schema Drift Suite (LLT 2.1)', () => {
   test('Test 1: GitHub Actions CI workflow schema & trigger validation', () => {
-    const ciPath = path.resolve(process.cwd(), '../.github/workflows/ci.yml');
+    const repoRoot = path.resolve(import.meta.dirname, '../../..');
+    const ciPath = path.resolve(repoRoot, '.github/workflows/ci.yml');
     assert.ok(fs.existsSync(ciPath), '.github/workflows/ci.yml must exist');
 
     const fileContent = fs.readFileSync(ciPath, 'utf8');
@@ -45,8 +46,10 @@ describe('Continuous Integration & Schema Drift Suite (LLT 2.1)', () => {
   test('Test 2: Drizzle schema drift check execution', () => {
     // Verify that drizzle-kit check runs cleanly against existing migrations and schema
     try {
+      const repoRoot = path.resolve(import.meta.dirname, '../../..');
+      const serverDir = path.resolve(repoRoot, 'server');
       const output = execSync('npx drizzle-kit check', {
-        cwd: path.resolve(process.cwd()),
+        cwd: serverDir,
         encoding: 'utf8',
         stdio: 'pipe',
       });

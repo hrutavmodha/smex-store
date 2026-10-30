@@ -7,3 +7,4 @@ export * from './marketplace.js';
 export * from './reviews.js';
 export * from './activity.js';
 export * from './notifications.js';
+export * from './login-history.js';

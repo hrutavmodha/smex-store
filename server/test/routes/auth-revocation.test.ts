@@ -681,4 +681,66 @@ describe('Disambiguated Session Revocation and Fast-Path Tombstones (LLT 2.3)', 
     assert.equal(wsCloseCode, 4401);
     assert.equal(app.wsGateway.getActiveClientCount(), 0, 'Socket must be purged from clients map');
   });
+
+  test('Test 15: Login history audit log tracking and retrieval via GET /api/v1/devices/history (BUG-M3-008)', async (t) => {
+    const app = await build(t);
+    const email = `audit_login_${Date.now()}@smexstore.com`;
+    const password = 'ValidPassword123!';
+
+    // Register user
+    const regRes = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/register',
+      remoteAddress: '192.168.1.10',
+      payload: {
+        email,
+        password,
+        username: `aud_${Date.now().toString().slice(-6)}`,
+      },
+    });
+    assert.equal(regRes.statusCode, 201);
+    const user = JSON.parse(regRes.body);
+
+    // 1. Successful login
+    const loginRes1 = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/login',
+      remoteAddress: '192.168.1.10',
+      headers: { 'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
+      payload: { email, password },
+    });
+    assert.equal(loginRes1.statusCode, 200);
+    const token = JSON.parse(loginRes1.body).accessToken;
+
+    // 2. Failed login attempt (wrong password)
+    const loginRes2 = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/login',
+      remoteAddress: '192.168.1.20',
+      headers: { 'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X)' },
+      payload: { email, password: 'WrongPassword123!' },
+    });
+    assert.equal(loginRes2.statusCode, 401);
+
+    // 3. Retrieve login history
+    const historyRes = await app.inject({
+      method: 'GET',
+      url: '/api/v1/devices/history',
+      headers: { authorization: `Bearer ${token}` },
+    });
+    assert.equal(historyRes.statusCode, 200);
+    const body = JSON.parse(historyRes.body);
+
+    assert.ok(Array.isArray(body.history), 'Must return history array');
+    assert.ok(body.history.length >= 2, 'Must contain at least 2 audit entries');
+
+    const statuses = body.history.map((h: any) => h.status);
+    assert.ok(statuses.includes('success'), 'Must contain success entry');
+    assert.ok(statuses.includes('failed'), 'Must contain failed entry');
+
+    // Verify fields
+    const successEntry = body.history.find((h: any) => h.status === 'success');
+    assert.equal(successEntry.ipAddress, '192.168.1.10');
+    assert.ok(successEntry.createdAt, 'Must include timestamp');
+  });
 });

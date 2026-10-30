@@ -18,56 +18,33 @@ export function setStoredToken(_token: string | null): void {
 
 /**
  * Resolves the appropriate base URL for API requests.
- * In the browser, returns an empty string to use same-origin relative URLs (/api/...)
- * unless an external NEXT_PUBLIC_API_URL is explicitly targeted.
- * In SSR / Node, falls back to the backend service address.
+ * In the browser, returns NEXT_PUBLIC_API_URL if configured,
+ * otherwise an empty string to use same-origin relative URLs (/api/...).
+ * In SSR / Node, uses the internal service address (INTERNAL_API_URL).
  */
 export function getApiBaseUrl(): string {
   if (typeof window !== 'undefined') {
-    const envUrl = process.env.NEXT_PUBLIC_API_URL;
-    const isLocalhost =
-      window.location.hostname === 'localhost' ||
-      window.location.hostname === '127.0.0.1';
-
-    if (envUrl && (!envUrl.includes('localhost') || isLocalhost)) {
-      return envUrl;
-    }
-    return '';
+    return process.env.NEXT_PUBLIC_API_URL || '';
   }
 
-  return (
-    process.env.INTERNAL_API_URL ||
-    process.env.NEXT_PUBLIC_API_URL ||
-    'http://localhost:3001'
-  );
+  return process.env.INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL || '';
 }
 
 /**
  * Resolves the appropriate WebSocket URL for real-time channels.
- * Intelligently switches between same-origin / reverse proxy,
- * LAN IP dev server, and local dev fallback.
+ * Uses NEXT_PUBLIC_WS_URL if set; otherwise resolves dynamically
+ * to the current window host (wss: on HTTPS, ws: on HTTP).
  */
 export function getWebSocketUrl(): string {
   if (typeof window !== 'undefined') {
-    const isLocalhost =
-      window.location.hostname === 'localhost' ||
-      window.location.hostname === '127.0.0.1';
-
-    // If accessing dev server via LAN IP from a mobile phone (e.g. 192.168.x.x:3000):
-    if (!isLocalhost && window.location.port === '3000') {
-      return `ws://${window.location.hostname}:3001`;
+    if (process.env.NEXT_PUBLIC_WS_URL) {
+      return process.env.NEXT_PUBLIC_WS_URL;
     }
-
-    const envWsUrl = process.env.NEXT_PUBLIC_WS_URL;
-    if (envWsUrl && (!envWsUrl.includes('localhost') || isLocalhost)) {
-      return envWsUrl;
-    }
-
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     return `${protocol}//${window.location.host}`;
   }
 
-  return process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:3001';
+  return process.env.NEXT_PUBLIC_WS_URL || '';
 }
 
 export interface FetchWithAuthOptions extends RequestInit {

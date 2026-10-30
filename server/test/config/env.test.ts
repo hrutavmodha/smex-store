@@ -62,3 +62,15 @@ test('loadEnv returns parsed configuration object', () => {
   assert.strictEqual(typeof config.PORT, 'number');
 });
 
+test('envSchema supports S3_PUBLIC_ENDPOINT (BUG-OPS-003)', () => {
+  const result = envSchema.safeParse({
+    S3_ENDPOINT: 'http://minio:9000',
+    S3_PUBLIC_ENDPOINT: 'https://smexstore.com',
+  });
+  assert.strictEqual(result.success, true);
+  if (result.success) {
+    assert.strictEqual(result.data.S3_ENDPOINT, 'http://minio:9000');
+    assert.strictEqual(result.data.S3_PUBLIC_ENDPOINT, 'https://smexstore.com');
+  }
+});
+

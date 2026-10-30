@@ -110,10 +110,9 @@ export function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFormProps) 
           <CheckCircle2 className="h-6 w-6" />
         </div>
         <div className="flex flex-col gap-1">
-          <h3 className="text-base font-bold text-text-primary">Account Created</h3>
+          <h3 className="text-base font-bold text-text-primary">Account Created!</h3>
           <p className="text-xs text-text-secondary max-w-xs">
-            We have dispatched a verification link to <span className="font-semibold text-text-primary">{email}</span>.
-            Please verify your email to unlock all marketplace and esports features.
+            Your account has been created successfully. You can now continue to sign in.
           </p>
         </div>
         {onSwitchToLogin && (

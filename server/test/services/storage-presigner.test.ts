@@ -305,6 +305,23 @@ describe('Marketplace S3 Presigned Upload Pipeline (LLT 2.1)', () => {
     const purged = await storageService.cleanupOrphanedUploads(new Set());
     assert.ok(Array.isArray(purged));
   });
+
+  it('Test 11: StorageService uses publicEndpoint for presigned URLs without leaking internal container hostname (BUG-OPS-003)', async () => {
+    const { StorageService } = await import('../../src/services/storage.service.js');
+    const storageService = new StorageService({
+      endpoint: 'http://minio:9000',
+      publicEndpoint: 'https://smexstore.com',
+    });
+
+    const result = await storageService.generatePresignedUpload('user-prod-123', {
+      fileName: 'proof.png',
+      contentType: 'image/png',
+      fileSize: 1024,
+    });
+
+    assert.ok(result.uploadUrl.startsWith('https://smexstore.com/smex-storage/marketplace/proofs/user-prod-123/'));
+    assert.ok(!result.uploadUrl.includes('minio:9000'), 'Presigned URL must not leak internal minio:9000 endpoint');
+  });
 });
 
 

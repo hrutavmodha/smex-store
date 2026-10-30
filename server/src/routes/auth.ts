@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { eq, and } from 'drizzle-orm';
 import { users, profiles } from '../db/schema/users.js';
 import { sessions } from '../db/schema/sessions.js';
+import { loginHistory } from '../db/schema/login-history.js';
 import { type AccessTokenPayload, formatRfc7807 } from '@smex/shared';
 import { hashPassword, verifyPassword, passwordSchema } from '../utils/crypto.js';
 import { parseDeviceMetadata } from '../utils/fingerprint.js';
@@ -117,7 +118,7 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
             email: normalizedEmail,
             passwordHash,
             role: 'user',
-            emailVerified: false,
+            emailVerified: true,
           })
           .returning();
 
@@ -131,13 +132,6 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
         return insertedUser;
       });
 
-      // Generate verification token (64 hex characters)
-      const verifyToken = crypto.randomBytes(32).toString('hex');
-      await fastify.redis.set(`verify_email:${verifyToken}`, newUser.id, 'EX', 86400);
-
-      // Dispatch verification email
-      await emailService.sendVerificationEmail(normalizedEmail, verifyToken);
-
       return reply.code(201).send({
         id: newUser.id,
         uid: newUser.id,
@@ -145,7 +139,7 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
         ign: username,
         avatarPreset: 'preset_default_01',
         email: newUser.email,
-        emailVerified: newUser.emailVerified,
+        emailVerified: true,
         profile: {
           username,
           inGameId: inGameId || null,
@@ -187,6 +181,22 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
         .limit(1);
 
       if (!userRecord) {
+        const metadata = parseDeviceMetadata(
+          (request.headers['user-agent'] as string) || '',
+          request.ip,
+          request.headers['accept-language'] as string
+        );
+        await fastify.db
+          .insert(loginHistory)
+          .values({
+            userId: null,
+            ipAddress: request.ip,
+            userAgent: (request.headers['user-agent'] as string) || null,
+            deviceName: metadata.deviceName,
+            status: 'failed',
+          })
+          .catch(() => {});
+
         return reply.code(401).send({
           type: 'https://api.smexstore.com/errors/unauthorized',
           title: 'Unauthorized',
@@ -198,6 +208,22 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
 
       const isValidPassword = await verifyPassword(userRecord.passwordHash, password);
       if (!isValidPassword) {
+        const metadata = parseDeviceMetadata(
+          (request.headers['user-agent'] as string) || '',
+          request.ip,
+          request.headers['accept-language'] as string
+        );
+        await fastify.db
+          .insert(loginHistory)
+          .values({
+            userId: userRecord.id,
+            ipAddress: request.ip,
+            userAgent: (request.headers['user-agent'] as string) || null,
+            deviceName: metadata.deviceName,
+            status: 'failed',
+          })
+          .catch(() => {});
+
         return reply.code(401).send({
           type: 'https://api.smexstore.com/errors/unauthorized',
           title: 'Unauthorized',
@@ -212,6 +238,17 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
         request.ip,
         request.headers['accept-language'] as string
       );
+
+      await fastify.db
+        .insert(loginHistory)
+        .values({
+          userId: userRecord.id,
+          ipAddress: request.ip,
+          userAgent: (request.headers['user-agent'] as string) || null,
+          deviceName: metadata.deviceName,
+          status: 'success',
+        })
+        .catch(() => {});
 
       const session = await SessionService.createSession(
         userRecord.id,

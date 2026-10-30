@@ -21,11 +21,16 @@ export function getDbPoolConfig(
   envConfig?: EnvConfig,
   overrides?: Partial<DbPoolConfig>
 ): DbPoolConfig {
-  const env = envConfig ?? getEnv();
-  const isProd = env.NODE_ENV === 'production';
+  const connectionString =
+    overrides?.connectionString ||
+    envConfig?.DATABASE_URL ||
+    process.env.DATABASE_URL ||
+    'postgresql://postgres:postgres@localhost:5432/smex_store';
+
+  const isProd = (envConfig?.NODE_ENV || process.env.NODE_ENV) === 'production';
 
   return {
-    connectionString: env.DATABASE_URL,
+    connectionString,
     max: isProd ? 20 : 5,
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 5000,

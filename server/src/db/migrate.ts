@@ -1,19 +1,24 @@
 import path from 'node:path';
+import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
 import { createDbPool, createDbClient } from './index.js';
-import { loadEnv } from '../config/env.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-export async function runMigrations() {
-  const env = loadEnv();
-  const pool = createDbPool(undefined, env);
+export async function runMigrations(databaseUrl?: string) {
+  const pool = createDbPool(databaseUrl ? { connectionString: databaseUrl } : undefined);
   const db = createDbClient(pool);
 
   try {
-    const migrationsFolder = path.resolve(__dirname, 'migrations');
+    let migrationsFolder = path.resolve(__dirname, 'migrations');
+    if (!fs.existsSync(migrationsFolder)) {
+      const fallback = path.resolve(__dirname, '../src/db/migrations');
+      if (fs.existsSync(fallback)) {
+        migrationsFolder = fallback;
+      }
+    }
     console.log(`[Migrations] Applying Drizzle migrations from ${migrationsFolder}...`);
     await migrate(db, { migrationsFolder });
     console.log('[Migrations] All migrations successfully applied.');
