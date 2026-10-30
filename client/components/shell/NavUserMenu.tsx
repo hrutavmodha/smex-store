@@ -79,15 +79,6 @@ export function NavUserMenu({
             </div>
           )}
 
-          <div className="px-2 py-1.5 text-[11px] text-text-muted border-b border-border-subtle flex flex-col gap-0.5">
-            <div>
-              Signed in as <span className="font-semibold text-text-primary">{user.email}</span>
-            </div>
-            <div data-testid="user-uid" className="font-mono text-[10px] text-text-muted">
-              UID: <span className="text-text-secondary">{user.inGameId || user.uid}</span>
-            </div>
-          </div>
-
           <Link
             href="/profile"
             onClick={() => setIsDropdownOpen(false)}

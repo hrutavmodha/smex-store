@@ -84,11 +84,7 @@ export function NavMobileDrawer({
       {/* User banner in drawer if logged in */}
       {user && (
         <div className="mt-4 p-3 rounded-lg bg-bg-surface-elevated border border-border-subtle flex flex-col gap-1">
-          <span className="font-bold text-sm text-text-primary">{user.ign || user.email}</span>
-          <span className="text-xs text-text-muted">{user.email}</span>
-          <span data-testid="mobile-user-uid" className="font-mono text-[10px] text-text-muted">
-            UID: {user.inGameId || user.uid}
-          </span>
+          <span className="font-bold text-sm text-text-primary">{user.ign || 'Player'}</span>
           {!user.emailVerified && (
             <span className="text-[10px] text-amber-400 font-semibold mt-1">⚠️ Email unverified</span>
           )}
