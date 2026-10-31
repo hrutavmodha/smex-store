@@ -42,8 +42,6 @@ export function getOwnerSocialChannels(): OwnerSocialChannel[] {
 }
 
 export function Footer() {
-  const socialChannels = getOwnerSocialChannels();
-
   return (
     <footer className="w-full border-t border-border-subtle bg-bg-surface text-text-secondary transition-colors duration-[120ms]">
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
@@ -158,7 +156,7 @@ export function Footer() {
                 Official Channels
               </h3>
               <a
-                href="https://whatsapp.com/channel/0029VbDEVo70G0XbUx6MK90w"
+                href={process.env.NEXT_PUBLIC_SOCIAL_WHATSAPP_CHANNEL?.trim() || "https://whatsapp.com/channel/0029VbDEVo70G0XbUx6MK90w"}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-[#25D366]/10 border border-[#25D366]/30 text-[#25D366] hover:bg-[#25D366]/20 text-xs font-bold transition-colors duration-[120ms] w-full"
@@ -166,25 +164,6 @@ export function Footer() {
                 <WhatsAppIcon className="h-4 w-4 shrink-0" />
                 <span>Join Official WhatsApp Channel</span>
               </a>
-              {socialChannels.length > 0 && (
-                <div className="flex flex-wrap gap-2 pt-1" data-testid="owner-social-directory">
-                  {socialChannels.map((social) => {
-                    const IconComponent = social.icon;
-                    return (
-                      <a
-                        key={social.id}
-                        href={social.href}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        aria-label={social.label}
-                        className="flex h-9 w-9 items-center justify-center rounded-lg border border-border-subtle bg-bg-canvas text-text-secondary hover:border-emerald-primary hover:text-emerald-primary transition-colors duration-[120ms]"
-                      >
-                        <IconComponent className="h-4 w-4" />
-                      </a>
-                    );
-                  })}
-                </div>
-              )}
             </div>
 
             {/* Creators & Promoters */}
