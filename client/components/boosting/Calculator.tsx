@@ -724,7 +724,7 @@ export function Calculator() {
                 : 'bg-emerald-primary hover:bg-emerald-hover active:scale-[0.98] shadow-lg shadow-emerald-primary/20'
             }`}
           >
-            1-Click WhatsApp
+            Dispatch Order on WhatsApp
           </button>
 
           <button

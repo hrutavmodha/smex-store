@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import {
   Users,
   ShoppingBag,
@@ -10,6 +11,8 @@ import {
   Trash2,
   UserX,
   CheckCircle,
+  Plus,
+  ArrowRight,
 } from 'lucide-react';
 import { fetchWithAuth } from '../../lib/api';
 import type { AdminMetrics, ModerationListingItem } from '@smex/shared';
@@ -151,21 +154,25 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Metric: Live Tournaments */}
-        <div
+        <Link
+          href="/admin/tournaments"
           data-testid="metric-live-tournaments"
-          className="bg-bg-surface border border-border-subtle rounded-xl p-5 transition-all duration-120 ease-out hover:border-emerald-primary/50"
+          className="bg-bg-surface border border-border-subtle rounded-xl p-5 transition-all duration-120 ease-out hover:border-emerald-primary/50 group block"
         >
           <div className="flex items-center justify-between text-text-secondary mb-2">
-            <span className="text-[11px] font-mono font-bold tracking-wider uppercase">
+            <span className="text-[11px] font-mono font-bold tracking-wider uppercase group-hover:text-emerald-primary transition-colors">
               TOURNAMENTS (LIVE)
             </span>
-            <Trophy size={16} className="text-amber-400" />
+            <Trophy size={16} className="text-amber-400 group-hover:scale-110 transition-transform" />
           </div>
           <div className="text-2xl font-black text-text-primary font-mono">
             {metrics.liveTournaments.toLocaleString()}
           </div>
-          <div className="text-[10px] text-text-muted font-mono mt-1">Ongoing & active brackets</div>
-        </div>
+          <div className="text-[10px] text-text-muted font-mono mt-1 flex items-center justify-between">
+            <span>Ongoing & active brackets</span>
+            <span className="text-emerald-primary font-bold inline-flex items-center gap-0.5">Manage &rarr;</span>
+          </div>
+        </Link>
 
         {/* Metric: Database Latency */}
         <div
@@ -186,6 +193,30 @@ export default function AdminDashboardPage() {
           </div>
           <div className="text-[10px] text-text-muted font-mono mt-1">PostgreSQL pool probe</div>
         </div>
+      </div>
+
+      {/* Tournament Management Quick Link Banner */}
+      <div className="flex flex-col sm:flex-row items-center justify-between p-5 rounded-xl bg-gradient-to-r from-bg-surface via-bg-surface-elevated to-bg-surface border border-border-subtle hover:border-emerald-primary/40 transition-all duration-120 gap-4">
+        <div className="flex items-center gap-3.5">
+          <div className="p-3 rounded-xl bg-amber-500/15 text-amber-400 border border-amber-500/30">
+            <Trophy className="h-6 w-6" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-text-primary">Tournament & Hall of Fame Management</h3>
+            <p className="text-xs text-text-secondary mt-0.5">
+              Create upcoming cash tournaments or record past tournament winners (Smex Cup) directly from the browser.
+            </p>
+          </div>
+        </div>
+
+        <Link
+          href="/admin/tournaments"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-primary hover:bg-[#22C58F] text-[#0B1A15] font-bold text-xs tracking-wide transition-all duration-120 shrink-0"
+        >
+          <Plus className="h-4 w-4" />
+          <span>Tournament Manager</span>
+          <ArrowRight className="h-4 w-4" />
+        </Link>
       </div>
 
       {/* Urgent Action / Moderation Queue */}

@@ -13,7 +13,9 @@ import {
   Star,
   Flame,
   Award,
+  ExternalLink,
 } from 'lucide-react';
+import { WhatsAppIcon, InstagramIcon, YouTubeIcon } from '../components/shell/SocialIcons';
 
 export default function Home() {
   return (
@@ -69,12 +71,8 @@ export default function Home() {
               </Link>
             </div>
 
-            {/* Key Platform Metrics */}
-            <div className="mt-14 grid grid-cols-2 gap-4 sm:grid-cols-4 lg:gap-6 w-full max-w-4xl pt-8 border-t border-border-subtle">
-              <div className="flex flex-col items-center p-4 rounded-xl bg-bg-surface border border-border-subtle">
-                <span className="text-2xl sm:text-3xl font-black text-emerald-primary">₹2,50,000+</span>
-                <span className="text-xs font-semibold text-text-secondary mt-1">Prizes Awarded</span>
-              </div>
+            {/* Key Platform Highlights */}
+            <div className="mt-14 grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-xl pt-8 border-t border-border-subtle">
               <div className="flex flex-col items-center p-4 rounded-xl bg-bg-surface border border-border-subtle">
                 <span className="text-2xl sm:text-3xl font-black text-text-primary">0% Commission</span>
                 <span className="text-xs font-semibold text-text-secondary mt-1">Direct P2P Trading</span>
@@ -82,10 +80,6 @@ export default function Home() {
               <div className="flex flex-col items-center p-4 rounded-xl bg-bg-surface border border-border-subtle">
                 <span className="text-2xl sm:text-3xl font-black text-cyan-depth">&lt; 15 mins</span>
                 <span className="text-xs font-semibold text-text-secondary mt-1">Order Handoff</span>
-              </div>
-              <div className="flex flex-col items-center p-4 rounded-xl bg-bg-surface border border-border-subtle">
-                <span className="text-2xl sm:text-3xl font-black text-text-primary">1,200+</span>
-                <span className="text-xs font-semibold text-text-secondary mt-1">Active Squads</span>
               </div>
             </div>
           </div>
@@ -349,7 +343,138 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 5. Call To Action Footer Banner */}
+      {/* 5. Official Community & Creators */}
+      <section className="w-full border-t border-border-subtle bg-bg-surface/30 px-4 py-16 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center max-w-2xl mx-auto mb-12">
+            <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-emerald-primary mb-2">
+              <Users className="h-4 w-4" />
+              <span>Leadership & Verification</span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-black text-text-primary tracking-tight">
+              OFFICIAL COMMUNITY & CREATORS
+            </h2>
+            <p className="text-sm text-text-secondary mt-2">
+              Follow our verified community leads for official tournament announcements, bracket streams, and escrow guarantees.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* WhatsApp Channel Card */}
+            <div className="flex flex-col justify-between p-6 rounded-2xl bg-bg-surface border border-[#25D366]/30 hover:border-[#25D366] transition-all duration-120 group shadow-lg">
+              <div className="space-y-4">
+                <div className="h-12 w-12 rounded-xl bg-[#25D366]/15 text-[#25D366] flex items-center justify-center">
+                  <WhatsAppIcon className="h-6 w-6" />
+                </div>
+                <div>
+                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#25D366]">
+                    Official Updates Hub
+                  </span>
+                  <h3 className="text-lg font-bold text-text-primary mt-1">WhatsApp Channel</h3>
+                </div>
+                <p className="text-xs text-text-secondary leading-relaxed">
+                  Real-time alerts for tournament room lobbies, registered team matchups, new verified account drops, and booster queues.
+                </p>
+              </div>
+
+              <div className="pt-6 mt-6 border-t border-border-subtle">
+                <a
+                  href="https://whatsapp.com/channel/0029VbDEVo70G0XbUx6MK90w"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl text-xs font-bold bg-[#25D366] hover:bg-[#20ba5a] text-black transition-colors"
+                >
+                  <WhatsAppIcon className="h-4 w-4" />
+                  <span>Join WhatsApp Channel</span>
+                  <ExternalLink className="h-3.5 w-3.5 ml-1" />
+                </a>
+              </div>
+            </div>
+
+            {/* Harshu Card */}
+            <div className="flex flex-col justify-between p-6 rounded-2xl bg-bg-surface border border-border-subtle hover:border-emerald-primary/50 transition-all duration-120 group shadow-lg">
+              <div className="space-y-4">
+                <div className="h-12 w-12 rounded-xl bg-emerald-primary/15 text-emerald-primary flex items-center justify-center font-black text-lg">
+                  H
+                </div>
+                <div>
+                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-primary">
+                    Community Lead & Creator
+                  </span>
+                  <h3 className="text-lg font-bold text-text-primary mt-1">Harshu</h3>
+                  <span className="text-xs font-mono text-text-muted">@harshu_moba</span>
+                </div>
+                <p className="text-xs text-text-secondary leading-relaxed">
+                  Official community middleman backing verified ID escrow handovers, Smex Cup tournaments, and MLBB rank pushing.
+                </p>
+              </div>
+
+              <div className="pt-6 mt-6 border-t border-border-subtle flex gap-2">
+                <a
+                  href="https://www.instagram.com/harshu_moba"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-bold bg-bg-canvas border border-border-subtle hover:border-[#E1306C] hover:text-[#E1306C] text-text-primary transition-colors"
+                >
+                  <InstagramIcon className="h-3.5 w-3.5" />
+                  <span>Instagram</span>
+                </a>
+                <a
+                  href="https://www.youtube.com/@Harshu_moba"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-bold bg-bg-canvas border border-border-subtle hover:border-[#FF0000] hover:text-[#FF0000] text-text-primary transition-colors"
+                >
+                  <YouTubeIcon className="h-3.5 w-3.5" />
+                  <span>YouTube</span>
+                </a>
+              </div>
+            </div>
+
+            {/* Bishal Card */}
+            <div className="flex flex-col justify-between p-6 rounded-2xl bg-bg-surface border border-border-subtle hover:border-cyan-depth/50 transition-all duration-120 group shadow-lg">
+              <div className="space-y-4">
+                <div className="h-12 w-12 rounded-xl bg-cyan-depth/15 text-cyan-depth flex items-center justify-center font-black text-lg">
+                  B
+                </div>
+                <div>
+                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-cyan-depth">
+                    Community Lead & Creator
+                  </span>
+                  <h3 className="text-lg font-bold text-text-primary mt-1">Bishal</h3>
+                  <span className="text-xs font-mono text-text-muted">@bishal__moba</span>
+                </div>
+                <p className="text-xs text-text-secondary leading-relaxed">
+                  Tournament host and content creator supervising fair play roster verification and 7-day buyer security.
+                </p>
+              </div>
+
+              <div className="pt-6 mt-6 border-t border-border-subtle flex gap-2">
+                <a
+                  href="https://www.instagram.com/bishal__moba"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-bold bg-bg-canvas border border-border-subtle hover:border-[#E1306C] hover:text-[#E1306C] text-text-primary transition-colors"
+                >
+                  <InstagramIcon className="h-3.5 w-3.5" />
+                  <span>Instagram</span>
+                </a>
+                <a
+                  href="https://www.youtube.com/@BishalMoba"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-bold bg-bg-canvas border border-border-subtle hover:border-[#FF0000] hover:text-[#FF0000] text-text-primary transition-colors"
+                >
+                  <YouTubeIcon className="h-3.5 w-3.5" />
+                  <span>YouTube</span>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 6. Call To Action Footer Banner */}
       <section className="w-full border-t border-border-subtle bg-bg-surface px-4 py-16 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-8 p-8 sm:p-12 rounded-3xl bg-gradient-to-br from-bg-surface-elevated via-bg-surface to-bg-surface-elevated border border-border-prominent shadow-xl">
           <div className="flex flex-col gap-3 max-w-2xl text-center md:text-left">

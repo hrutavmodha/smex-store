@@ -25,6 +25,7 @@ export interface MarketplaceListingItem {
   title: string;
   gameSlug: string;
   rankTier: string;
+  peakRank?: string;
   priceInr: string;
   baselinePriceInr?: string | null;
   badgeType: ListingBadgeType;
@@ -36,6 +37,16 @@ export interface MarketplaceListingItem {
   updatedAt: string;
   proofImages: ProofImageItem[];
   seller?: MarketplaceSeller;
+  totalSkins?: number;
+  totalHeroes?: number;
+  accountLevel?: number;
+  winrate?: string;
+  totalMatches?: number;
+  collectionPoints?: string;
+  emblemsStatus?: string;
+  serverRegion?: string;
+  bindingStatus?: string;
+  highlightAttributes?: string[];
 }
 
 export interface GetListingsParams {

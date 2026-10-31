@@ -162,6 +162,10 @@ export class TournamentLifecycleService {
         prizePoolInr: tournaments.prizePoolInr,
         maxTeams: tournaments.maxTeams,
         winnerTeamId: tournaments.winnerTeamId,
+        winnerName: tournaments.winnerName,
+        runnerUpName: tournaments.runnerUpName,
+        mvpName: tournaments.mvpName,
+        rulesMarkdown: tournaments.rulesMarkdown,
         createdAt: tournaments.createdAt,
         registeredTeams: sql<number>`CAST(count(${tournamentParticipants.id}) AS integer)`,
       })
@@ -199,7 +203,7 @@ export class TournamentLifecycleService {
     targetStatus: TournamentStatus,
     db: DbOrTx,
     redis?: Redis,
-    options?: { winnerTeamId?: string }
+    options?: { winnerTeamId?: string; winnerName?: string }
   ): Promise<Tournament> {
     const [current] = await db
       .select()
@@ -251,11 +255,12 @@ export class TournamentLifecycleService {
     // Invariant: Transition to completed requires crowned champion
     if (targetStatus === 'completed') {
       const winnerId = options?.winnerTeamId ?? current.winnerTeamId;
-      if (!winnerId) {
+      const winnerName = options?.winnerName ?? current.winnerName;
+      if (!winnerId && !winnerName) {
         throw new TournamentLifecycleError(
           'CHAMPION_NOT_DETERMINED',
           422,
-          'Cannot complete tournament without declaring a winning team'
+          'Cannot complete tournament without declaring a winning team or champion name'
         );
       }
     }
@@ -266,6 +271,7 @@ export class TournamentLifecycleService {
       .set({
         status: targetStatus,
         winnerTeamId: options?.winnerTeamId ?? current.winnerTeamId,
+        winnerName: options?.winnerName ?? current.winnerName,
         updatedAt: new Date(),
       })
       .where(eq(tournaments.id, tournamentId))

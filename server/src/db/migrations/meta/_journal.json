@@ -57,6 +57,13 @@
       "when": 1792589715306,
       "tag": "0007_eager_titania",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792700000000,
+      "tag": "0008_past_tournament_metadata",
+      "breakpoints": true
     }
   ]
 }

@@ -3,7 +3,7 @@
 import React, { useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { ShieldAlert, ShieldCheck, Home, DollarSign, Activity } from 'lucide-react';
+import { ShieldAlert, ShieldCheck, Home, DollarSign, Activity, Trophy } from 'lucide-react';
 import { useAuth } from '../../lib/useAuth';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -78,6 +78,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const navItems = [
     { href: '/admin', label: 'Overview', icon: Activity },
+    { href: '/admin/tournaments', label: 'Tournaments', icon: Trophy },
     { href: '/admin/rates', label: 'Boosting Rates', icon: DollarSign },
   ];
 

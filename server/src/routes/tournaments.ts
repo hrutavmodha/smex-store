@@ -50,6 +50,9 @@ const createTournamentSchema = z.object({
   format: z
     .enum(['single_elimination', 'double_elimination', 'round_robin'])
     .default('single_elimination'),
+  status: z
+    .enum(['upcoming', 'registration_open', 'ongoing', 'completed'])
+    .default('upcoming'),
   startTime: z.string().datetime({ message: 'Invalid start time ISO format' }),
   endTime: z.string().datetime({ message: 'Invalid end time ISO format' }).optional(),
   prizePoolInr: z.string().or(z.number()).default('0.00'),
@@ -60,6 +63,9 @@ const createTournamentSchema = z.object({
     .max(128, 'Max teams cannot exceed 128')
     .default(16),
   rulesMarkdown: z.string().optional(),
+  winnerName: z.string().trim().max(100).optional(),
+  runnerUpName: z.string().trim().max(100).optional(),
+  mvpName: z.string().trim().max(100).optional(),
 });
 
 const updateTournamentSchema = z.object({
@@ -73,6 +79,9 @@ const updateTournamentSchema = z.object({
   maxTeams: z.number().int().min(2).max(128).optional(),
   rulesMarkdown: z.string().optional(),
   winnerTeamId: z.string().uuid().optional(),
+  winnerName: z.string().trim().max(100).optional(),
+  runnerUpName: z.string().trim().max(100).optional(),
+  mvpName: z.string().trim().max(100).optional(),
 });
 
 const registerSquadSchema = z.object({
@@ -178,11 +187,15 @@ const tournamentsRoutes: FastifyPluginAsync = async (fastify) => {
           title: input.title,
           gameSlug: input.gameSlug,
           format: input.format,
+          status: input.status,
           startTime: new Date(input.startTime),
           endTime: input.endTime ? new Date(input.endTime) : null,
           prizePoolInr: String(input.prizePoolInr),
           maxTeams: input.maxTeams,
           rulesMarkdown: input.rulesMarkdown ?? null,
+          winnerName: input.winnerName ?? null,
+          runnerUpName: input.runnerUpName ?? null,
+          mvpName: input.mvpName ?? null,
         },
         fastify.db
       );
@@ -265,7 +278,7 @@ const tournamentsRoutes: FastifyPluginAsync = async (fastify) => {
             input.status,
             fastify.db,
             fastify.redis,
-            { winnerTeamId: input.winnerTeamId }
+            { winnerTeamId: input.winnerTeamId, winnerName: input.winnerName }
           );
 
           try {
@@ -294,6 +307,9 @@ const tournamentsRoutes: FastifyPluginAsync = async (fastify) => {
         if (input.maxTeams !== undefined) updateFields.maxTeams = input.maxTeams;
         if (input.rulesMarkdown !== undefined) updateFields.rulesMarkdown = input.rulesMarkdown;
         if (input.winnerTeamId !== undefined) updateFields.winnerTeamId = input.winnerTeamId;
+        if (input.winnerName !== undefined) updateFields.winnerName = input.winnerName;
+        if (input.runnerUpName !== undefined) updateFields.runnerUpName = input.runnerUpName;
+        if (input.mvpName !== undefined) updateFields.mvpName = input.mvpName;
 
         if (Object.keys(updateFields).length > 0) {
           updateFields.updatedAt = new Date();
@@ -309,6 +325,29 @@ const tournamentsRoutes: FastifyPluginAsync = async (fastify) => {
       } catch (err) {
         return handleError(reply, err);
       }
+    }
+  );
+
+  // 4b. DELETE /api/v1/tournaments/:id - Admin deletes tournament
+  fastify.delete(
+    '/api/v1/tournaments/:id',
+    {
+      preHandler: [fastify.authenticate, fastify.adminGuard],
+    },
+    async (request, reply) => {
+      const { id } = request.params as { id: string };
+      const [deleted] = await fastify.db
+        .delete(tournaments)
+        .where(eq(tournaments.id, id))
+        .returning();
+
+      if (!deleted) {
+        return reply
+          .code(404)
+          .send(formatRfc7807(404, 'TOURNAMENT_NOT_FOUND', 'Not Found', 'Tournament not found'));
+      }
+
+      return reply.code(200).send({ message: 'Tournament deleted successfully', id: deleted.id });
     }
   );
 

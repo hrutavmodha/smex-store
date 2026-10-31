@@ -210,6 +210,20 @@ export async function seed(db: SmexDatabase): Promise<SeedResult> {
   // 4. Upsert Sample Esports Tournaments (Past, Ongoing, Upcoming)
   const sampleTournaments = [
     {
+      title: 'Smex Cup Season 1 (S1)',
+      gameSlug: 'mlbb',
+      format: 'single_elimination' as const,
+      status: 'completed' as const,
+      prizePoolInr: '5000.00',
+      startTime: new Date('2026-09-15T14:00:00Z'),
+      endTime: new Date('2026-09-15T20:00:00Z'),
+      maxTeams: 16,
+      winnerName: 'VO DUDU',
+      runnerUpName: 'Goon',
+      mvpName: 'Marvelous Grievous',
+      rulesMarkdown: 'Official Smex Cup S1 Tournament Rules and Brackets.',
+    },
+    {
       title: 'Smex Community Clash Vol. 1',
       gameSlug: 'mlbb',
       format: 'single_elimination' as const,

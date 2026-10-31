@@ -3,7 +3,7 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Trophy, Users, Calendar, IndianRupee, Swords } from 'lucide-react';
+import { Trophy, Users, Calendar, IndianRupee, Swords, Crown, Medal, Flame, Sparkles, Award } from 'lucide-react';
 
 import type { TournamentCardData } from '@smex/shared';
 
@@ -133,6 +133,97 @@ function TournamentsDirectoryContent() {
           </nav>
         </div>
 
+        {/* Smex Cup Hall of Fame Showcase for Past Tab */}
+        {activeTab === 'past' && (
+          <div
+            className="mb-10 overflow-hidden rounded-2xl border border-amber-500/40 bg-gradient-to-br from-[#121212] via-[#0A0A0A] to-[#161616] p-6 sm:p-8 shadow-2xl relative"
+          >
+            {/* Background Glow */}
+            <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-64 h-64 bg-emerald-primary/10 rounded-full blur-3xl pointer-events-none" />
+
+            <div className="relative z-10">
+              <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border-subtle/80 pb-5 mb-6">
+                <div>
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 text-xs font-mono font-bold tracking-wider uppercase mb-2">
+                    <Sparkles className="h-3.5 w-3.5" />
+                    <span>Official Hall of Fame</span>
+                  </div>
+                  <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-text-primary">
+                    Smex Cup Season 1 (S1)
+                  </h2>
+                  <p className="text-xs sm:text-sm text-text-secondary mt-1">
+                    The inaugural Mobile Legends championship of Smex Store. Completed tournament standings & honorees.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="px-3 py-1 rounded-lg bg-bg-surface-elevated text-xs font-mono font-bold text-emerald-primary border border-border-subtle">
+                    MLBB • 5v5
+                  </span>
+                  <span className="px-3 py-1 rounded-lg bg-amber-500/10 text-xs font-mono font-bold text-amber-400 border border-amber-500/20">
+                    CONCLUDED
+                  </span>
+                </div>
+              </div>
+
+              {/* Hall of Fame Podium Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+                {/* 1. Champion: VO DUDU */}
+                <div className="flex flex-col items-center text-center p-6 rounded-xl bg-gradient-to-b from-amber-500/10 to-transparent border border-amber-500/40 relative group hover:border-amber-400 transition-colors duration-[120ms]">
+                  <div className="w-14 h-14 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 mb-3 shadow-[0_0_20px_rgba(245,158,11,0.25)]">
+                    <Crown className="h-7 w-7" />
+                  </div>
+                  <span className="inline-flex items-center gap-1 text-[11px] font-mono font-extrabold uppercase tracking-widest text-amber-400 mb-1">
+                    <Trophy className="h-3.5 w-3.5" />
+                    CHAMPION / WINNER
+                  </span>
+                  <h3 className="text-xl sm:text-2xl font-black text-text-primary tracking-wide">
+                    VO DUDU
+                  </h3>
+                  <p className="text-[11px] text-text-muted mt-2 font-mono">
+                    Smex Cup S1 Title Winner
+                  </p>
+                </div>
+
+                {/* 2. Runner-Up: Goon */}
+                <div className="flex flex-col items-center text-center p-6 rounded-xl bg-gradient-to-b from-slate-400/10 to-transparent border border-slate-400/40 relative group hover:border-slate-300 transition-colors duration-[120ms]">
+                  <div className="w-14 h-14 rounded-2xl bg-slate-400/20 border border-slate-400/40 flex items-center justify-center text-slate-300 mb-3 shadow-[0_0_20px_rgba(148,163,184,0.2)]">
+                    <Medal className="h-7 w-7" />
+                  </div>
+                  <span className="inline-flex items-center gap-1 text-[11px] font-mono font-extrabold uppercase tracking-widest text-slate-300 mb-1">
+                    <Award className="h-3.5 w-3.5" />
+                    RUNNER-UP
+                  </span>
+                  <h3 className="text-xl sm:text-2xl font-black text-text-primary tracking-wide">
+                    Goon
+                  </h3>
+                  <p className="text-[11px] text-text-muted mt-2 font-mono">
+                    Smex Cup S1 Grand Finalist
+                  </p>
+                </div>
+
+                {/* 3. Audience Favourite: Marvelous Grievous */}
+                <div className="flex flex-col items-center text-center p-6 rounded-xl bg-gradient-to-b from-rose-500/10 to-transparent border border-rose-500/40 relative group hover:border-rose-400 transition-colors duration-[120ms]">
+                  <div className="w-14 h-14 rounded-2xl bg-rose-500/20 border border-rose-500/40 flex items-center justify-center text-rose-400 mb-3 shadow-[0_0_20px_rgba(244,63,94,0.25)]">
+                    <Flame className="h-7 w-7" />
+                  </div>
+                  <span className="inline-flex items-center gap-1 text-[11px] font-mono font-extrabold uppercase tracking-widest text-rose-400 mb-1">
+                    <Flame className="h-3.5 w-3.5" />
+                    AUDIENCE FAVOURITE
+                  </span>
+                  <h3 className="text-xl sm:text-2xl font-black text-text-primary tracking-wide">
+                    Marvelous Grievous
+                  </h3>
+                  <p className="text-[11px] text-text-muted mt-2 font-mono">
+                    Community MVP & Fan Choice
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Tournament Card Grid */}
         {isLoading ? (
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -161,6 +252,7 @@ function TournamentsDirectoryContent() {
           >
             {tournamentsList.map((t) => {
               const isOngoing = t.status === 'ongoing';
+              const isCompleted = t.status === 'completed';
 
               return (
                 <Link
@@ -169,7 +261,7 @@ function TournamentsDirectoryContent() {
                   className="group relative flex flex-col justify-between rounded-xl border border-border-subtle bg-bg-surface p-6 transition-all duration-[120ms] ease-out hover:border-emerald-primary hover:-translate-y-0.5"
                 >
                   <div>
-                    {/* Badges & Live Status */}
+                    {/* Badges & Live/Completed Status */}
                     <div className="flex items-center justify-between gap-2 mb-3">
                       <div className="flex items-center gap-2">
                         <span className="rounded bg-bg-surface-elevated px-2 py-0.5 text-[10px] font-mono font-bold uppercase text-emerald-primary border border-border-subtle">
@@ -189,12 +281,46 @@ function TournamentsDirectoryContent() {
                           LIVE
                         </div>
                       )}
+
+                      {isCompleted && (
+                        <div className="flex items-center gap-1.5 rounded-full border border-amber-500/40 bg-amber-500/10 px-2.5 py-0.5 text-[10px] font-bold text-amber-400">
+                          <Trophy className="h-3 w-3 text-amber-400" />
+                          CONCLUDED
+                        </div>
+                      )}
                     </div>
 
                     {/* Tournament Title */}
                     <h3 className="text-lg font-bold text-text-primary group-hover:text-emerald-primary transition-colors duration-[120ms]">
                       {t.title}
                     </h3>
+
+                    {/* Winner Metadata Pills if Completed */}
+                    {(t.winnerName || t.runnerUpName || t.mvpName) && (
+                      <div className="mt-3 flex flex-col gap-1.5 pt-2 border-t border-border-subtle/60">
+                        {t.winnerName && (
+                          <div className="flex items-center gap-1.5 text-xs text-amber-400 font-semibold">
+                            <Crown className="h-3.5 w-3.5 shrink-0" />
+                            <span className="text-[10px] uppercase font-mono text-text-muted">Champion:</span>
+                            <span className="text-text-primary font-bold">{t.winnerName}</span>
+                          </div>
+                        )}
+                        {t.runnerUpName && (
+                          <div className="flex items-center gap-1.5 text-xs text-slate-300 font-semibold">
+                            <Medal className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                            <span className="text-[10px] uppercase font-mono text-text-muted">Runner-up:</span>
+                            <span className="text-text-secondary font-medium">{t.runnerUpName}</span>
+                          </div>
+                        )}
+                        {t.mvpName && (
+                          <div className="flex items-center gap-1.5 text-xs text-rose-400 font-semibold">
+                            <Flame className="h-3.5 w-3.5 shrink-0" />
+                            <span className="text-[10px] uppercase font-mono text-text-muted">Audience MVP:</span>
+                            <span className="text-text-secondary font-medium">{t.mvpName}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     {/* Prize Pool */}
                     <div className="mt-4 flex items-baseline gap-1 text-emerald-primary">

@@ -14,6 +14,10 @@ export interface TournamentCardData {
   maxTeams: number;
   registeredTeams?: number;
   winnerTeamId?: string | null;
+  winnerName?: string | null;
+  runnerUpName?: string | null;
+  mvpName?: string | null;
+  rulesMarkdown?: string | null;
 }
 
 export interface MatchNodeData {
