@@ -91,7 +91,7 @@ jobs:
             chmod 600 ~/.ssh/id_ed25519
             # Remote docker compose pull and restart
             echo "${{ secrets.GITHUB_TOKEN }}" | ssh -o StrictHostKeyChecking=no "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
-              "docker login ghcr.io -u ${{ github.actor }} --password-stdin && cd ${{ secrets.SSH_DEPLOY_DIR:-/opt/smex-store }} && CLIENT_IMAGE=${{ env.CLIENT_IMAGE }}:${{ github.sha }} SERVER_IMAGE=${{ env.SERVER_IMAGE }}:${{ github.sha }} docker compose -f docker-compose.prod.yml pull client server && CLIENT_IMAGE=${{ env.CLIENT_IMAGE }}:${{ github.sha }} SERVER_IMAGE=${{ env.SERVER_IMAGE }}:${{ github.sha }} docker compose -f docker-compose.prod.yml up -d --remove-orphans client server"
+              "docker login ghcr.io -u ${{ github.actor }} --password-stdin && cd ${{ secrets.SSH_DEPLOY_DIR || '/opt/smex-store' }} && CLIENT_IMAGE=${{ env.CLIENT_IMAGE }}:${{ github.sha }} SERVER_IMAGE=${{ env.SERVER_IMAGE }}:${{ github.sha }} docker compose -f docker-compose.prod.yml pull client server && CLIENT_IMAGE=${{ env.CLIENT_IMAGE }}:${{ github.sha }} SERVER_IMAGE=${{ env.SERVER_IMAGE }}:${{ github.sha }} docker compose -f docker-compose.prod.yml up -d --remove-orphans client server"
           else
             echo "Notice: PRODUCTION_DEPLOY_WEBHOOK or SSH_HOST not configured. Container images published to GHCR. Manual deployment pull required on target host."
           fi
@@ -146,7 +146,7 @@ jobs:
             echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_ed25519
             chmod 600 ~/.ssh/id_ed25519
             ssh -o StrictHostKeyChecking=no "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
-              "cd ${{ secrets.SSH_DEPLOY_DIR:-/opt/smex-store }} && docker compose -f docker-compose.prod.yml down"
+              "cd ${{ secrets.SSH_DEPLOY_DIR || '/opt/smex-store' }} && docker compose -f docker-compose.prod.yml down"
             echo "Remote rollback executed via SSH."
           else
             echo "Warning: Automated rollback handler requires PRODUCTION_ROLLBACK_WEBHOOK or SSH_HOST to be configured."
