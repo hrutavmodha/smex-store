@@ -402,7 +402,6 @@ export default function Home() {
                     Content Creator & Promoter
                   </span>
                   <h3 className="text-lg font-bold text-text-primary mt-1">Harshu</h3>
-                  <span className="text-xs font-mono text-text-muted">@harshu_moba</span>
                 </div>
                 <p className="text-xs text-text-secondary leading-relaxed">
                   Popular MLBB content creator and streamer sharing gameplay highlights, tournament coverage, and MLBB tips.
@@ -442,7 +441,6 @@ export default function Home() {
                     Content Creator & Promoter
                   </span>
                   <h3 className="text-lg font-bold text-text-primary mt-1">Bishal</h3>
-                  <span className="text-xs font-mono text-text-muted">@bishal__moba</span>
                 </div>
                 <p className="text-xs text-text-secondary leading-relaxed">
                   MLBB streamer and content creator covering competitive matches, hero gameplay, and esports updates.
