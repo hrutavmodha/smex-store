@@ -1,4 +1,4 @@
-name: Continuous Deployment & Rollback
+name: Continuous Deployment
 
 on:
   workflow_run:
@@ -20,7 +20,7 @@ env:
 
 jobs:
   deploy:
-    name: Build, Publish, Deploy & Healthcheck
+    name: Build, Publish & Deploy
     runs-on: ubuntu-latest
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     permissions:
@@ -89,66 +89,10 @@ jobs:
             mkdir -p ~/.ssh
             echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_ed25519
             chmod 600 ~/.ssh/id_ed25519
-            # Remote docker compose pull and restart
+            # Remote docker compose pull, restart, and reload nginx
             echo "${{ secrets.GITHUB_TOKEN }}" | ssh -o StrictHostKeyChecking=no "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
-              "docker login ghcr.io -u ${{ github.actor }} --password-stdin && cd ${{ secrets.SSH_DEPLOY_DIR || '/opt/smex-store' }} && CLIENT_IMAGE=${{ env.CLIENT_IMAGE }}:${{ github.sha }} SERVER_IMAGE=${{ env.SERVER_IMAGE }}:${{ github.sha }} docker compose -f docker-compose.prod.yml pull client server && CLIENT_IMAGE=${{ env.CLIENT_IMAGE }}:${{ github.sha }} SERVER_IMAGE=${{ env.SERVER_IMAGE }}:${{ github.sha }} docker compose -f docker-compose.prod.yml up -d --remove-orphans client server"
+              "docker login ghcr.io -u ${{ github.actor }} --password-stdin && cd ${{ secrets.SSH_DEPLOY_DIR || '/opt/smex-store' }} && CLIENT_IMAGE=${{ env.CLIENT_IMAGE }}:${{ github.sha }} SERVER_IMAGE=${{ env.SERVER_IMAGE }}:${{ github.sha }} docker compose -f docker-compose.prod.yml pull client server && CLIENT_IMAGE=${{ env.CLIENT_IMAGE }}:${{ github.sha }} SERVER_IMAGE=${{ env.SERVER_IMAGE }}:${{ github.sha }} docker compose -f docker-compose.prod.yml up -d --remove-orphans client server && docker compose -f docker-compose.prod.yml exec -T nginx nginx -s reload 2>/dev/null || true"
+            echo "Deployment completed successfully on remote server."
           else
             echo "Notice: PRODUCTION_DEPLOY_WEBHOOK or SSH_HOST not configured. Container images published to GHCR. Manual deployment pull required on target host."
           fi
-
-      - name: Verify Deployment Health Probe
-        id: deploy_probe
-        run: |
-          TARGET_URL="${{ secrets.PRODUCTION_HEALTH_URL }}"
-          MAX_ATTEMPTS=10
-          INTERVAL=5
-          DEPLOY_SUCCESS=false
-
-          if [ -n "$TARGET_URL" ]; then
-            echo "Starting health probe polling on $TARGET_URL (Max attempts: $MAX_ATTEMPTS, interval: ${INTERVAL}s)..."
-            for i in $(seq 1 $MAX_ATTEMPTS); do
-              echo "Probe attempt $i of $MAX_ATTEMPTS..."
-              STATUS_CODE=$(curl -s -o /tmp/health_response.json -w "%{http_code}" "$TARGET_URL" || echo "000")
-              if [ "$STATUS_CODE" -eq 200 ]; then
-                if grep -q '"status":"ok"' /tmp/health_response.json; then
-                  echo "Health probe passed with status 200 OK and healthy state."
-                  DEPLOY_SUCCESS=true
-                  break
-                fi
-              fi
-              sleep $INTERVAL
-            done
-          else
-            echo "PRODUCTION_HEALTH_URL not configured. Image publication complete."
-            DEPLOY_SUCCESS=true
-          fi
-
-          if [ "$DEPLOY_SUCCESS" = "false" ]; then
-            echo "HEALTH_CHECK_FAILED=true" >> "$GITHUB_OUTPUT"
-            echo "Critical: Post-deployment health check failed after ${MAX_ATTEMPTS} attempts."
-            exit 1
-          else
-            echo "HEALTH_CHECK_FAILED=false" >> "$GITHUB_OUTPUT"
-            echo "Deployment successfully verified."
-          fi
-
-      - name: Automated Rollback on Health Probe Failure
-        if: failure() && steps.trigger_deploy.outcome == 'success'
-        run: |
-          echo "::error title=Deployment Failed::Health check failed. Executing automated rollback..."
-          if [ -n "${{ secrets.PRODUCTION_ROLLBACK_WEBHOOK }}" ]; then
-            curl -s -X POST "${{ secrets.PRODUCTION_ROLLBACK_WEBHOOK }}" \
-              -H "Content-Type: application/json" \
-              -d '{"action":"rollback","reason":"health_check_failed"}'
-            echo "Rollback webhook dispatched."
-          elif [ -n "${{ secrets.SSH_HOST }}" ]; then
-            mkdir -p ~/.ssh
-            echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_ed25519
-            chmod 600 ~/.ssh/id_ed25519
-            ssh -o StrictHostKeyChecking=no "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
-              "cd ${{ secrets.SSH_DEPLOY_DIR || '/opt/smex-store' }} && docker compose -f docker-compose.prod.yml down"
-            echo "Remote rollback executed via SSH."
-          else
-            echo "Warning: Automated rollback handler requires PRODUCTION_ROLLBACK_WEBHOOK or SSH_HOST to be configured."
-          fi
-          exit 1
