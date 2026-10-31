@@ -413,7 +413,7 @@ export default function Home() {
                   href="https://www.instagram.com/harshu_moba"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-bold bg-bg-canvas border border-border-subtle hover:border-[#E1306C] hover:text-[#E1306C] text-text-primary transition-colors duration-[120ms]"
+                  className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-bold bg-bg-canvas border border-border-subtle hover:border-emerald-primary hover:text-emerald-primary text-text-primary transition-colors duration-[120ms]"
                 >
                   <InstagramIcon className="h-3.5 w-3.5" />
                   <span>Instagram</span>
@@ -422,7 +422,7 @@ export default function Home() {
                   href="https://www.youtube.com/@Harshu_moba"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-bold bg-bg-canvas border border-border-subtle hover:border-[#FF0000] hover:text-[#FF0000] text-text-primary transition-colors duration-[120ms]"
+                  className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-bold bg-bg-canvas border border-border-subtle hover:border-emerald-primary hover:text-emerald-primary text-text-primary transition-colors duration-[120ms]"
                 >
                   <YouTubeIcon className="h-3.5 w-3.5" />
                   <span>YouTube</span>
@@ -452,7 +452,7 @@ export default function Home() {
                   href="https://www.instagram.com/bishal__moba"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-bold bg-bg-canvas border border-border-subtle hover:border-[#E1306C] hover:text-[#E1306C] text-text-primary transition-colors duration-[120ms]"
+                  className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-bold bg-bg-canvas border border-border-subtle hover:border-emerald-primary hover:text-emerald-primary text-text-primary transition-colors duration-[120ms]"
                 >
                   <InstagramIcon className="h-3.5 w-3.5" />
                   <span>Instagram</span>
@@ -461,7 +461,7 @@ export default function Home() {
                   href="https://www.youtube.com/@BishalMoba"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-bold bg-bg-canvas border border-border-subtle hover:border-[#FF0000] hover:text-[#FF0000] text-text-primary transition-colors duration-[120ms]"
+                  className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-bold bg-bg-canvas border border-border-subtle hover:border-emerald-primary hover:text-emerald-primary text-text-primary transition-colors duration-[120ms]"
                 >
                   <YouTubeIcon className="h-3.5 w-3.5" />
                   <span>YouTube</span>

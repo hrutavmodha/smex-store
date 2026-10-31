@@ -202,7 +202,7 @@ export function Footer() {
                       target="_blank"
                       rel="noopener noreferrer"
                       aria-label="Harshu on Instagram"
-                      className="p-1.5 rounded text-text-muted hover:text-[#E1306C] hover:bg-bg-surface-elevated transition-colors duration-[120ms]"
+                      className="p-1.5 rounded border border-transparent hover:border-emerald-primary/40 text-text-muted hover:text-emerald-primary hover:bg-bg-surface-elevated transition-colors duration-[120ms]"
                     >
                       <InstagramIcon className="h-4 w-4" />
                     </a>
@@ -211,7 +211,7 @@ export function Footer() {
                       target="_blank"
                       rel="noopener noreferrer"
                       aria-label="Harshu on YouTube"
-                      className="p-1.5 rounded text-text-muted hover:text-[#FF0000] hover:bg-bg-surface-elevated transition-colors duration-[120ms]"
+                      className="p-1.5 rounded border border-transparent hover:border-emerald-primary/40 text-text-muted hover:text-emerald-primary hover:bg-bg-surface-elevated transition-colors duration-[120ms]"
                     >
                       <YouTubeIcon className="h-4 w-4" />
                     </a>
@@ -227,7 +227,7 @@ export function Footer() {
                       target="_blank"
                       rel="noopener noreferrer"
                       aria-label="Bishal on Instagram"
-                      className="p-1.5 rounded text-text-muted hover:text-[#E1306C] hover:bg-bg-surface-elevated transition-colors duration-[120ms]"
+                      className="p-1.5 rounded border border-transparent hover:border-emerald-primary/40 text-text-muted hover:text-emerald-primary hover:bg-bg-surface-elevated transition-colors duration-[120ms]"
                     >
                       <InstagramIcon className="h-4 w-4" />
                     </a>
@@ -236,7 +236,7 @@ export function Footer() {
                       target="_blank"
                       rel="noopener noreferrer"
                       aria-label="Bishal on YouTube"
-                      className="p-1.5 rounded text-text-muted hover:text-[#FF0000] hover:bg-bg-surface-elevated transition-colors duration-[120ms]"
+                      className="p-1.5 rounded border border-transparent hover:border-emerald-primary/40 text-text-muted hover:text-emerald-primary hover:bg-bg-surface-elevated transition-colors duration-[120ms]"
                     >
                       <YouTubeIcon className="h-4 w-4" />
                     </a>
