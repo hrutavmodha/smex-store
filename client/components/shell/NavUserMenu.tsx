@@ -35,7 +35,6 @@ export function NavUserMenu({
         aria-expanded={isDropdownOpen}
         data-testid="user-profile-button"
       >
-        {/* Avatar Preset Badge */}
         <span
           data-testid="user-avatar-badge"
           data-preset={user.avatarPreset}
@@ -47,7 +46,6 @@ export function NavUserMenu({
           {user.ign || user.email}
         </span>
 
-        {/* Email unverified warning indicator */}
         {!user.emailVerified && (
           <span
             data-testid="unverified-email-dot"
@@ -59,13 +57,11 @@ export function NavUserMenu({
         <ChevronDown className="h-3.5 w-3.5 text-text-muted" />
       </button>
 
-      {/* Profile Dropdown Menu */}
       {isDropdownOpen && (
         <div
           data-testid="user-profile-dropdown"
           className="absolute right-0 mt-2 w-56 rounded-xl border border-border-subtle bg-bg-surface shadow-2xl p-1.5 z-50 flex flex-col gap-1 transition-transform duration-[120ms]"
         >
-          {/* Unverified Email Alert Banner */}
           {!user.emailVerified && (
             <div
               data-testid="unverified-email-banner"

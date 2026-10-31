@@ -137,7 +137,13 @@ export const searchRateLimitConfig: RateLimitOptions = {
   timeWindow: 60 * 1000, // 60 seconds
   keyGenerator: (req) => {
     const user = (req as FastifyRequest & { user?: { sub?: string } }).user;
-    return `rl:search:${user?.sub || req.ip}`;
+    let clientIp = '127.0.0.1';
+    try {
+      clientIp = req.ip || '127.0.0.1';
+    } catch {
+      clientIp = req.raw?.socket?.remoteAddress || (req.headers['x-forwarded-for'] as string) || '127.0.0.1';
+    }
+    return `rl:search:${user?.sub || clientIp}`;
   },
   errorResponseBuilder,
 };
@@ -150,7 +156,15 @@ const rateLimitPlugin: FastifyPluginAsync = async (fastify) => {
     timeWindow: 60 * 1000,
     hook: 'onRequest',
     redis: fastify.redis,
-    keyGenerator: (req) => `rl:global:${req.ip}`,
+    keyGenerator: (req) => {
+      let clientIp = '127.0.0.1';
+      try {
+        clientIp = req.ip || '127.0.0.1';
+      } catch {
+        clientIp = req.raw?.socket?.remoteAddress || (req.headers['x-forwarded-for'] as string) || '127.0.0.1';
+      }
+      return `rl:global:${clientIp}`;
+    },
     errorResponseBuilder,
   });
 };

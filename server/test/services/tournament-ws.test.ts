@@ -2,37 +2,10 @@ import { test, describe } from 'vitest';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import { eq } from 'drizzle-orm';
-import { build } from '../helper.js';
+import { build, createVerifiedUser } from '../helper.js';
 import { users } from '../../src/db/schema/users.js';
 import { TeamService } from '../../src/services/team.service.js';
 import type { FastifyInstance } from 'fastify';
-
-async function createVerifiedUser(app: FastifyInstance, prefix = 'wsu') {
-  const ip = `10.${Math.floor(Math.random() * 200) + 1}.${Math.floor(Math.random() * 200) + 1}.${Math.floor(Math.random() * 200) + 1}`;
-  const email = `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}@smexstore.com`;
-  const username = `${prefix}_${Date.now().toString().slice(-4)}_${Math.random().toString(36).slice(2, 6)}`;
-  const password = 'ValidPassword123!';
-
-  const regRes = await app.inject({
-    method: 'POST',
-    url: '/api/v1/auth/register',
-    remoteAddress: ip,
-    payload: { email, password, username },
-  });
-  const user = JSON.parse(regRes.body);
-
-  await app.db.update(users).set({ emailVerified: true }).where(eq(users.id, user.id));
-
-  const loginRes = await app.inject({
-    method: 'POST',
-    url: '/api/v1/auth/login',
-    remoteAddress: ip,
-    payload: { email, password },
-  });
-  const { accessToken } = JSON.parse(loginRes.body);
-
-  return { user, token: accessToken };
-}
 
 function createAdminToken(app: FastifyInstance, userId: string) {
   return app.jwt.sign({

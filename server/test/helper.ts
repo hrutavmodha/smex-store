@@ -30,6 +30,17 @@ async function build(
   }
   await app.ready();
 
+  if (typeof (app as any).injectWS === 'function') {
+    const origInjectWS = (app as any).injectWS.bind(app);
+    (app as any).injectWS = (path: string = '/', upgradeContext: any = {}, options: any = {}) => {
+      const mergedContext = {
+        socket: { remoteAddress: '127.0.0.1' },
+        ...upgradeContext,
+      };
+      return origInjectWS(path, mergedContext, options);
+    };
+  }
+
   // Clear any residual rate-limit or search cache keys from prior runs to ensure test determinism
   if (app.redis) {
     const rlKeys = await app.redis.keys('fastify-rate-limit-*');

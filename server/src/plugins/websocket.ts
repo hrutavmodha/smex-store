@@ -147,120 +147,149 @@ const websocketPlugin: FastifyPluginAsync = async (fastify) => {
 
   // Register public WebSocket gateway route
   fastify.get('/ws', { websocket: true }, async (socket, req) => {
-    const query = (req.query || {}) as { token?: string };
-    let userId: string | null = null;
-    let sessionId: string | null = null;
+    try {
+      // Buffer early incoming messages during async auth validation
+      const earlyMessages: (Buffer | string)[] = [];
+      let isInitialized = false;
 
-    const cookieToken = getCookie(req, 'smex_access_token');
+      const earlyHandler = (raw: Buffer | string) => {
+        if (!isInitialized) {
+          earlyMessages.push(raw);
+        }
+      };
+      socket.on('message', earlyHandler);
 
-    const token = query.token || cookieToken;
+      const query = (req.query || {}) as { token?: string };
+      let userId: string | null = null;
+      let sessionId: string | null = null;
 
-    if (token && fastify.jwt) {
-      try {
-        const decoded = fastify.jwt.verify<AccessTokenPayload>(token);
-        userId = decoded.sub;
-        sessionId = decoded.sessionId;
-      } catch {
-        // Unauthenticated or expired token: allow guest or restricted connection
-      }
-    }
+      const cookieToken = getCookie(req, 'smex_access_token');
 
-    // Guard against revoked sessions and banned users on WebSocket handshake (Bug 10)
-    if (fastify.redis) {
-      if (sessionId) {
-        const isRevoked = await fastify.redis.exists(`revoked_token:${sessionId}`);
-        if (isRevoked) {
-          socket.close(4401, 'Session revoked');
-          return;
+      const token = query.token || cookieToken;
+
+      if (token && fastify.jwt) {
+        try {
+          const decoded = fastify.jwt.verify<AccessTokenPayload>(token);
+          userId = decoded.sub;
+          sessionId = decoded.sessionId;
+        } catch {
+          // Unauthenticated or expired token: allow guest or restricted connection
         }
       }
-      if (userId) {
-        const cachedBan = await fastify.redis.get(`banned_user:${userId}`);
-        let isBanned = cachedBan === '1';
-        if (cachedBan === null && fastify.db) {
-          const [userRow] = await fastify.db
-            .select({ isBanned: users.isBanned })
-            .from(users)
-            .where(eq(users.id, userId))
-            .limit(1);
 
-          if (userRow?.isBanned) {
-            isBanned = true;
-            await fastify.redis.set(`banned_user:${userId}`, '1', 'EX', 3600);
-          } else {
-            await fastify.redis.set(`banned_user:${userId}`, '0', 'EX', 300);
+      // Guard against revoked sessions and banned users on WebSocket handshake (Bug 10)
+      if (fastify.redis) {
+        if (sessionId) {
+          const isRevoked = await fastify.redis.exists(`revoked_token:${sessionId}`);
+          if (isRevoked) {
+            socket.removeListener?.('message', earlyHandler);
+            socket.close(4401, 'Session revoked');
+            return;
           }
         }
-        if (isBanned) {
+        if (userId) {
+          const cachedBan = await fastify.redis.get(`banned_user:${userId}`);
+          let isBanned = cachedBan === '1';
+          if (cachedBan === null && fastify.db) {
+            const [userRow] = await fastify.db
+              .select({ isBanned: users.isBanned })
+              .from(users)
+              .where(eq(users.id, userId))
+              .limit(1);
+
+            if (userRow?.isBanned) {
+              isBanned = true;
+              await fastify.redis.set(`banned_user:${userId}`, '1', 'EX', 3600);
+            } else {
+              await fastify.redis.set(`banned_user:${userId}`, '0', 'EX', 300);
+            }
+          }
+          if (isBanned) {
+            socket.removeListener?.('message', earlyHandler);
+            socket.close(4403, 'Account banned');
+            return;
+          }
+        }
+      } else if (fastify.db && userId) {
+        const [userRow] = await fastify.db
+          .select({ isBanned: users.isBanned })
+          .from(users)
+          .where(eq(users.id, userId))
+          .limit(1);
+
+        if (userRow?.isBanned) {
+          socket.removeListener?.('message', earlyHandler);
           socket.close(4403, 'Account banned');
           return;
         }
       }
-    } else if (fastify.db && userId) {
-      const [userRow] = await fastify.db
-        .select({ isBanned: users.isBanned })
-        .from(users)
-        .where(eq(users.id, userId))
-        .limit(1);
 
-      if (userRow?.isBanned) {
-        socket.close(4403, 'Account banned');
-        return;
-      }
-    }
+      const meta = registerSocket(socket, clients, fastify.log, userId, sessionId, req.id);
 
-    const meta = registerSocket(socket, clients, fastify.log, userId, sessionId, req.id);
+      socket.removeListener?.('message', earlyHandler);
+      isInitialized = true;
 
-    socket.on('message', (raw: Buffer | string) => {
-      try {
-        const text = typeof raw === 'string' ? raw : raw.toString();
-        const msg = JSON.parse(text);
-        if (msg.action === 'subscribe' && typeof msg.channel === 'string') {
-          const channel = msg.channel.trim();
+      const handleMessage = (raw: Buffer | string) => {
+        try {
+          const text = typeof raw === 'string' ? raw : raw.toString();
+          const msg = JSON.parse(text);
+          if (msg.action === 'subscribe' && typeof msg.channel === 'string') {
+            const channel = msg.channel.trim();
 
-          // Enforce private channel authorization (BUG-M8-005)
-          if (channel.startsWith('user:')) {
-            const targetUserId = channel.slice(5);
-            if (!meta.userId || meta.userId !== targetUserId) {
-              if (socket.readyState === 1) {
-                socket.send(
-                  JSON.stringify({
-                    event: 'error',
-                    code: 'FORBIDDEN_CHANNEL',
-                    message: 'You are not authorized to subscribe to this private channel',
-                  })
-                );
+            // Enforce private channel authorization (BUG-M8-005)
+            if (channel.startsWith('user:')) {
+              const targetUserId = channel.slice(5);
+              if (!meta.userId || meta.userId !== targetUserId) {
+                if (socket.readyState === 1) {
+                  socket.send(
+                    JSON.stringify({
+                      event: 'error',
+                      code: 'FORBIDDEN_CHANNEL',
+                      message: 'You are not authorized to subscribe to this private channel',
+                    })
+                  );
+                }
+                return;
               }
-              return;
+            }
+
+            meta.subscriptions.add(channel);
+            if (socket.readyState === 1) {
+              socket.send(
+                JSON.stringify({
+                  event: 'subscribed',
+                  channel,
+                  timestamp: Date.now(),
+                })
+              );
+            }
+          } else if (msg.action === 'unsubscribe' && typeof msg.channel === 'string') {
+            meta.subscriptions.delete(msg.channel);
+            if (socket.readyState === 1) {
+              socket.send(
+                JSON.stringify({
+                  event: 'unsubscribed',
+                  channel: msg.channel,
+                  timestamp: Date.now(),
+                })
+              );
             }
           }
-
-          meta.subscriptions.add(channel);
-          if (socket.readyState === 1) {
-            socket.send(
-              JSON.stringify({
-                event: 'subscribed',
-                channel,
-                timestamp: Date.now(),
-              })
-            );
-          }
-        } else if (msg.action === 'unsubscribe' && typeof msg.channel === 'string') {
-          meta.subscriptions.delete(msg.channel);
-          if (socket.readyState === 1) {
-            socket.send(
-              JSON.stringify({
-                event: 'unsubscribed',
-                channel: msg.channel,
-                timestamp: Date.now(),
-              })
-            );
-          }
+        } catch (err) {
+          fastify.log.warn({ err }, 'Invalid WebSocket incoming message frame');
         }
-      } catch (err) {
-        fastify.log.warn({ err }, 'Invalid WebSocket incoming message frame');
+      };
+
+      socket.on('message', handleMessage);
+
+      // Process any messages that arrived during async authentication
+      for (const earlyMsg of earlyMessages) {
+        handleMessage(earlyMsg);
       }
-    });
+    } catch (err) {
+      console.error('[CRITICAL WS ERROR]', err);
+      throw err;
+    }
   });
 };
 
