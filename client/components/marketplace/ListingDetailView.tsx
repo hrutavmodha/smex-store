@@ -59,7 +59,7 @@ export function ListingDetailView({ listing }: ListingDetailViewProps) {
     ? listing.contactHandle.replace(/[^0-9]/g, '')
     : '';
   const waMsg = encodeURIComponent(
-    `Hello! I am ready to purchase "${listing.title}" (Price: ₹${listing.priceInr} INR). Please proceed with the Harshu & Bishal escrow handover.`
+    `Hello! I am ready to purchase "${listing.title}" (Price: ₹${listing.priceInr} INR). Please proceed with the verified escrow handover.`
   );
   const directWhatsAppUrl = cleanPhone
     ? `https://wa.me/${cleanPhone}?text=${waMsg}`
@@ -229,7 +229,7 @@ export function ListingDetailView({ listing }: ListingDetailViewProps) {
               <li className="flex items-start gap-2">
                 <UserCheck className="w-4 h-4 text-cyan-depth shrink-0 mt-0.5" />
                 <span>
-                  <strong>7-Day Middleman Protection:</strong> Backed and verified by Harshu & Bishal.
+                  <strong>7-Day Escrow Protection:</strong> Handover assistance and middleman security backed by SMEX Store.
                 </span>
               </li>
             </ul>

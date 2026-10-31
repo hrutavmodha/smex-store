@@ -151,7 +151,7 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* Column 4: Community Leads & Official Channels */}
+          {/* Column 4: Creators & Official Channels */}
           <div className="space-y-4">
             <div className="space-y-2">
               <h3 className="text-xs font-semibold uppercase tracking-wider text-text-primary">
@@ -187,10 +187,10 @@ export function Footer() {
               )}
             </div>
 
-            {/* Community Leads & Creators */}
+            {/* Creators & Promoters */}
             <div className="space-y-2.5 pt-2 border-t border-border-subtle/70">
               <h3 className="text-xs font-semibold uppercase tracking-wider text-text-primary">
-                Community Leads & Creators
+                Creators & Promoters
               </h3>
               <div className="space-y-2">
                 {/* Harshu */}
