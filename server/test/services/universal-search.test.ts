@@ -22,7 +22,6 @@ describe('PostgreSQL Trigram Universal Search Engine Suite (LLT 2.3)', () => {
         format: 'single_elimination',
         status: 'registration_open',
         startTime: new Date(Date.now() + 86400000),
-        prizePoolInr: '5000.00',
       })
       .returning();
 

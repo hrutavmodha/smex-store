@@ -205,6 +205,26 @@ const boostingRoutes: FastifyPluginAsync = async (fastify) => {
       }
     }
 
+    // Manager-exclusive alerting hook for incoming boosting orders
+    try {
+      await NotificationService.notifyNewBoostingOrder(
+        {
+          orderId: order.id,
+          orderRef,
+          customerIgn: data.customerIgn,
+          startingRank: data.startingRank,
+          targetRank: data.targetRank,
+          totalPriceInr: calculation.totalPriceInr,
+          contactChannel: data.contactChannel,
+        },
+        fastify.db,
+        fastify.redis,
+        fastify.wsGateway
+      );
+    } catch {
+      // Non-blocking notification dispatch: failures must never fail order creation
+    }
+
     return reply.code(201).send({
       orderId: order.id,
       orderRef,

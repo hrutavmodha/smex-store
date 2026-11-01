@@ -7,6 +7,8 @@ import {
   ChevronDown,
   LogOut,
   ShieldAlert,
+  ShieldCheck,
+  Shield,
   Laptop,
   Sliders,
 } from 'lucide-react';
@@ -46,6 +48,26 @@ export function NavUserMenu({
           {user.ign || user.email}
         </span>
 
+        {user.role === 'manager' && (
+          <span
+            data-testid="manager-badge"
+            className="hidden sm:inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/40 uppercase"
+          >
+            <Shield className="h-3 w-3" />
+            Mgr
+          </span>
+        )}
+
+        {user.role === 'admin' && (
+          <span
+            data-testid="admin-badge"
+            className="hidden sm:inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-primary border border-emerald-500/40 uppercase"
+          >
+            <ShieldCheck className="h-3 w-3" />
+            Admin
+          </span>
+        )}
+
         {!user.emailVerified && (
           <span
             data-testid="unverified-email-dot"
@@ -73,6 +95,30 @@ export function NavUserMenu({
                 <span className="text-[10px] text-amber-300/80">Some features restricted</span>
               </div>
             </div>
+          )}
+
+          {user.role === 'manager' && (
+            <div
+              data-testid="manager-role-indicator"
+              className="flex items-center gap-2 p-2 rounded-lg bg-purple-500/10 border border-purple-500/30 text-purple-300 text-xs font-medium"
+            >
+              <Shield className="h-4 w-4 shrink-0 text-purple-400" />
+              <div className="flex flex-col">
+                <span className="font-bold">Standing Manager</span>
+                <span className="text-[10px] text-purple-300/80">Match & Operations Lead</span>
+              </div>
+            </div>
+          )}
+
+          {user.role === 'admin' && (
+            <Link
+              href="/admin"
+              onClick={() => setIsDropdownOpen(false)}
+              className="flex items-center gap-2 px-2.5 py-2 text-xs font-bold text-emerald-primary bg-emerald-500/10 hover:bg-emerald-500/20 rounded-lg border border-emerald-500/30 transition-colors duration-[120ms] min-h-[36px]"
+            >
+              <ShieldCheck className="h-4 w-4" />
+              <span>Admin Portal</span>
+            </Link>
           )}
 
           <Link

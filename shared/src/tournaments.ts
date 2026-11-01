@@ -8,9 +8,8 @@ export interface TournamentCardData {
   gameSlug: string;
   format: TournamentFormat;
   status: TournamentStatus;
-  startTime: string;
+  startTime?: string | null;
   endTime?: string | null;
-  prizePoolInr: string;
   maxTeams: number;
   registeredTeams?: number;
   winnerTeamId?: string | null;
@@ -52,4 +51,48 @@ export interface ParticipantItem {
   teamName?: string;
   teamTag?: string;
   seed?: number;
+}
+
+export type IncidentType =
+  | 'suspected_cheat'
+  | 'unauthorized_substitute'
+  | 'toxic_behavior'
+  | 'connection_manipulation'
+  | 'other';
+
+export type IncidentSeverity = 'low' | 'medium' | 'high' | 'critical';
+
+export type IncidentStatus = 'flagged' | 'under_review' | 'resolved' | 'dismissed';
+
+export interface TournamentIncidentItem {
+  id: string;
+  tournamentId: string;
+  matchId: string;
+  reportedBy: string;
+  reportedByIgn?: string | null;
+  targetTeamId?: string | null;
+  targetTeamName?: string | null;
+  targetPlayerIgn?: string | null;
+  incidentType: IncidentType;
+  severity: IncidentSeverity;
+  description: string;
+  evidenceUrl?: string | null;
+  status: IncidentStatus;
+  resolutionNotes?: string | null;
+  resolvedBy?: string | null;
+  resolvedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface IncidentAlertFramePayload {
+  incidentId: string;
+  tournamentId: string;
+  matchId: string;
+  reportedByIgn: string;
+  targetTeamName?: string;
+  incidentType: IncidentType;
+  severity: IncidentSeverity;
+  summary: string;
+  timestamp: string;
 }

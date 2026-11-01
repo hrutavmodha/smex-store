@@ -3,7 +3,7 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { Trophy, Swords, ArrowLeft, Users, Calendar, IndianRupee } from 'lucide-react';
+import { Trophy, Swords, ArrowLeft, Users, Calendar } from 'lucide-react';
 import { type MatchNodeData, type ParticipantItem } from '@smex/shared';
 import { BracketVisualizer } from '../../../components/tournaments/BracketVisualizer';
 import { TournamentLobbyRoom } from '../../../components/tournaments/TournamentLobbyRoom';
@@ -17,7 +17,6 @@ export interface TournamentDetailData {
   status: 'upcoming' | 'registration_open' | 'ongoing' | 'completed';
   startTime: string;
   endTime?: string | null;
-  prizePoolInr: string;
   maxTeams: number;
   matches?: MatchNodeData[];
   participants?: ParticipantItem[];
@@ -142,21 +141,19 @@ function TournamentDetailContent() {
 
               <div className="mt-4 flex flex-wrap items-center gap-6 text-xs text-text-secondary">
                 <div className="flex items-center gap-1.5">
-                  <IndianRupee className="h-4 w-4 text-emerald-primary" />
-                  <span className="font-mono text-sm font-bold text-emerald-primary">
-                    ₹{Number(tournament.prizePoolInr).toLocaleString('en-IN')}
-                  </span>
-                </div>
-                <div className="flex items-center gap-1.5">
                   <Users className="h-4 w-4 text-cyan-depth" />
                   <span>
                     {tournament.participants?.length ?? 0} / {tournament.maxTeams} Teams
                   </span>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <Calendar className="h-4 w-4 text-text-muted" />
-                  <span>{new Date(tournament.startTime).toLocaleString()}</span>
-                </div>
+                {tournament.status !== 'completed' && tournament.startTime && tournament.endTime ? (
+                  <div className="flex items-center gap-1.5">
+                    <Calendar className="h-4 w-4 text-text-muted" />
+                    <span>
+                      {new Date(tournament.startTime).toLocaleString()} - {new Date(tournament.endTime).toLocaleString()}
+                    </span>
+                  </div>
+                ) : null}
               </div>
             </div>
 

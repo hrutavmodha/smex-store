@@ -3,7 +3,7 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Trophy, Users, Calendar, IndianRupee, Swords, Crown, Medal, Flame, Sparkles, Award } from 'lucide-react';
+import { Trophy, Users, Calendar, Swords, Crown, Medal, Flame, Sparkles, Award } from 'lucide-react';
 
 import type { TournamentCardData } from '@smex/shared';
 
@@ -321,15 +321,6 @@ function TournamentsDirectoryContent() {
                         )}
                       </div>
                     )}
-
-                    {/* Prize Pool */}
-                    <div className="mt-4 flex items-baseline gap-1 text-emerald-primary">
-                      <IndianRupee className="h-4 w-4" />
-                      <span className="text-xl font-mono font-black">
-                        {Number(t.prizePoolInr).toLocaleString('en-IN')}
-                      </span>
-                      <span className="text-[10px] font-semibold text-text-muted ml-1">Prize Pool</span>
-                    </div>
                   </div>
 
                   {/* Metadata Footer */}
@@ -341,10 +332,14 @@ function TournamentsDirectoryContent() {
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-1.5">
-                      <Calendar className="h-3.5 w-3.5 text-text-muted" />
-                      <span>{new Date(t.startTime).toLocaleDateString()}</span>
-                    </div>
+                    {!isCompleted && t.startTime && t.endTime ? (
+                      <div className="flex items-center gap-1.5">
+                        <Calendar className="h-3.5 w-3.5 text-text-muted" />
+                        <span>
+                          {new Date(t.startTime).toLocaleDateString()} - {new Date(t.endTime).toLocaleDateString()}
+                        </span>
+                      </div>
+                    ) : null}
                   </div>
                 </Link>
               );

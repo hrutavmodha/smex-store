@@ -65,7 +65,6 @@ describe('Tournament Lifecycle State Machine Suite (LLT 2.1)', () => {
         gameSlug: 'mlbb',
         format: 'single_elimination',
         startTime: new Date(Date.now() + 86400000).toISOString(),
-        prizePoolInr: '10000.00',
         maxTeams: 16,
       },
     });

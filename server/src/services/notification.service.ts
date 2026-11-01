@@ -3,6 +3,7 @@ import { eq, and, desc, count } from 'drizzle-orm';
 import type { WsGatewayDecorator } from '../plugins/websocket.js';
 import type { SmexDatabase } from '../db/index.js';
 import { notifications } from '../db/schema/notifications.js';
+import { users } from '../db/schema/users.js';
 
 import type {
   NotificationType,
@@ -42,6 +43,17 @@ export interface OrderStatusNotificationData {
   orderId: string;
   status: string;
   notes?: string;
+}
+
+export interface NewBoostingOrderData {
+  orderId: string;
+  orderRef: string;
+  customerIgn: string;
+  startingRank: string;
+  targetRank: string;
+  totalPriceInr: number | string;
+  contactChannel: string;
+  timestamp: string;
 }
 
 
@@ -497,5 +509,97 @@ export class NotificationService {
     }
 
     return envelope;
+  }
+
+  /**
+   * Queries user IDs of all active users holding the 'manager' role (excluding 'admin')
+   */
+  static async getManagerRecipients(db: SmexDatabase): Promise<string[]> {
+    const rows = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(and(eq(users.role, 'manager'), eq(users.isBanned, false)));
+
+    return rows.map((r) => r.id);
+  }
+
+  /**
+   * Dispatches real-time alerts and durable notifications for new boosting orders
+   * exclusively to all active Managers (excluding Admins).
+   */
+  static async notifyNewBoostingOrder(
+    orderData: {
+      orderId: string;
+      orderRef: string;
+      customerIgn: string;
+      startingRank: string;
+      targetRank: string;
+      totalPriceInr: number | string;
+      contactChannel: string;
+    },
+    db: SmexDatabase,
+    redis?: Redis,
+    wsGateway?: WsGatewayDecorator
+  ): Promise<string[]> {
+    const managerIds = await this.getManagerRecipients(db);
+    if (!managerIds.length) return [];
+
+    const nowIso = new Date().toISOString();
+    const payloadData: NewBoostingOrderData = {
+      orderId: orderData.orderId,
+      orderRef: orderData.orderRef,
+      customerIgn: orderData.customerIgn,
+      startingRank: orderData.startingRank,
+      targetRank: orderData.targetRank,
+      totalPriceInr: orderData.totalPriceInr,
+      contactChannel: orderData.contactChannel,
+      timestamp: nowIso,
+    };
+
+    const wsFrame = {
+      event: 'NEW_BOOSTING_ORDER',
+      payload: payloadData,
+      timestamp: Date.now(),
+    };
+
+    const title = `🚀 New Boosting Order #${orderData.orderRef}`;
+    const message = `Customer ${orderData.customerIgn} requested ${orderData.startingRank} ➔ ${orderData.targetRank} (₹${orderData.totalPriceInr}) via ${orderData.contactChannel}.`;
+
+    for (const managerId of managerIds) {
+      const channel = `user:${managerId}`;
+
+      // 1. WebSocket / Redis PubSub broadcast directly to Manager channel
+      if (redis) {
+        await redis.publish(channel, JSON.stringify(wsFrame)).catch(() => {});
+      } else if (wsGateway) {
+        wsGateway.broadcastToChannel(channel, wsFrame);
+      }
+
+      // 2. Durable in-app notification record insertion
+      try {
+        await this.dispatchNotification(
+          managerId,
+          'update',
+          title,
+          message,
+          {
+            actionUrl: `/boosting`,
+            entityType: 'boosting_order',
+            entityId: orderData.orderId,
+            metadata: {
+              ...payloadData,
+              event: 'NEW_BOOSTING_ORDER',
+            },
+          },
+          db,
+          redis,
+          wsGateway
+        );
+      } catch {
+        // Non-blocking notification dispatch
+      }
+    }
+
+    return managerIds;
   }
 }

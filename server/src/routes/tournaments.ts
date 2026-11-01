@@ -1,6 +1,6 @@
 import { type FastifyPluginAsync, type FastifyReply } from 'fastify';
 import { z } from 'zod';
-import { eq } from 'drizzle-orm';
+import { eq, inArray, desc, and } from 'drizzle-orm';
 import {
   TournamentLifecycleService,
   TournamentLifecycleError,
@@ -11,8 +11,11 @@ import { MatchService, MatchError } from '../services/match.service.js';
 import {
   tournaments,
   tournamentParticipants,
+  tournamentMatches,
+  tournamentIncidents,
 } from '../db/schema/tournaments.js';
 import { teams, teamMembers } from '../db/schema/teams.js';
+import { users, profiles } from '../db/schema/users.js';
 import { NotificationService } from '../services/notification.service.js';
 import { formatRfc7807 } from '@smex/shared';
 import type { SmexDatabase } from '../db/index.js';
@@ -53,9 +56,8 @@ const createTournamentSchema = z.object({
   status: z
     .enum(['upcoming', 'registration_open', 'ongoing', 'completed'])
     .default('upcoming'),
-  startTime: z.string().datetime({ message: 'Invalid start time ISO format' }),
-  endTime: z.string().datetime({ message: 'Invalid end time ISO format' }).optional(),
-  prizePoolInr: z.string().or(z.number()).default('0.00'),
+  startTime: z.string().datetime().optional().nullable(),
+  endTime: z.string().datetime().optional().nullable(),
   maxTeams: z
     .number()
     .int()
@@ -73,9 +75,8 @@ const updateTournamentSchema = z.object({
   gameSlug: z.string().trim().optional(),
   format: z.enum(['single_elimination', 'double_elimination', 'round_robin']).optional(),
   status: z.enum(['upcoming', 'registration_open', 'ongoing', 'completed']).optional(),
-  startTime: z.string().datetime().optional(),
-  endTime: z.string().datetime().optional(),
-  prizePoolInr: z.string().or(z.number()).optional(),
+  startTime: z.string().datetime().optional().nullable(),
+  endTime: z.string().datetime().optional().nullable(),
   maxTeams: z.number().int().min(2).max(128).optional(),
   rulesMarkdown: z.string().optional(),
   winnerTeamId: z.string().uuid().optional(),
@@ -134,6 +135,26 @@ function handleError(reply: FastifyReply, err: unknown) {
   throw err;
 }
 
+const createIncidentSchema = z.object({
+  incidentType: z.enum([
+    'suspected_cheat',
+    'unauthorized_substitute',
+    'toxic_behavior',
+    'connection_manipulation',
+    'other',
+  ]),
+  severity: z.enum(['low', 'medium', 'high', 'critical']).default('medium'),
+  description: z.string().min(10, 'Description must be at least 10 characters').max(1000),
+  targetTeamId: z.string().uuid().optional().nullable(),
+  targetPlayerIgn: z.string().max(50).optional().nullable(),
+  evidenceUrl: z.string().url().optional().or(z.literal('')).nullable(),
+});
+
+const resolveIncidentSchema = z.object({
+  status: z.enum(['under_review', 'resolved', 'dismissed']),
+  resolutionNotes: z.string().min(5, 'Resolution notes must be at least 5 characters'),
+});
+
 const tournamentsRoutes: FastifyPluginAsync = async (fastify) => {
   // 1. GET /api/v1/tournaments - Public tournament catalog with filters
   fastify.get('/api/v1/tournaments', async (request, reply) => {
@@ -188,9 +209,8 @@ const tournamentsRoutes: FastifyPluginAsync = async (fastify) => {
           gameSlug: input.gameSlug,
           format: input.format,
           status: input.status,
-          startTime: new Date(input.startTime),
+          startTime: input.startTime ? new Date(input.startTime) : null,
           endTime: input.endTime ? new Date(input.endTime) : null,
-          prizePoolInr: String(input.prizePoolInr),
           maxTeams: input.maxTeams,
           rulesMarkdown: input.rulesMarkdown ?? null,
           winnerName: input.winnerName ?? null,
@@ -301,9 +321,8 @@ const tournamentsRoutes: FastifyPluginAsync = async (fastify) => {
         if (input.title !== undefined) updateFields.title = input.title;
         if (input.gameSlug !== undefined) updateFields.gameSlug = input.gameSlug;
         if (input.format !== undefined) updateFields.format = input.format;
-        if (input.startTime !== undefined) updateFields.startTime = new Date(input.startTime);
-        if (input.endTime !== undefined) updateFields.endTime = new Date(input.endTime);
-        if (input.prizePoolInr !== undefined) updateFields.prizePoolInr = String(input.prizePoolInr);
+        if (input.startTime !== undefined) updateFields.startTime = input.startTime ? new Date(input.startTime) : null;
+        if (input.endTime !== undefined) updateFields.endTime = input.endTime ? new Date(input.endTime) : null;
         if (input.maxTeams !== undefined) updateFields.maxTeams = input.maxTeams;
         if (input.rulesMarkdown !== undefined) updateFields.rulesMarkdown = input.rulesMarkdown;
         if (input.winnerTeamId !== undefined) updateFields.winnerTeamId = input.winnerTeamId;
@@ -564,6 +583,298 @@ const tournamentsRoutes: FastifyPluginAsync = async (fastify) => {
       } catch (err) {
         return handleError(reply, err);
       }
+    }
+  );
+
+  // 9. POST /api/v1/tournaments/matches/:id/incidents - Manager or Admin flags a live match incident
+  fastify.post(
+    '/api/v1/tournaments/matches/:id/incidents',
+    {
+      preHandler: [fastify.authenticate, fastify.managerGuard],
+    },
+    async (request, reply) => {
+      const { id } = request.params as { id: string };
+      const parseResult = createIncidentSchema.safeParse(request.body);
+      if (!parseResult.success) {
+        return reply.code(422).send(
+          formatRfc7807(
+            422,
+            'VALIDATION_FAILED',
+            'Validation Failed',
+            parseResult.error.issues.map((i) => i.message).join(', ')
+          )
+        );
+      }
+
+      const [match] = await fastify.db
+        .select()
+        .from(tournamentMatches)
+        .where(eq(tournamentMatches.id, id))
+        .limit(1);
+
+      if (!match) {
+        return reply.code(404).send(
+          formatRfc7807(404, 'MATCH_NOT_FOUND', 'Not Found', 'Tournament match not found')
+        );
+      }
+
+      const input = parseResult.data;
+
+      // 1. Insert incident into DB
+      const [incident] = await fastify.db
+        .insert(tournamentIncidents)
+        .values({
+          tournamentId: match.tournamentId,
+          matchId: match.id,
+          reportedBy: request.user.sub,
+          targetTeamId: input.targetTeamId || null,
+          targetPlayerIgn: input.targetPlayerIgn || null,
+          incidentType: input.incidentType,
+          severity: input.severity,
+          description: input.description,
+          evidenceUrl: input.evidenceUrl || null,
+          status: 'flagged',
+        })
+        .returning();
+
+      // 2. Fetch reporter IGN
+      let reportedByIgn = 'Staff Manager';
+      const [reporterProfile] = await fastify.db
+        .select({ username: profiles.username })
+        .from(profiles)
+        .where(eq(profiles.userId, request.user.sub))
+        .limit(1);
+      if (reporterProfile?.username) {
+        reportedByIgn = reporterProfile.username;
+      }
+
+      // 3. Fetch target team name if provided
+      let targetTeamName: string | undefined;
+      if (input.targetTeamId) {
+        const [targetTeam] = await fastify.db
+          .select({ name: teams.name })
+          .from(teams)
+          .where(eq(teams.id, input.targetTeamId))
+          .limit(1);
+        if (targetTeam?.name) {
+          targetTeamName = targetTeam.name;
+        }
+      }
+
+      // 4. Determine alert recipients: Clan Leader(s) of teamA / teamB + active Admins
+      const clanLeaderIds = new Set<string>();
+      if (match.teamAId || match.teamBId) {
+        const teamIds = [match.teamAId, match.teamBId].filter(Boolean) as string[];
+        const teamRows = await fastify.db
+          .select({ captainId: teams.captainId })
+          .from(teams)
+          .where(inArray(teams.id, teamIds));
+        for (const t of teamRows) {
+          if (t.captainId) clanLeaderIds.add(t.captainId);
+        }
+      }
+
+      const adminRows = await fastify.db
+        .select({ id: users.id })
+        .from(users)
+        .where(and(eq(users.role, 'admin'), eq(users.isBanned, false)));
+
+      const adminIds = adminRows.map((a) => a.id);
+      const recipientIds = Array.from(new Set([...Array.from(clanLeaderIds), ...adminIds]));
+
+      // 5. Construct real-time WebSocket frame
+      const nowIso = new Date().toISOString();
+      const wsFrame = {
+        event: 'TOURNAMENT_INCIDENT_FLAGGED',
+        payload: {
+          incidentId: incident.id,
+          tournamentId: incident.tournamentId,
+          matchId: incident.matchId,
+          reportedByIgn,
+          targetTeamName: targetTeamName || 'Match Participant',
+          incidentType: incident.incidentType,
+          severity: incident.severity,
+          summary: incident.description.slice(0, 100),
+          timestamp: nowIso,
+        },
+      };
+
+      const notifTitle = `🚨 Match Incident Flagged`;
+      const notifMessage = `Manager ${reportedByIgn} flagged an incident (${incident.incidentType}, ${incident.severity}) in Match #${incident.matchId.slice(0, 8)}.`;
+
+      for (const recipientId of recipientIds) {
+        const channel = `user:${recipientId}`;
+        if (fastify.redis) {
+          await fastify.redis.publish(channel, JSON.stringify(wsFrame)).catch(() => {});
+        } else if (fastify.wsGateway) {
+          fastify.wsGateway.broadcastToChannel(channel, wsFrame);
+        }
+
+        try {
+          await NotificationService.dispatchNotification(
+            recipientId,
+            'update',
+            notifTitle,
+            notifMessage,
+            {
+              actionUrl: `/tournaments/${incident.tournamentId}`,
+              entityType: 'tournament_incident',
+              entityId: incident.id,
+              metadata: {
+                ...wsFrame.payload,
+                event: 'TOURNAMENT_INCIDENT_FLAGGED',
+              },
+            },
+            fastify.db,
+            fastify.redis,
+            fastify.wsGateway
+          );
+        } catch {
+          // Non-blocking notification dispatch
+        }
+      }
+
+      return reply.code(201).send({ incident });
+    }
+  );
+
+  // 10. GET /api/v1/tournaments/matches/:id/incidents - Fetch incidents for a match
+  fastify.get(
+    '/api/v1/tournaments/matches/:id/incidents',
+    {
+      preHandler: [fastify.authenticate],
+    },
+    async (request, reply) => {
+      const { id } = request.params as { id: string };
+
+      const [match] = await fastify.db
+        .select()
+        .from(tournamentMatches)
+        .where(eq(tournamentMatches.id, id))
+        .limit(1);
+
+      if (!match) {
+        return reply.code(404).send(
+          formatRfc7807(404, 'MATCH_NOT_FOUND', 'Not Found', 'Tournament match not found')
+        );
+      }
+
+      // Authorization check: Admin, Manager, or Clan Leader of competing teams
+      const userRole = request.user.role;
+      let isAuthorized = userRole === 'admin' || userRole === 'manager';
+
+      if (!isAuthorized && (match.teamAId || match.teamBId)) {
+        const teamIds = [match.teamAId, match.teamBId].filter(Boolean) as string[];
+        const teamRows = await fastify.db
+          .select({ captainId: teams.captainId })
+          .from(teams)
+          .where(inArray(teams.id, teamIds));
+        if (teamRows.some((t) => t.captainId === request.user.sub)) {
+          isAuthorized = true;
+        }
+      }
+
+      if (!isAuthorized) {
+        return reply.code(403).send(
+          formatRfc7807(
+            403,
+            'INSUFFICIENT_PERMISSIONS',
+            'Forbidden',
+            'You do not have permission to view incidents for this match'
+          )
+        );
+      }
+
+      const incidents = await fastify.db
+        .select()
+        .from(tournamentIncidents)
+        .where(eq(tournamentIncidents.matchId, id))
+        .orderBy(desc(tournamentIncidents.createdAt));
+
+      return reply.code(200).send({ incidents });
+    }
+  );
+
+  // 11. PATCH /api/v1/tournaments/incidents/:id/resolve - Resolve or dismiss incident
+  fastify.patch(
+    '/api/v1/tournaments/incidents/:id/resolve',
+    {
+      preHandler: [fastify.authenticate],
+    },
+    async (request, reply) => {
+      const { id } = request.params as { id: string };
+      const parseResult = resolveIncidentSchema.safeParse(request.body);
+      if (!parseResult.success) {
+        return reply.code(422).send(
+          formatRfc7807(
+            422,
+            'VALIDATION_FAILED',
+            'Validation Failed',
+            parseResult.error.issues.map((i) => i.message).join(', ')
+          )
+        );
+      }
+
+      const [incident] = await fastify.db
+        .select()
+        .from(tournamentIncidents)
+        .where(eq(tournamentIncidents.id, id))
+        .limit(1);
+
+      if (!incident) {
+        return reply.code(404).send(
+          formatRfc7807(404, 'INCIDENT_NOT_FOUND', 'Not Found', 'Tournament incident not found')
+        );
+      }
+
+      // Check match and team captain authorization
+      const [match] = await fastify.db
+        .select()
+        .from(tournamentMatches)
+        .where(eq(tournamentMatches.id, incident.matchId))
+        .limit(1);
+
+      const userRole = request.user.role;
+      let isAuthorized = userRole === 'admin';
+
+      if (!isAuthorized && match && (match.teamAId || match.teamBId)) {
+        const teamIds = [match.teamAId, match.teamBId].filter(Boolean) as string[];
+        const teamRows = await fastify.db
+          .select({ captainId: teams.captainId })
+          .from(teams)
+          .where(inArray(teams.id, teamIds));
+        if (teamRows.some((t) => t.captainId === request.user.sub)) {
+          isAuthorized = true;
+        }
+      }
+
+      if (!isAuthorized) {
+        return reply.code(403).send(
+          formatRfc7807(
+            403,
+            'INSUFFICIENT_PERMISSIONS',
+            'Forbidden',
+            'Only Platform Admins or competing Clan Leaders can resolve match incidents'
+          )
+        );
+      }
+
+      const input = parseResult.data;
+      const now = new Date();
+
+      const [updated] = await fastify.db
+        .update(tournamentIncidents)
+        .set({
+          status: input.status,
+          resolutionNotes: input.resolutionNotes,
+          resolvedBy: request.user.sub,
+          resolvedAt: now,
+          updatedAt: now,
+        })
+        .where(eq(tournamentIncidents.id, id))
+        .returning();
+
+      return reply.code(200).send({ incident: updated });
     }
   );
 };

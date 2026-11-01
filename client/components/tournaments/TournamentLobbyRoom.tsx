@@ -1,9 +1,11 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Trophy, Users, ShieldAlert, CheckCircle2 } from 'lucide-react';
+import { Trophy, Users, ShieldAlert, CheckCircle2, AlertTriangle, Shield } from 'lucide-react';
 import { type MatchNodeData, type ParticipantItem } from '@smex/shared';
 import { fetchWithAuth } from '../../lib/api';
+import { useAuth } from '../../lib/useAuth';
+import { IncidentReportModal } from './IncidentReportModal';
 
 export interface TournamentLobbyRoomProps {
   tournamentId: string;
@@ -25,6 +27,9 @@ export function TournamentLobbyRoom({
   isAdmin = false,
   onScoreUpdate,
 }: TournamentLobbyRoomProps) {
+  const { isManager, isStaff: authStaff } = useAuth();
+  const canModerate = isAdmin || authStaff;
+  const [isIncidentModalOpen, setIsIncidentModalOpen] = useState<boolean>(false);
   const [selectedMatchId, setSelectedMatchId] = useState<string>(
     matches[0]?.id || ''
   );
@@ -215,11 +220,16 @@ export function TournamentLobbyRoom({
               Match Desk
             </h3>
           </div>
-          {isAdmin && (
+          {isAdmin ? (
             <span className="rounded bg-emerald-primary px-2 py-0.5 text-[10px] font-bold uppercase text-[#0B1A15]">
               Admin
             </span>
-          )}
+          ) : isManager ? (
+            <span className="rounded bg-purple-500/20 text-purple-300 border border-purple-500/40 px-2 py-0.5 text-[10px] font-bold uppercase flex items-center gap-1">
+              <Shield className="h-3 w-3" />
+              Manager
+            </span>
+          ) : null}
         </div>
 
         {activeMatch ? (
@@ -338,12 +348,42 @@ export function TournamentLobbyRoom({
                   {feedbackMessage}
                 </div>
               )}
+
+              {canModerate && (
+                <div className="mt-4 pt-3 border-t border-border-subtle flex items-center justify-between">
+                  <span className="text-[11px] text-text-secondary">Referee & Moderation</span>
+                  <button
+                    type="button"
+                    onClick={() => setIsIncidentModalOpen(true)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-500/40 bg-red-500/10 text-red-400 hover:bg-red-500/20 text-xs font-bold transition-all duration-[120ms] min-h-[32px]"
+                  >
+                    <AlertTriangle className="h-3.5 w-3.5" />
+                    <span>Flag Incident</span>
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         ) : (
           <p className="py-8 text-center text-xs text-text-secondary">Select a match from queue</p>
         )}
       </div>
+
+      {canModerate && activeMatch && (
+        <IncidentReportModal
+          isOpen={isIncidentModalOpen}
+          onClose={() => setIsIncidentModalOpen(false)}
+          matchId={activeMatch.id}
+          tournamentId={tournamentId}
+          teams={[
+            ...(activeMatch.teamAId ? [{ id: activeMatch.teamAId, name: activeMatch.teamAName || 'Team A' }] : []),
+            ...(activeMatch.teamBId ? [{ id: activeMatch.teamBId, name: activeMatch.teamBName || 'Team B' }] : []),
+          ]}
+          onIncidentReported={() => {
+            setFeedbackMessage('Match incident successfully reported.');
+          }}
+        />
+      )}
     </section>
   );
 }

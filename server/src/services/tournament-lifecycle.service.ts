@@ -159,7 +159,6 @@ export class TournamentLifecycleService {
         status: tournaments.status,
         startTime: tournaments.startTime,
         endTime: tournaments.endTime,
-        prizePoolInr: tournaments.prizePoolInr,
         maxTeams: tournaments.maxTeams,
         winnerTeamId: tournaments.winnerTeamId,
         winnerName: tournaments.winnerName,
@@ -176,7 +175,7 @@ export class TournamentLifecycleService {
       )
       .where(whereClause)
       .groupBy(tournaments.id)
-      .orderBy(desc(tournaments.startTime))
+      .orderBy(desc(tournaments.createdAt))
       .limit(filters.limit ?? 20)
       .offset(filters.offset ?? 0);
 

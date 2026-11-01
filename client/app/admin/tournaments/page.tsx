@@ -5,7 +5,6 @@ import Link from 'next/link';
 import {
   Trophy,
   Plus,
-  IndianRupee,
   Crown,
   Medal,
   Flame,
@@ -35,7 +34,6 @@ export default function AdminTournamentsPage() {
   const [title, setTitle] = useState('');
   const [status, setStatus] = useState<TournamentStatus>('upcoming');
   const [format, setFormat] = useState<TournamentFormat>('single_elimination');
-  const [prizePoolInr, setPrizePoolInr] = useState('5000');
   const [maxTeams, setMaxTeams] = useState<number>(16);
   const [startTime, setStartTime] = useState(new Date().toISOString().slice(0, 16));
   const [winnerName, setWinnerName] = useState('');
@@ -48,7 +46,6 @@ export default function AdminTournamentsPage() {
   const [editTitle, setEditTitle] = useState('');
   const [editStatus, setEditStatus] = useState<TournamentStatus>('upcoming');
   const [editFormat, setEditFormat] = useState<TournamentFormat>('single_elimination');
-  const [editPrizePoolInr, setEditPrizePoolInr] = useState('5000');
   const [editMaxTeams, setEditMaxTeams] = useState<number>(16);
   const [editStartTime, setEditStartTime] = useState('');
   const [editWinnerName, setEditWinnerName] = useState('');
@@ -81,7 +78,27 @@ export default function AdminTournamentsPage() {
   };
 
   useEffect(() => {
-    loadTournaments(filterStatus);
+    let ignore = false;
+    const fetchTournaments = async () => {
+      try {
+        const url = filterStatus === 'all' ? '/api/v1/tournaments' : `/api/v1/tournaments?status=${filterStatus}`;
+        const res = await fetch(url);
+        if (res.ok && !ignore) {
+          const data = await res.json();
+          setTournaments(data.tournaments || []);
+        }
+      } catch {
+        // Fallback
+      } finally {
+        if (!ignore) {
+          setLoading(false);
+        }
+      }
+    };
+    void fetchTournaments();
+    return () => {
+      ignore = true;
+    };
   }, [filterStatus]);
 
   const handleCreateTournament = async (e: React.FormEvent) => {
@@ -100,8 +117,7 @@ export default function AdminTournamentsPage() {
         gameSlug: 'mlbb',
         format,
         status,
-        startTime: new Date(startTime).toISOString(),
-        prizePoolInr: prizePoolInr || '0.00',
+        startTime: startTime.trim() ? new Date(startTime).toISOString() : undefined,
         maxTeams: Number(maxTeams) || 16,
         rulesMarkdown: rulesMarkdown.trim() || undefined,
         winnerName: status === 'completed' && winnerName.trim() ? winnerName.trim() : undefined,
@@ -174,7 +190,6 @@ export default function AdminTournamentsPage() {
     setEditTitle(t.title);
     setEditStatus(t.status);
     setEditFormat(t.format);
-    setEditPrizePoolInr(t.prizePoolInr);
     setEditMaxTeams(t.maxTeams);
     setEditStartTime(t.startTime ? new Date(t.startTime).toISOString().slice(0, 16) : '');
     setEditWinnerName(t.winnerName || '');
@@ -195,9 +210,8 @@ export default function AdminTournamentsPage() {
         title: editTitle.trim(),
         status: editStatus,
         format: editFormat,
-        prizePoolInr: editPrizePoolInr,
         maxTeams: Number(editMaxTeams),
-        startTime: new Date(editStartTime).toISOString(),
+        startTime: editStartTime.trim() ? new Date(editStartTime).toISOString() : undefined,
         rulesMarkdown: editRulesMarkdown.trim() || undefined,
         winnerName: editWinnerName.trim() || undefined,
         runnerUpName: editRunnerUpName.trim() || undefined,
@@ -382,25 +396,6 @@ export default function AdminTournamentsPage() {
               </select>
             </div>
 
-            {/* Prize Pool */}
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-text-secondary mb-1.5">
-                Prize Pool (₹ INR)
-              </label>
-              <div className="relative">
-                <IndianRupee className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-emerald-primary" />
-                <input
-                  type="number"
-                  min="0"
-                  step="100"
-                  value={prizePoolInr}
-                  onChange={(e) => setPrizePoolInr(e.target.value)}
-                  placeholder="5000"
-                  className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-bg-canvas border border-border-subtle text-text-primary text-sm focus:outline-none focus:border-emerald-primary transition-colors duration-[120ms]"
-                />
-              </div>
-            </div>
-
             {/* Start Date & Time */}
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-text-secondary mb-1.5">
@@ -582,7 +577,6 @@ export default function AdminTournamentsPage() {
                 <tr className="border-b border-border-subtle text-text-secondary font-mono uppercase tracking-wider">
                   <th className="pb-3 font-semibold">Title</th>
                   <th className="pb-3 font-semibold">Status</th>
-                  <th className="pb-3 font-semibold">Prize</th>
                   <th className="pb-3 font-semibold">Honorees</th>
                   <th className="pb-3 font-semibold">Lifecycle & Actions</th>
                   <th className="pb-3 font-semibold text-right">Settings</th>
@@ -612,10 +606,6 @@ export default function AdminTournamentsPage() {
                       >
                         {t.status.replace('_', ' ')}
                       </span>
-                    </td>
-
-                    <td className="py-3 pr-3 font-mono font-bold text-emerald-primary">
-                      ₹{Number(t.prizePoolInr).toLocaleString('en-IN')}
                     </td>
 
                     <td className="py-3 pr-3">
@@ -794,18 +784,6 @@ export default function AdminTournamentsPage() {
                     <option value="ongoing">Ongoing (Live Brackets)</option>
                     <option value="completed">Completed</option>
                   </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-text-secondary mb-1">
-                    Prize Pool (₹ INR)
-                  </label>
-                  <input
-                    type="number"
-                    value={editPrizePoolInr}
-                    onChange={(e) => setEditPrizePoolInr(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg bg-bg-canvas border border-border-subtle text-text-primary text-xs focus:outline-none focus:border-emerald-primary transition-colors duration-[120ms]"
-                  />
                 </div>
 
                 <div>

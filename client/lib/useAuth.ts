@@ -9,6 +9,8 @@ export interface UseAuthReturn {
   loading: boolean;
   isAuthenticated: boolean;
   isAdmin: boolean;
+  isManager: boolean;
+  isStaff: boolean;
 }
 
 export function useAuth(): UseAuthReturn {
@@ -62,11 +64,15 @@ export function useAuth(): UseAuthReturn {
 
   const isAuthenticated = Boolean(user);
   const isAdmin = user?.role === 'admin';
+  const isManager = user?.role === 'manager';
+  const isStaff = user?.role === 'manager' || user?.role === 'admin';
 
   return {
     user,
     loading,
     isAuthenticated,
     isAdmin,
+    isManager,
+    isStaff,
   };
 }

@@ -13,6 +13,7 @@ import {
   index,
 } from 'drizzle-orm/pg-core';
 import { teams } from './teams.js';
+import { users } from './users.js';
 
 export const tournamentFormatEnum = pgEnum('tournament_format', [
   'single_elimination',
@@ -35,9 +36,8 @@ export const tournaments = pgTable(
     gameSlug: varchar('game_slug', { length: 50 }).notNull().default('mlbb'),
     format: tournamentFormatEnum('format').notNull().default('single_elimination'),
     status: tournamentStatusEnum('status').notNull().default('upcoming'),
-    startTime: timestamp('start_time', { withTimezone: true }).notNull(),
+    startTime: timestamp('start_time', { withTimezone: true }),
     endTime: timestamp('end_time', { withTimezone: true }),
-    prizePoolInr: numeric('prize_pool_inr', { precision: 10, scale: 2 }).notNull().default('0.00'),
     maxTeams: integer('max_teams').notNull().default(16),
     rulesMarkdown: text('rules_markdown'),
     winnerTeamId: uuid('winner_team_id').references(() => teams.id, { onDelete: 'set null' }),
@@ -100,3 +100,39 @@ export type TournamentParticipant = typeof tournamentParticipants.$inferSelect;
 export type NewTournamentParticipant = typeof tournamentParticipants.$inferInsert;
 export type TournamentMatch = typeof tournamentMatches.$inferSelect;
 export type NewTournamentMatch = typeof tournamentMatches.$inferInsert;
+
+export const tournamentIncidents = pgTable(
+  'tournament_incidents',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    tournamentId: uuid('tournament_id')
+      .notNull()
+      .references(() => tournaments.id, { onDelete: 'cascade' }),
+    matchId: uuid('match_id')
+      .notNull()
+      .references(() => tournamentMatches.id, { onDelete: 'cascade' }),
+    reportedBy: uuid('reported_by')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    targetTeamId: uuid('target_team_id').references(() => teams.id, { onDelete: 'set null' }),
+    targetPlayerIgn: varchar('target_player_ign', { length: 50 }),
+    incidentType: varchar('incident_type', { length: 50 }).notNull(),
+    severity: varchar('severity', { length: 20 }).notNull().default('medium'),
+    description: text('description').notNull(),
+    evidenceUrl: text('evidence_url'),
+    status: varchar('status', { length: 20 }).notNull().default('flagged'),
+    resolutionNotes: text('resolution_notes'),
+    resolvedBy: uuid('resolved_by').references(() => users.id, { onDelete: 'set null' }),
+    resolvedAt: timestamp('resolved_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index('idx_incidents_match_id').on(t.matchId),
+    index('idx_incidents_status').on(t.status),
+    index('idx_incidents_tournament_id').on(t.tournamentId),
+  ]
+);
+
+export type TournamentIncident = typeof tournamentIncidents.$inferSelect;
+export type NewTournamentIncident = typeof tournamentIncidents.$inferInsert;

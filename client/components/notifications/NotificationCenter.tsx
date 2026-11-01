@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Bell, CheckCheck, Inbox, ExternalLink } from 'lucide-react';
+import { Bell, CheckCheck, Inbox, ExternalLink, Rocket, AlertTriangle, X } from 'lucide-react';
 import { fetchWithAuth, getWebSocketUrl } from '../../lib/api';
 import type { NotificationEnvelope } from '@smex/shared';
 
@@ -15,13 +15,31 @@ export interface NotificationCenterProps {
   } | null;
 }
 
+export interface ToastItem {
+  id: string;
+  title: string;
+  message: string;
+  type: 'order' | 'incident' | 'system';
+  actionUrl?: string;
+}
+
 export function NotificationCenter({ user }: NotificationCenterProps) {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<NotificationEnvelope[]>([]);
   const [unreadCount, setUnreadCount] = useState<number>(0);
+  const [toasts, setToasts] = useState<ToastItem[]>([]);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const accountId = user?.id || user?.uid;
+
+  const addToast = (item: Omit<ToastItem, 'id'>) => {
+    const id = `toast-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    const newToast: ToastItem = { ...item, id };
+    setToasts((prev) => [newToast, ...prev].slice(0, 4));
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 7000);
+  };
 
   // Fetch notifications on mount if user is present
   useEffect(() => {
@@ -72,7 +90,25 @@ export function NotificationCenter({ user }: NotificationCenterProps) {
       socket.onmessage = (event) => {
         try {
           const frame = JSON.parse(event.data);
-          if (frame.event === 'notification:new') {
+          if (frame.event === 'NEW_BOOSTING_ORDER') {
+            const p = frame.payload || {};
+            addToast({
+              title: `🚀 New Boosting Order #${p.orderRef || ''}`,
+              message: `${p.customerIgn || 'Customer'}: ${p.startingRank || ''} ➔ ${p.targetRank || ''} (₹${p.totalPriceInr || 0})`,
+              type: 'order',
+              actionUrl: '/boosting',
+            });
+            setUnreadCount((prev) => prev + 1);
+          } else if (frame.event === 'TOURNAMENT_INCIDENT_FLAGGED') {
+            const p = frame.payload || {};
+            addToast({
+              title: `⚠️ Incident Flagged [${String(p.severity || 'ALERT').toUpperCase()}]`,
+              message: `${p.reportedByIgn || 'Manager'} reported ${p.targetTeamName || 'a squad'}: ${p.summary || p.incidentType || 'Incident'}`,
+              type: 'incident',
+              actionUrl: p.tournamentId ? `/tournaments/${p.tournamentId}` : '/tournaments',
+            });
+            setUnreadCount((prev) => prev + 1);
+          } else if (frame.event === 'notification:new') {
             const incomingCount =
               frame.unreadCount !== undefined
                 ? Number(frame.unreadCount)
@@ -93,6 +129,23 @@ export function NotificationCenter({ user }: NotificationCenterProps) {
             };
 
             setNotifications((prev) => [newRecord, ...prev.filter((n) => n.id !== newRecord.id)]);
+
+            // Trigger real-time toast if matching special events
+            if (rawItem.payload?.event === 'NEW_BOOSTING_ORDER') {
+              addToast({
+                title: rawItem.title || '🚀 New Boosting Order',
+                message: rawItem.message,
+                type: 'order',
+                actionUrl: '/boosting',
+              });
+            } else if (rawItem.payload?.event === 'TOURNAMENT_INCIDENT_FLAGGED') {
+              addToast({
+                title: rawItem.title || '⚠️ Tournament Incident Flagged',
+                message: rawItem.message,
+                type: 'incident',
+                actionUrl: rawItem.payload.tournamentId ? `/tournaments/${rawItem.payload.tournamentId}` : undefined,
+              });
+            }
           }
         } catch {
           // Ignore invalid frames
@@ -294,6 +347,74 @@ export function NotificationCenter({ user }: NotificationCenterProps) {
               ))
             )}
           </div>
+        </div>
+      )}
+
+      {/* Real-time Floating Toasts Portal */}
+      {toasts.length > 0 && (
+        <div
+          data-testid="toast-container"
+          className="fixed bottom-5 right-5 z-[9999] flex flex-col gap-2.5 max-w-sm w-full pointer-events-none"
+        >
+          {toasts.map((toast) => (
+            <div
+              key={toast.id}
+              role="alert"
+              data-testid={`toast-${toast.type}`}
+              className={`pointer-events-auto flex items-start gap-3 p-4 rounded-xl border shadow-2xl backdrop-blur-md transition-all duration-200 ${
+                toast.type === 'order'
+                  ? 'bg-purple-950/95 border-purple-500/50 text-purple-200 shadow-purple-950/60'
+                  : toast.type === 'incident'
+                  ? 'bg-red-950/95 border-red-500/50 text-red-200 shadow-red-950/60'
+                  : 'bg-bg-surface-elevated/95 border-emerald-500/40 text-text-primary shadow-black/60'
+              }`}
+            >
+              <div className="shrink-0 pt-0.5">
+                {toast.type === 'order' ? (
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-purple-500/20 text-purple-300">
+                    <Rocket className="h-4 w-4" />
+                  </div>
+                ) : toast.type === 'incident' ? (
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-red-500/20 text-red-400">
+                    <AlertTriangle className="h-4 w-4" />
+                  </div>
+                ) : (
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500/20 text-emerald-primary">
+                    <Bell className="h-4 w-4" />
+                  </div>
+                )}
+              </div>
+
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-bold tracking-tight text-white">{toast.title}</p>
+                <p className="mt-0.5 text-xs text-text-secondary leading-snug break-words">
+                  {toast.message}
+                </p>
+                {toast.actionUrl && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (toast.actionUrl) router.push(toast.actionUrl);
+                      setToasts((prev) => prev.filter((t) => t.id !== toast.id));
+                    }}
+                    className="mt-2 inline-flex items-center gap-1 text-[11px] font-bold text-emerald-primary hover:underline"
+                  >
+                    <span>View Details</span>
+                    <ExternalLink className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setToasts((prev) => prev.filter((t) => t.id !== toast.id))}
+                className="text-text-muted hover:text-white shrink-0 p-1"
+                aria-label="Dismiss toast"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          ))}
         </div>
       )}
     </div>
