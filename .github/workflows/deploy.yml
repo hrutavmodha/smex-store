@@ -89,9 +89,23 @@ jobs:
             mkdir -p ~/.ssh
             echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_ed25519
             chmod 600 ~/.ssh/id_ed25519
-            # Remote docker compose pull, restart, and reload nginx
+
+            DEPLOY_DIR="${{ secrets.SSH_DEPLOY_DIR || '/opt/smex-store' }}"
+            ENV_VARS="CLIENT_IMAGE=${{ env.CLIENT_IMAGE }}:${{ github.sha }} SERVER_IMAGE=${{ env.SERVER_IMAGE }}:${{ github.sha }}"
+            COMPOSE="docker compose -f docker-compose.prod.yml"
+
+            # set -e: stop the deploy if any step (especially migrations) fails
             echo "${{ secrets.GITHUB_TOKEN }}" | ssh -o StrictHostKeyChecking=no "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
-              "docker login ghcr.io -u ${{ github.actor }} --password-stdin && cd ${{ secrets.SSH_DEPLOY_DIR || '/opt/smex-store' }} && CLIENT_IMAGE=${{ env.CLIENT_IMAGE }}:${{ github.sha }} SERVER_IMAGE=${{ env.SERVER_IMAGE }}:${{ github.sha }} docker compose -f docker-compose.prod.yml pull client server && CLIENT_IMAGE=${{ env.CLIENT_IMAGE }}:${{ github.sha }} SERVER_IMAGE=${{ env.SERVER_IMAGE }}:${{ github.sha }} docker compose -f docker-compose.prod.yml up -d --remove-orphans client server && docker compose -f docker-compose.prod.yml exec -T nginx nginx -s reload 2>/dev/null || true"
+              "set -e
+               docker login ghcr.io -u ${{ github.actor }} --password-stdin
+               cd $DEPLOY_DIR
+               $ENV_VARS $COMPOSE pull client server
+               echo '[deploy] Running database migrations...'
+               $ENV_VARS $COMPOSE up -d postgres redis
+               $ENV_VARS $COMPOSE run --rm --no-deps server node dist/migrate.mjs
+               echo '[deploy] Migrations OK. Restarting app...'
+               $ENV_VARS $COMPOSE up -d --remove-orphans client server
+               $COMPOSE exec -T nginx nginx -s reload 2>/dev/null || true"
             echo "Deployment completed successfully on remote server."
           else
             echo "Notice: PRODUCTION_DEPLOY_WEBHOOK or SSH_HOST not configured. Container images published to GHCR. Manual deployment pull required on target host."
