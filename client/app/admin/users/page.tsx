@@ -10,9 +10,8 @@ import {
   UserCheck,
   UserX,
   RefreshCw,
-  AlertTriangle,
-  CheckCircle,
 } from 'lucide-react';
+import { Alert } from '@/components/ui/Alert';
 import { fetchWithAuth } from '../../../lib/api';
 import type { AdminUserListItem, UserRole } from '@smex/shared';
 
@@ -207,30 +206,11 @@ export default function AdminUsersPage() {
 
       {/* Notifications Alert Banner */}
       {notification && (
-        <div
-          role="alert"
-          className={`flex items-center justify-between p-3.5 rounded-xl border text-xs font-medium ${
-            notification.type === 'success'
-              ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-primary'
-              : 'bg-red-500/10 border-red-500/30 text-red-400'
-          }`}
-        >
-          <div className="flex items-center gap-2.5">
-            {notification.type === 'success' ? (
-              <CheckCircle className="h-4 w-4 shrink-0" />
-            ) : (
-              <AlertTriangle className="h-4 w-4 shrink-0" />
-            )}
-            <span>{notification.message}</span>
-          </div>
-          <button
-            type="button"
-            onClick={() => setNotification(null)}
-            className="text-text-muted hover:text-text-primary ml-4"
-          >
-            ✕
-          </button>
-        </div>
+        <Alert
+          variant={notification.type === 'success' ? 'success' : 'error'}
+          description={notification.message}
+          onClose={() => setNotification(null)}
+        />
       )}
 
       {/* Filters & Search Bar */}

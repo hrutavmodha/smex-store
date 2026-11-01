@@ -19,6 +19,7 @@ import {
   X,
   Users,
 } from 'lucide-react';
+import { Alert } from '@/components/ui/Alert';
 import { fetchWithAuth } from '../../../lib/api';
 import type { TournamentCardData, TournamentFormat, TournamentStatus } from '@smex/shared';
 
@@ -337,20 +338,10 @@ export default function AdminTournamentsPage() {
       </div>
 
       {actionMessage && (
-        <div
-          className={`p-4 rounded-xl text-xs font-mono flex items-center gap-2.5 border transition-all duration-[120ms] ${
-            actionMessage.type === 'success'
-              ? 'bg-emerald-950/70 border-emerald-500/40 text-emerald-primary'
-              : 'bg-red-950/70 border-red-500/40 text-red-400'
-          }`}
-        >
-          {actionMessage.type === 'success' ? (
-            <CheckCircle className="h-4 w-4 shrink-0" />
-          ) : (
-            <AlertCircle className="h-4 w-4 shrink-0" />
-          )}
-          <span>{actionMessage.text}</span>
-        </div>
+        <Alert
+          variant={actionMessage.type === 'success' ? 'success' : 'error'}
+          description={actionMessage.text}
+        />
       )}
 
       {/* Form: Create Tournament / Record Past Tournament */}

@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Save, RotateCcw, CheckCircle, AlertCircle, Calculator } from 'lucide-react';
+import { Save, RotateCcw, Calculator } from 'lucide-react';
+import { Alert } from '@/components/ui/Alert';
 import { fetchWithAuth } from '../../../lib/api';
 import type { BoostingRateRow } from '@smex/shared';
 
@@ -202,23 +203,19 @@ export default function AdminRatesPage() {
       </div>
 
       {savedSuccess && (
-        <div
+        <Alert
           data-testid="rates-saved-alert"
-          className="bg-emerald-950/70 border border-[#22C58F]/40 text-emerald-primary px-4 py-3 rounded-lg text-xs font-mono flex items-center gap-2 transition-all duration-120 ease-out"
-        >
-          <CheckCircle size={16} />
-          <span>Rates updated successfully. Cache invalidated sitewide.</span>
-        </div>
+          variant="success"
+          description="Rates updated successfully. Cache invalidated sitewide."
+        />
       )}
 
       {errorMessage && (
-        <div
+        <Alert
           data-testid="rates-error-alert"
-          className="bg-red-950/70 border border-red-500/40 text-red-300 px-4 py-3 rounded-lg text-xs font-mono flex items-center gap-2 transition-all duration-120 ease-out"
-        >
-          <AlertCircle size={16} />
-          <span>{errorMessage}</span>
-        </div>
+          variant="error"
+          description={errorMessage}
+        />
       )}
 
       {/* Sub-Mythic Fixed Tiers */}

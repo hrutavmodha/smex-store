@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Eye, EyeOff, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, CheckCircle2, Loader2 } from 'lucide-react';
+import { Alert } from '../ui/Alert';
 
 export interface ResetPasswordFormProps {
   token: string;
@@ -123,13 +124,7 @@ export function ResetPasswordForm({ token, onSuccess, onGoToLogin }: ResetPasswo
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4 w-full" noValidate>
       {errorMessage && (
-        <div
-          role="alert"
-          className="flex items-center gap-2 p-3 text-sm text-red-400 bg-red-950/40 border border-red-800/60 rounded-lg"
-        >
-          <AlertCircle className="h-4 w-4 shrink-0 text-red-400" />
-          <span>{errorMessage}</span>
-        </div>
+        <Alert variant="error" description={errorMessage} />
       )}
 
       {/* New Password */}

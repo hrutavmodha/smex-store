@@ -7,12 +7,11 @@ import {
   Globe,
   Shield,
   Trash2,
-  AlertTriangle,
   Loader2,
-  CheckCircle2,
   Clock,
   MapPin,
 } from 'lucide-react';
+import { Alert } from '@/components/ui/Alert';
 import { fetchWithAuth } from '../../../lib/api';
 
 export interface DeviceSession {
@@ -168,23 +167,11 @@ export default function DeviceManagementDashboard() {
 
       {/* Alerts */}
       {errorMessage && (
-        <div
-          role="alert"
-          className="mt-4 flex items-center gap-2 p-3 text-xs text-red-400 bg-red-950/40 border border-red-800/60 rounded-lg"
-        >
-          <AlertTriangle className="h-4 w-4 shrink-0 text-red-400" />
-          <span>{errorMessage}</span>
-        </div>
+        <Alert variant="error" description={errorMessage} className="mt-4" />
       )}
 
       {successMessage && (
-        <div
-          role="status"
-          className="mt-4 flex items-center gap-2 p-3 text-xs text-emerald-400 bg-emerald-950/40 border border-emerald-800/60 rounded-lg"
-        >
-          <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
-          <span>{successMessage}</span>
-        </div>
+        <Alert variant="success" description={successMessage} className="mt-4" />
       )}
 
       {/* Sessions Grid */}

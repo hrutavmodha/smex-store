@@ -2,7 +2,8 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ShieldAlert, AlertCircle, Loader2 } from 'lucide-react';
+import { ShieldAlert, Loader2 } from 'lucide-react';
+import { Alert } from '../ui/Alert';
 import {
   uploadScreenshotProof,
   deleteUploadedProof,
@@ -176,10 +177,7 @@ export function CreateListingForm() {
   return (
     <form onSubmit={handleSubmit} className="w-full max-w-2xl flex flex-col gap-6">
       {formError && (
-        <div className="p-4 rounded-xl bg-red-950/40 border border-red-800 text-sm text-red-200 flex items-center gap-3">
-          <AlertCircle className="w-5 h-5 text-red-400 shrink-0" />
-          <span>{formError}</span>
-        </div>
+        <Alert variant="error" description={formError} />
       )}
 
       {/* Listing Title */}

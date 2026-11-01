@@ -9,8 +9,8 @@ import {
   Link2,
   User,
   Users,
-  CheckCircle2,
 } from 'lucide-react';
+import { Alert } from '../ui/Alert';
 import { fetchWithAuth } from '../../lib/api';
 import type {
   IncidentType,
@@ -179,17 +179,11 @@ export function IncidentReportModal({
 
         {/* Status Alerts */}
         {errorMessage && (
-          <div className="mt-4 flex items-center gap-2 rounded-xl bg-red-500/10 border border-red-500/30 p-3 text-xs text-red-400">
-            <AlertTriangle className="h-4 w-4 shrink-0" />
-            <span>{errorMessage}</span>
-          </div>
+          <Alert variant="error" description={errorMessage} className="mt-4" />
         )}
 
         {successMessage && (
-          <div className="mt-4 flex items-center gap-2 rounded-xl bg-emerald-500/10 border border-emerald-500/30 p-3 text-xs text-emerald-primary">
-            <CheckCircle2 className="h-4 w-4 shrink-0" />
-            <span>{successMessage}</span>
-          </div>
+          <Alert variant="success" description={successMessage} className="mt-4" />
         )}
 
         {/* Form */}

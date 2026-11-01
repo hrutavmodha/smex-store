@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Plus, Shield, Users, AlertCircle, X } from 'lucide-react';
+import { Search, Plus, Shield, Users, X } from 'lucide-react';
+import { Alert } from '@/components/ui/Alert';
 import { TeamCard } from '../../components/teams/TeamCard';
 import type { TeamCardData, RosterMember, JoinRequestItem } from '@smex/shared';
 import { TeamDetailModal } from '../../components/teams/TeamDetailModal';
@@ -418,10 +419,7 @@ export default function TeamsPage() {
             </p>
 
             {createError && (
-              <div className="mb-4 p-3 rounded-lg bg-red-950/20 border border-red-900/30 text-red-400 text-xs flex items-center gap-2">
-                <AlertCircle className="h-4 w-4 shrink-0" />
-                <span>{createError}</span>
-              </div>
+              <Alert variant="error" description={createError} className="mb-4" />
             )}
 
             <form onSubmit={handleCreateSubmit} className="flex flex-col gap-4">

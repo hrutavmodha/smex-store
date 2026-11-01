@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { X, Crown, Users, UserX, Check, Ban, AlertTriangle } from 'lucide-react';
+import { Alert } from '../ui/Alert';
 import {
   type TeamCardData,
   type RosterMember,
@@ -166,10 +167,7 @@ export function TeamDetailModal({
         </div>
 
         {errorMsg && (
-          <div className="mb-4 p-3 rounded-lg bg-red-950/20 border border-red-900/30 text-red-400 text-xs flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4 shrink-0" />
-            <span>{errorMsg}</span>
-          </div>
+          <Alert variant="error" description={errorMsg} className="mb-4" />
         )}
 
         {/* Section: Active Roster Members */}
