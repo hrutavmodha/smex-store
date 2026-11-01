@@ -1,7 +1,7 @@
 import { sql } from 'drizzle-orm';
 import { pgEnum, pgTable, uuid, varchar, text, boolean, timestamp, index } from 'drizzle-orm/pg-core';
 
-export const userRoleEnum = pgEnum('user_role', ['user', 'admin']);
+export const userRoleEnum = pgEnum('user_role', ['user', 'manager', 'admin']);
 export const themePrefEnum = pgEnum('theme_preference', ['dark', 'amoled', 'light']);
 export const densityPrefEnum = pgEnum('density_preference', ['compact', 'comfortable', 'spacious']);
 export const privacyPrefEnum = pgEnum('privacy_preference', ['public', 'friends', 'private']);
@@ -11,6 +11,8 @@ export const users = pgTable('users', {
   email: varchar('email', { length: 255 }).notNull().unique('users_email_unique_idx'),
   passwordHash: text('password_hash').notNull(),
   role: userRoleEnum('role').notNull().default('user'),
+  promotedBy: uuid('promoted_by').references((): any => users.id, { onDelete: 'set null' }),
+  promotedAt: timestamp('promoted_at', { withTimezone: true }),
   emailVerified: boolean('email_verified').notNull().default(true),
   isBanned: boolean('is_banned').notNull().default(false),
   banReason: text('ban_reason'),

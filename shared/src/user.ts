@@ -1,4 +1,4 @@
-export type UserRole = 'user' | 'admin';
+export type UserRole = 'user' | 'manager' | 'admin';
 export type ThemePreference = 'dark' | 'amoled' | 'light';
 export type DensityPreference = 'compact' | 'comfortable' | 'spacious';
 export type PrivacyPreference = 'public' | 'friends' | 'private';

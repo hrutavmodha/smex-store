@@ -9,6 +9,7 @@ import { SessionService } from './session.service.js';
 import { NotificationService } from './notification.service.js';
 import { TournamentParticipantService } from './tournament-participant.service.js';
 import type { WsGatewayDecorator } from '../plugins/websocket.js';
+import type { UserRole } from '@smex/shared';
 
 export interface UserModerationErrorOptions {
   code: string;
@@ -47,8 +48,19 @@ export interface DisbandTeamResult {
   notifiedMembersCount: number;
 }
 
+export interface UpdateUserRoleResult {
+  success: boolean;
+  user: {
+    id: string;
+    email: string;
+    role: UserRole;
+    promotedBy?: string | null;
+    promotedAt?: Date | null;
+  };
+}
+
 export interface GetUsersFilter {
-  role?: 'user' | 'admin';
+  role?: UserRole;
   isBanned?: boolean;
   search?: string;
   page?: number;
@@ -204,6 +216,94 @@ export class UserModerationService {
     return {
       success: true,
       unbannedUserId: targetUserId,
+    };
+  }
+
+  /**
+   * Promotes or demotes user role (e.g. appointing or firing a Manager).
+   * Standing appointment persisted in users table and activity_logs.
+   * If demoting from manager to user, active sessions are revoked.
+   */
+  static async updateUserRole(
+    targetUserId: string,
+    newRole: UserRole,
+    adminId: string,
+    db: SmexDatabase,
+    redis: Redis,
+    wsGateway?: WsGatewayDecorator
+  ): Promise<UpdateUserRoleResult> {
+    if (targetUserId === adminId) {
+      throw new UserModerationError('Cannot alter your own administrative role', {
+        code: 'CANNOT_ALTER_OWN_ROLE',
+        statusCode: 400,
+      });
+    }
+
+    const [targetUser] = await db
+      .select({ id: users.id, email: users.email, role: users.role })
+      .from(users)
+      .where(eq(users.id, targetUserId))
+      .limit(1);
+
+    if (!targetUser) {
+      throw new UserModerationError(`User with id '${targetUserId}' not found`, {
+        code: 'USER_NOT_FOUND',
+        statusCode: 404,
+      });
+    }
+
+    const previousRole = targetUser.role;
+    const now = new Date();
+    const promotedBy = newRole === 'manager' ? adminId : null;
+    const promotedAt = newRole === 'manager' ? now : null;
+
+    // 1. Update user record in PostgreSQL
+    const [updatedUser] = await db
+      .update(users)
+      .set({
+        role: newRole,
+        promotedBy,
+        promotedAt,
+        updatedAt: now,
+      })
+      .where(eq(users.id, targetUserId))
+      .returning();
+
+    // 2. Insert audit log record
+    const actionType =
+      newRole === 'manager'
+        ? 'admin_user_promote_manager'
+        : previousRole === 'manager'
+          ? 'admin_user_demote_manager'
+          : 'admin_user_role_update';
+
+    await db.insert(activityLogs).values({
+      userId: adminId,
+      actionType,
+      entityType: 'user',
+      entityId: targetUserId,
+      metadataJson: {
+        previousRole,
+        newRole,
+        adminId,
+        targetUserId,
+      },
+    });
+
+    // 3. If demoting manager to user, revoke active sessions so outdated credentials cannot be used
+    if (previousRole === 'manager' && newRole === 'user') {
+      await SessionService.revokeAllSessions(targetUserId, db, redis, wsGateway);
+    }
+
+    return {
+      success: true,
+      user: {
+        id: updatedUser.id,
+        email: updatedUser.email,
+        role: updatedUser.role as UserRole,
+        promotedBy: updatedUser.promotedBy,
+        promotedAt: updatedUser.promotedAt,
+      },
     };
   }
 
@@ -372,6 +472,8 @@ export class UserModerationService {
         isBanned: users.isBanned,
         banReason: users.banReason,
         bannedAt: users.bannedAt,
+        promotedBy: users.promotedBy,
+        promotedAt: users.promotedAt,
         createdAt: users.createdAt,
         username: profiles.username,
         inGameId: profiles.inGameId,

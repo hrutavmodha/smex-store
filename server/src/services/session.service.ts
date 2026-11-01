@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import type { Redis } from 'ioredis';
 import type { SmexDatabase } from '../db/index.js';
 import { eq, and, ne, gt, lte } from 'drizzle-orm';
+import { type UserRole } from '@smex/shared';
 import { sessions } from '../db/schema/sessions.js';
 import { users } from '../db/schema/users.js';
 import { type DeviceMetadata, resolveDeviceType, type DeviceType } from '../utils/fingerprint.js';
@@ -20,7 +21,7 @@ export interface CreateSessionResult {
 export interface RefreshSessionResult {
   userId: string;
   sessionId: string;
-  role: 'user' | 'admin';
+  role: UserRole;
   newCookieValue: string;
 }
 

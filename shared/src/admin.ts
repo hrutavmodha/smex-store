@@ -1,3 +1,5 @@
+import { type UserRole } from './user.js';
+
 export interface AdminRateUpdateRequest {
   priceInr?: number | string;
   isActive?: boolean;
@@ -47,7 +49,7 @@ export interface ModerationListingItem {
 export interface AdminUserListItem {
   id: string;
   email: string;
-  role: 'user' | 'admin';
+  role: UserRole;
   emailVerified: boolean;
   isBanned: boolean;
   banReason?: string | null;

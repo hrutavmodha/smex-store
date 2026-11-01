@@ -3,7 +3,7 @@ import fp from 'fastify-plugin';
 import fastifyJwt from '@fastify/jwt';
 import fastifyCookie from '@fastify/cookie';
 import { eq } from 'drizzle-orm';
-import { type AccessTokenPayload } from '@smex/shared';
+import { type AccessTokenPayload, type UserRole } from '@smex/shared';
 import { users } from '../db/schema/users.js';
 import { loadEnv } from '../config/env.js';
 import { getCookie } from '../utils/cookies.js';
@@ -13,6 +13,10 @@ declare module 'fastify' {
     authenticate: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
     emailVerifiedGuard: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
     adminGuard: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
+    managerGuard: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
+    roleGuard: (
+      allowedRoles: UserRole[]
+    ) => (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
   }
 }
 
@@ -150,9 +154,47 @@ const authPlugin: FastifyPluginAsync = async (fastify) => {
     }
   };
 
+  const managerGuard = async (request: FastifyRequest, reply: FastifyReply) => {
+    if (!request.user || (request.user.role !== 'manager' && request.user.role !== 'admin')) {
+      return reply.code(403).send({
+        type: 'https://api.smexstore.com/errors/forbidden',
+        title: 'Forbidden',
+        status: 403,
+        detail: 'Manager or Admin privileges required',
+        code: 'INSUFFICIENT_PERMISSIONS',
+      });
+    }
+  };
+
+  const roleGuard = (allowedRoles: UserRole[]) => {
+    return async (request: FastifyRequest, reply: FastifyReply) => {
+      if (!request.user) {
+        return reply.code(401).send({
+          type: 'https://api.smexstore.com/errors/unauthorized',
+          title: 'Unauthorized',
+          status: 401,
+          detail: 'Authentication required',
+          code: 'UNAUTHORIZED',
+        });
+      }
+
+      if (!allowedRoles.includes(request.user.role)) {
+        return reply.code(403).send({
+          type: 'https://api.smexstore.com/errors/forbidden',
+          title: 'Forbidden',
+          status: 403,
+          detail: 'Insufficient permissions',
+          code: 'INSUFFICIENT_PERMISSIONS',
+        });
+      }
+    };
+  };
+
   fastify.decorate('authenticate', authenticate);
   fastify.decorate('emailVerifiedGuard', emailVerifiedGuard);
   fastify.decorate('adminGuard', adminGuard);
+  fastify.decorate('managerGuard', managerGuard);
+  fastify.decorate('roleGuard', roleGuard);
 };
 
 export default fp(authPlugin, {

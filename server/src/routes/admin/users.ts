@@ -4,10 +4,14 @@ import {
   UserModerationService,
   UserModerationError,
 } from '../../services/user-moderation.service.js';
-import { formatRfc7807 } from '@smex/shared';
+import { formatRfc7807, type UserRole } from '@smex/shared';
 
 const banUserSchema = z.object({
   reason: z.string().min(1, 'Ban reason is required'),
+});
+
+const updateRoleSchema = z.object({
+  role: z.enum(['user', 'manager', 'admin']),
 });
 
 const adminUsersRoutes: FastifyPluginAsync = async (fastify) => {
@@ -23,7 +27,7 @@ const adminUsersRoutes: FastifyPluginAsync = async (fastify) => {
    */
   fastify.get('/api/v1/admin/users', async (request, reply) => {
     const query = request.query as {
-      role?: 'user' | 'admin';
+      role?: UserRole;
       isBanned?: string;
       search?: string;
       page?: string;
@@ -104,6 +108,45 @@ const adminUsersRoutes: FastifyPluginAsync = async (fastify) => {
         request.user.sub,
         fastify.db,
         fastify.redis
+      );
+
+      return reply.code(200).send(result);
+    } catch (err) {
+      if (err instanceof UserModerationError) {
+        return reply.code(err.statusCode).send(
+          formatRfc7807(err.statusCode, err.code, 'Moderation Error', err.message)
+        );
+      }
+      throw err;
+    }
+  });
+
+  /**
+   * PATCH /api/v1/admin/users/:id/role
+   * Updates a user's role (promote to manager, demote to user, etc.)
+   */
+  fastify.patch('/api/v1/admin/users/:id/role', async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const parseResult = updateRoleSchema.safeParse(request.body);
+    if (!parseResult.success) {
+      return reply.code(422).send(
+        formatRfc7807(
+          422,
+          'VALIDATION_FAILED',
+          'Validation Failed',
+          parseResult.error.issues.map((i) => i.message).join(', ')
+        )
+      );
+    }
+
+    try {
+      const result = await UserModerationService.updateUserRole(
+        id,
+        parseResult.data.role,
+        request.user.sub,
+        fastify.db,
+        fastify.redis,
+        fastify.wsGateway
       );
 
       return reply.code(200).send(result);
