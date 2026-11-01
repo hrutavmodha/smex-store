@@ -12,6 +12,7 @@ export interface RegisterFormProps {
 export function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFormProps) {
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -20,6 +21,7 @@ export function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFormProps) 
   const [fieldErrors, setFieldErrors] = useState<{
     email?: string;
     username?: string;
+    phoneNumber?: string;
     password?: string;
     confirmPassword?: string;
   }>({});
@@ -29,6 +31,7 @@ export function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFormProps) 
     const errors: {
       email?: string;
       username?: string;
+      phoneNumber?: string;
       password?: string;
       confirmPassword?: string;
     } = {};
@@ -45,6 +48,15 @@ export function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFormProps) 
       errors.username = 'In-Game Name must be between 3 and 32 characters';
     } else if (!/^[a-zA-Z0-9_]+$/.test(username.trim())) {
       errors.username = 'In-Game Name must only contain alphanumeric characters and underscores';
+    }
+
+    if (!phoneNumber.trim()) {
+      errors.phoneNumber = 'Phone number is required';
+    } else {
+      const cleanDigits = phoneNumber.replace(/\D/g, '');
+      if (cleanDigits.length < 7 || cleanDigits.length > 15 || !/^[+]?[(]?[0-9]{1,4}[)]?[-\s./0-9]*$/.test(phoneNumber.trim())) {
+        errors.phoneNumber = 'Please enter a valid phone number';
+      }
     }
 
     if (!password) {
@@ -88,6 +100,7 @@ export function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFormProps) 
           email: email.trim(),
           password,
           username: username.trim(),
+          phoneNumber: phoneNumber.trim(),
         }),
       });
 
@@ -190,6 +203,35 @@ export function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFormProps) 
         {fieldErrors.username && (
           <span id="reg-username-error" className="text-xs text-red-400 font-medium">
             {fieldErrors.username}
+          </span>
+        )}
+      </div>
+
+      {/* Phone Number Input */}
+      <div className="flex flex-col gap-1">
+        <label htmlFor="reg-phone" className="text-xs font-semibold uppercase tracking-wider text-text-secondary">
+          Phone Number
+        </label>
+        <input
+          id="reg-phone"
+          type="tel"
+          value={phoneNumber}
+          onChange={(e) => {
+            setPhoneNumber(e.target.value);
+            if (fieldErrors.phoneNumber) setFieldErrors((prev) => ({ ...prev, phoneNumber: undefined }));
+          }}
+          placeholder="+91 98765 43210"
+          autoComplete="tel"
+          data-testid="reg-phone"
+          className={`h-11 w-full px-3 text-sm text-text-primary bg-bg-canvas border rounded-lg outline-none transition-colors duration-[120ms] ${
+            fieldErrors.phoneNumber ? 'border-red-500 focus:border-red-400' : 'border-border-subtle focus:border-emerald-primary'
+          }`}
+          aria-invalid={!!fieldErrors.phoneNumber}
+          aria-describedby={fieldErrors.phoneNumber ? 'reg-phone-error' : undefined}
+        />
+        {fieldErrors.phoneNumber && (
+          <span id="reg-phone-error" className="text-xs text-red-400 font-medium">
+            {fieldErrors.phoneNumber}
           </span>
         )}
       </div>

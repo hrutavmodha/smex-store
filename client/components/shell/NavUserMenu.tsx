@@ -32,7 +32,7 @@ export function NavUserMenu({
       <button
         type="button"
         onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-        className="flex items-center gap-2 px-2.5 py-1.5 text-xs font-semibold text-text-primary bg-bg-surface-elevated hover:bg-bg-canvas rounded-lg border border-border-subtle transition-colors duration-[120ms] min-h-[40px]"
+        className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-2.5 py-1.5 text-xs font-semibold text-text-primary bg-bg-surface-elevated hover:bg-bg-canvas rounded-lg border border-border-subtle transition-colors duration-[120ms] min-h-[40px] touch-manipulation active:scale-95"
         aria-label="User Profile Menu"
         aria-expanded={isDropdownOpen}
         data-testid="user-profile-button"
@@ -40,11 +40,11 @@ export function NavUserMenu({
         <span
           data-testid="user-avatar-badge"
           data-preset={user.avatarPreset}
-          className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-primary/20 text-emerald-primary text-[10px] font-bold border border-emerald-primary/40"
+          className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-primary/20 text-emerald-primary text-[10px] font-bold border border-emerald-primary/40 shrink-0"
         >
           {(user.ign || user.email || '?').charAt(0).toUpperCase()}
         </span>
-        <span data-testid="user-ign" className="font-medium text-text-primary max-w-[120px] truncate">
+        <span data-testid="user-ign" className="font-medium text-text-primary max-w-[80px] sm:max-w-[120px] truncate hidden min-[420px]:inline">
           {user.ign || user.email}
         </span>
 
@@ -98,16 +98,14 @@ export function NavUserMenu({
           )}
 
           {user.role === 'manager' && (
-            <div
-              data-testid="manager-role-indicator"
-              className="flex items-center gap-2 p-2 rounded-lg bg-purple-500/10 border border-purple-500/30 text-purple-300 text-xs font-medium"
+            <Link
+              href="/manager"
+              onClick={() => setIsDropdownOpen(false)}
+              className="flex items-center gap-2 px-2.5 py-2 text-xs font-bold text-purple-300 bg-purple-500/10 hover:bg-purple-500/20 rounded-lg border border-purple-500/30 transition-colors duration-[120ms] min-h-[36px]"
             >
-              <Shield className="h-4 w-4 shrink-0 text-purple-400" />
-              <div className="flex flex-col">
-                <span className="font-bold">Standing Manager</span>
-                <span className="text-[10px] text-purple-300/80">Match & Operations Lead</span>
-              </div>
-            </div>
+              <Shield className="h-4 w-4 text-purple-400" />
+              <span>Manager Panel</span>
+            </Link>
           )}
 
           {user.role === 'admin' && (

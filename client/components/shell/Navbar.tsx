@@ -182,32 +182,57 @@ export function Navbar({ user, onLogout, onOpenAuthModal }: NavbarProps) {
         </div>
 
         {/* Mobile Hamburger & Controls Trigger */}
-        <div className="flex items-center gap-2 sm:hidden relative z-50">
+        <div className="flex items-center gap-1.5 sm:hidden relative z-50">
+          {/* Mobile Search Trigger */}
+          <button
+            type="button"
+            onClick={() => setIsSearchOpen(true)}
+            className="flex items-center justify-center p-2 text-text-secondary hover:text-text-primary bg-bg-surface-elevated rounded-lg min-w-[40px] min-h-[40px] cursor-pointer touch-manipulation active:scale-95 transition-transform"
+            aria-label="Open Search"
+          >
+            <Search className="h-4 w-4" />
+          </button>
+
+          {/* User Profile Dropdown on Mobile if logged in */}
+          {user && (
+            <NavUserMenu
+              user={user}
+              isDropdownOpen={isProfileDropdownOpen}
+              setIsDropdownOpen={setIsProfileDropdownOpen}
+              onLogout={handleLogout}
+            />
+          )}
+
+          {/* Mobile Real-time Notification Center */}
+          <NotificationCenter user={user} />
+
+          {/* Mobile Theme Toggle */}
           <button
             type="button"
             onClick={handleCycleTheme}
-            className="flex items-center justify-center p-2.5 text-text-secondary hover:text-text-primary bg-bg-surface-elevated rounded-lg min-w-[44px] min-h-[44px] cursor-pointer touch-manipulation active:scale-95 transition-transform"
+            className="flex items-center justify-center p-2 text-text-secondary hover:text-text-primary bg-bg-surface-elevated rounded-lg min-w-[40px] min-h-[40px] cursor-pointer touch-manipulation active:scale-95 transition-transform"
             aria-label={`Toggle theme (current: ${theme})`}
             data-testid="mobile-theme-toggle"
           >
             {theme === 'dark' ? (
-              <Moon className="h-5 w-5 pointer-events-none" />
+              <Moon className="h-4 w-4 pointer-events-none" />
             ) : (
-              <Sun className="h-5 w-5 text-cyan-depth pointer-events-none" />
+              <Sun className="h-4 w-4 text-cyan-depth pointer-events-none" />
             )}
           </button>
 
+          {/* Mobile Drawer Trigger (Hamburger / Close) */}
           <button
             type="button"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="flex items-center justify-center p-2.5 text-text-secondary hover:text-text-primary bg-bg-surface-elevated rounded-lg min-w-[44px] min-h-[44px] cursor-pointer touch-manipulation active:scale-95 transition-transform"
+            className="flex items-center justify-center p-2 text-text-secondary hover:text-text-primary bg-bg-surface-elevated rounded-lg min-w-[40px] min-h-[40px] cursor-pointer touch-manipulation active:scale-95 transition-transform"
             aria-label={isMobileMenuOpen ? 'Close Navigation Menu' : 'Open Navigation Menu'}
             aria-expanded={isMobileMenuOpen}
           >
             {isMobileMenuOpen ? (
-              <X className="h-5 w-5 pointer-events-none" />
+              <X className="h-4 w-4 pointer-events-none" />
             ) : (
-              <Menu className="h-5 w-5 pointer-events-none" />
+              <Menu className="h-4 w-4 pointer-events-none" />
             )}
           </button>
         </div>
@@ -221,6 +246,8 @@ export function Navbar({ user, onLogout, onOpenAuthModal }: NavbarProps) {
         navLinks={NAV_LINKS}
         onLogout={handleLogout}
         onOpenAuthModal={onOpenAuthModal}
+        density={density}
+        onCycleDensity={handleCycleDensity}
       />
 
       {/* Universal Search Modal */}

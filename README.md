@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./assets/logo.png" alt="Smex Store and Esports" width="420" />
+  <img src="./client/public/logo.png" alt="Smex Store and Esports" width="420" />
 </p>
 
 <p align="center">

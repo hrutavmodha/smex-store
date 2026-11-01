@@ -49,6 +49,7 @@ export interface ModerationListingItem {
 export interface AdminUserListItem {
   id: string;
   email: string;
+  phoneNumber?: string | null;
   role: UserRole;
   emailVerified: boolean;
   isBanned: boolean;

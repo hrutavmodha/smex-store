@@ -254,8 +254,8 @@ export class UserModerationService {
 
     const previousRole = targetUser.role;
     const now = new Date();
-    const promotedBy = newRole === 'manager' ? adminId : null;
-    const promotedAt = newRole === 'manager' ? now : null;
+    const promotedBy = newRole === 'manager' || newRole === 'admin' ? adminId : null;
+    const promotedAt = newRole === 'manager' || newRole === 'admin' ? now : null;
 
     // 1. Update user record in PostgreSQL
     const [updatedUser] = await db
@@ -271,11 +271,15 @@ export class UserModerationService {
 
     // 2. Insert audit log record
     const actionType =
-      newRole === 'manager'
-        ? 'admin_user_promote_manager'
-        : previousRole === 'manager'
-          ? 'admin_user_demote_manager'
-          : 'admin_user_role_update';
+      newRole === 'admin'
+        ? 'admin_user_promote_admin'
+        : newRole === 'manager'
+          ? 'admin_user_promote_manager'
+          : previousRole === 'manager'
+            ? 'admin_user_demote_manager'
+            : previousRole === 'admin'
+              ? 'admin_user_demote_admin'
+              : 'admin_user_role_update';
 
     await db.insert(activityLogs).values({
       userId: adminId,
@@ -290,8 +294,8 @@ export class UserModerationService {
       },
     });
 
-    // 3. If demoting manager to user, revoke active sessions so outdated credentials cannot be used
-    if (previousRole === 'manager' && newRole === 'user') {
+    // 3. If demoting manager or admin to user, revoke active sessions so outdated credentials cannot be used
+    if ((previousRole === 'manager' || previousRole === 'admin') && newRole === 'user') {
       await SessionService.revokeAllSessions(targetUserId, db, redis, wsGateway);
     }
 
@@ -467,6 +471,7 @@ export class UserModerationService {
       .select({
         id: users.id,
         email: users.email,
+        phoneNumber: users.phoneNumber,
         role: users.role,
         emailVerified: users.emailVerified,
         isBanned: users.isBanned,

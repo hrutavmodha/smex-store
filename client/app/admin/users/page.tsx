@@ -10,6 +10,10 @@ import {
   UserCheck,
   UserX,
   RefreshCw,
+  ChevronLeft,
+  ChevronRight,
+  Ban,
+  RotateCcw,
 } from 'lucide-react';
 import { Alert } from '@/components/ui/Alert';
 import { fetchWithAuth } from '../../../lib/api';
@@ -127,7 +131,12 @@ export default function AdminUsersPage() {
         setUsersList((prev) =>
           prev.map((u) => (u.id === targetUser.id ? { ...u, role: newRole } : u))
         );
-        const actionLabel = newRole === 'manager' ? 'promoted to Manager' : 'demoted to User';
+        const actionLabel =
+          newRole === 'admin'
+            ? 'promoted to Admin'
+            : newRole === 'manager'
+              ? 'promoted to Manager'
+              : 'demoted to User';
         setNotification({
           type: 'success',
           message: `User ${targetUser.username || targetUser.email} successfully ${actionLabel}.`,
@@ -149,18 +158,58 @@ export default function AdminUsersPage() {
     }
   };
 
+  const handleToggleBan = async (targetUser: AdminUserListItem) => {
+    setActionLoadingId(targetUser.id);
+    setNotification(null);
+
+    try {
+      const endpoint = targetUser.isBanned
+        ? `/api/v1/admin/users/${targetUser.id}/unban`
+        : `/api/v1/admin/users/${targetUser.id}/ban`;
+
+      const res = await fetchWithAuth(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason: 'Administrative governance action' }),
+      });
+
+      if (res.ok) {
+        setUsersList((prev) =>
+          prev.map((u) => (u.id === targetUser.id ? { ...u, isBanned: !targetUser.isBanned } : u))
+        );
+        setNotification({
+          type: 'success',
+          message: `User ${targetUser.username || targetUser.email} ${targetUser.isBanned ? 'unbanned' : 'banned'} successfully.`,
+        });
+      } else {
+        const err = await res.json().catch(() => ({}));
+        setNotification({
+          type: 'error',
+          message: err.detail || err.message || 'Failed to update account ban status',
+        });
+      }
+    } catch {
+      setNotification({
+        type: 'error',
+        message: 'Network error while attempting ban update',
+      });
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
   const getRoleBadge = (role: UserRole) => {
     switch (role) {
       case 'admin':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-primary border border-emerald-500/30">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-primary border border-emerald-500/30">
             <ShieldCheck className="h-3.5 w-3.5" />
             Admin
           </span>
         );
       case 'manager':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-purple-500/15 text-purple-400 border border-purple-500/40">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-purple-500/10 dark:bg-purple-500/15 text-purple-700 dark:text-purple-300 border border-purple-500/30 dark:border-purple-500/40">
             <Shield className="h-3.5 w-3.5" />
             Standing Manager
           </span>
@@ -197,7 +246,7 @@ export default function AdminUsersPage() {
           type="button"
           onClick={loadUsers}
           disabled={isLoading}
-          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-bg-surface border border-border-subtle text-xs font-semibold text-text-secondary hover:text-text-primary hover:bg-bg-surface-elevated transition-colors duration-[120ms] disabled:opacity-50 min-h-[36px]"
+          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-bg-surface border border-border-subtle text-xs font-semibold text-text-secondary hover:text-text-primary hover:bg-bg-surface-elevated hover:border-emerald-primary/40 transition-all duration-[120ms] ease-out active:scale-[0.98] disabled:opacity-50 cursor-pointer min-h-[38px]"
         >
           <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin text-emerald-primary' : ''}`} />
           <span>Refresh</span>
@@ -296,6 +345,11 @@ export default function AdminUsersPage() {
                           <span className="text-[11px] text-text-secondary font-mono">
                             {targetUser.email}
                           </span>
+                          {targetUser.phoneNumber && (
+                            <span className="text-[10px] text-text-muted font-mono mt-0.5">
+                              📞 {targetUser.phoneNumber}
+                            </span>
+                          )}
                         </div>
                       </td>
 
@@ -312,12 +366,12 @@ export default function AdminUsersPage() {
                       {/* Account Status */}
                       <td className="py-3.5 px-4">
                         {targetUser.isBanned ? (
-                          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-bold bg-red-500/10 text-red-400 border border-red-500/30">
+                          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-bold bg-red-500/10 text-red-700 dark:text-red-400 border border-red-500/30">
                             <ShieldAlert className="h-3 w-3" />
                             Banned
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1.5 text-emerald-primary font-medium text-[11px]">
+                          <span className="inline-flex items-center gap-1.5 text-emerald-700 dark:text-emerald-primary font-medium text-[11px]">
                             <span className="h-1.5 w-1.5 rounded-full bg-emerald-primary" />
                             Active
                           </span>
@@ -332,29 +386,71 @@ export default function AdminUsersPage() {
                       {/* Actions */}
                       <td className="py-3.5 px-4 text-right">
                         {isTargetAdmin ? (
-                          <span className="text-[11px] text-text-muted font-mono">
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-bg-surface-elevated border border-border-subtle text-[11px] font-mono font-medium text-text-muted">
                             Protected Admin
                           </span>
-                        ) : isTargetManager ? (
-                          <button
-                            type="button"
-                            disabled={isProcessing}
-                            onClick={() => handleUpdateRole(targetUser, 'user')}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-amber-500/40 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 font-bold text-xs transition-colors duration-[120ms] disabled:opacity-50"
-                          >
-                            <UserX className="h-3.5 w-3.5" />
-                            <span>{isProcessing ? 'Revoking...' : 'Demote to User'}</span>
-                          </button>
                         ) : (
-                          <button
-                            type="button"
-                            disabled={isProcessing}
-                            onClick={() => handleUpdateRole(targetUser, 'manager')}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-purple-500/40 bg-purple-500/15 text-purple-300 hover:bg-purple-500/25 font-bold text-xs transition-colors duration-[120ms] disabled:opacity-50"
-                          >
-                            <UserCheck className="h-3.5 w-3.5" />
-                            <span>{isProcessing ? 'Promoting...' : 'Promote to Manager'}</span>
-                          </button>
+                          <div className="flex items-center justify-end gap-2">
+                            {isTargetManager ? (
+                              <>
+                                <button
+                                  type="button"
+                                  disabled={isProcessing}
+                                  onClick={() => handleUpdateRole(targetUser, 'user')}
+                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-400 active:scale-[0.98] font-bold text-xs transition-all duration-[120ms] ease-out disabled:opacity-50 cursor-pointer min-h-[32px]"
+                                  title="Demote manager to standard user"
+                                >
+                                  <UserX className="h-3.5 w-3.5" />
+                                  <span>{isProcessing ? 'Updating...' : 'Demote'}</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={isProcessing}
+                                  onClick={() => handleUpdateRole(targetUser, 'admin')}
+                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 dark:bg-emerald-500/15 hover:bg-emerald-500/20 dark:hover:bg-emerald-500/25 text-emerald-700 dark:text-emerald-primary active:scale-[0.98] font-bold text-xs transition-all duration-[120ms] ease-out disabled:opacity-50 cursor-pointer min-h-[32px]"
+                                  title="Promote manager to Admin"
+                                >
+                                  <ShieldCheck className="h-3.5 w-3.5" />
+                                  <span>{isProcessing ? 'Updating...' : 'Make Admin'}</span>
+                                </button>
+                              </>
+                            ) : (
+                              <button
+                                type="button"
+                                disabled={isProcessing}
+                                onClick={() => handleUpdateRole(targetUser, 'manager')}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-purple-500/30 bg-purple-500/10 dark:bg-purple-500/15 hover:bg-purple-500/20 dark:hover:bg-purple-500/25 text-purple-700 dark:text-purple-300 active:scale-[0.98] font-bold text-xs transition-all duration-[120ms] ease-out disabled:opacity-50 cursor-pointer min-h-[32px]"
+                                title="Promote user to standing manager"
+                              >
+                                <UserCheck className="h-3.5 w-3.5" />
+                                <span>{isProcessing ? 'Updating...' : 'Promote'}</span>
+                              </button>
+                            )}
+
+                            {targetUser.isBanned ? (
+                              <button
+                                type="button"
+                                disabled={isProcessing}
+                                onClick={() => handleToggleBan(targetUser)}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-primary active:scale-[0.98] font-bold text-xs transition-all duration-[120ms] ease-out disabled:opacity-50 cursor-pointer min-h-[32px]"
+                                title="Restore user account access"
+                              >
+                                <RotateCcw className="h-3.5 w-3.5" />
+                                <span>Unban</span>
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                disabled={isProcessing}
+                                onClick={() => handleToggleBan(targetUser)}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 text-red-700 dark:text-red-400 active:scale-[0.98] font-bold text-xs transition-all duration-[120ms] ease-out disabled:opacity-50 cursor-pointer min-h-[32px]"
+                                title="Suspend user account"
+                              >
+                                <Ban className="h-3.5 w-3.5" />
+                                <span>Ban</span>
+                              </button>
+                            )}
+                          </div>
                         )}
                       </td>
                     </tr>
@@ -366,7 +462,7 @@ export default function AdminUsersPage() {
         </div>
 
         {/* Pagination Bar */}
-        <div className="flex items-center justify-between px-4 py-3 border-t border-border-subtle bg-bg-canvas text-xs text-text-secondary font-mono">
+        <div className="flex items-center justify-between px-5 py-3.5 border-t border-border-subtle bg-bg-canvas text-xs text-text-secondary font-mono">
           <span>
             Total: {totalCount} registered accounts
           </span>
@@ -375,18 +471,22 @@ export default function AdminUsersPage() {
               type="button"
               disabled={page <= 1 || isLoading}
               onClick={() => setPage((p) => Math.max(1, p - 1))}
-              className="px-3 py-1 rounded bg-bg-surface border border-border-subtle hover:bg-bg-surface-elevated disabled:opacity-40"
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-bg-surface hover:bg-bg-surface-elevated border border-border-subtle hover:border-emerald-primary/40 text-text-primary text-xs font-semibold transition-all duration-[120ms] ease-out active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100 cursor-pointer"
             >
-              Previous
+              <ChevronLeft className="h-3.5 w-3.5" />
+              <span>Previous</span>
             </button>
-            <span className="px-2 font-bold text-text-primary">Page {page}</span>
+            <span className="px-2.5 py-1 rounded-md bg-bg-surface-elevated border border-border-subtle text-xs font-bold font-mono text-text-primary">
+              {page}
+            </span>
             <button
               type="button"
               disabled={page * limit >= totalCount || isLoading}
               onClick={() => setPage((p) => p + 1)}
-              className="px-3 py-1 rounded bg-bg-surface border border-border-subtle hover:bg-bg-surface-elevated disabled:opacity-40"
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-bg-surface hover:bg-bg-surface-elevated border border-border-subtle hover:border-emerald-primary/40 text-text-primary text-xs font-semibold transition-all duration-[120ms] ease-out active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100 cursor-pointer"
             >
-              Next
+              <span>Next</span>
+              <ChevronRight className="h-3.5 w-3.5" />
             </button>
           </div>
         </div>

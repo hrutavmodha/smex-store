@@ -29,6 +29,7 @@ const registerBodySchema = z.object({
     .regex(/^[a-zA-Z0-9_]+$/, 'Username must only contain alphanumeric characters and underscores')
     .trim(),
   inGameId: z.string().min(3).max(50).optional(),
+  phoneNumber: z.string().min(1, 'Phone number is required'),
 });
 
 const loginBodySchema = z.object({
@@ -72,7 +73,7 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
         );
       }
 
-      const { email, password, username, inGameId } = parsed.data;
+      const { email, password, username, inGameId, phoneNumber } = parsed.data;
       const normalizedEmail = email.toLowerCase().trim();
 
       // Check if email or username already taken
@@ -117,6 +118,7 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
           .values({
             email: normalizedEmail,
             passwordHash,
+            phoneNumber: phoneNumber ? phoneNumber.trim() : null,
             role: 'user',
             emailVerified: true,
           })
@@ -137,6 +139,7 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
         uid: newUser.id,
         inGameId: inGameId || null,
         ign: username,
+        phoneNumber: newUser.phoneNumber,
         avatarPreset: 'preset_default_01',
         email: newUser.email,
         emailVerified: true,
@@ -299,6 +302,7 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
           ign: profileRecord?.username || userRecord.email,
           avatarPreset: profileRecord?.avatarPreset || 'preset_default_01',
           email: userRecord.email,
+          phoneNumber: userRecord.phoneNumber || null,
           role: userRecord.role,
           emailVerified: userRecord.emailVerified,
           profile: profileRecord || null,
@@ -500,10 +504,38 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
         ign: profileRecord?.username || userRecord.email,
         avatarPreset: profileRecord?.avatarPreset || 'preset_default_01',
         email: userRecord.email,
+        phoneNumber: userRecord.phoneNumber || null,
         role: userRecord.role,
         emailVerified: userRecord.emailVerified,
         sessionId: request.user.sessionId,
         profile: profileRecord,
+      });
+    }
+  );
+
+  // 5b. PATCH /api/v1/auth/profile - Update user profile metadata
+  fastify.patch(
+    '/api/v1/auth/profile',
+    { preHandler: [fastify.authenticate] },
+    async (request, reply) => {
+      const body = (request.body as Record<string, unknown>) || {};
+      const updateData: Record<string, unknown> = {
+        updatedAt: new Date(),
+      };
+      if (typeof body.inGameId === 'string') updateData.inGameId = body.inGameId.trim() || null;
+      if (typeof body.bio === 'string') updateData.bio = body.bio.trim() || null;
+      if (typeof body.playstyle === 'string') updateData.playstyle = body.playstyle.trim() || null;
+      if (typeof body.avatarPreset === 'string') updateData.avatarPreset = body.avatarPreset.trim() || 'preset_default_01';
+
+      const [updatedProfile] = await fastify.db
+        .update(profiles)
+        .set(updateData)
+        .where(eq(profiles.userId, request.user.sub))
+        .returning();
+
+      return reply.code(200).send({
+        success: true,
+        profile: updatedProfile,
       });
     }
   );

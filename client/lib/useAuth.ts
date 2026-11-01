@@ -31,6 +31,7 @@ export function useAuth(): UseAuthReturn {
               uid: raw.uid || raw.id,
               inGameId: raw.inGameId || raw.profile?.inGameId || null,
               email: raw.email,
+              phoneNumber: raw.phoneNumber || null,
               ign: raw.ign || raw.profile?.username || raw.username || '',
               avatarPreset: raw.avatarPreset || raw.profile?.avatarPreset || 'preset_default_01',
               emailVerified: Boolean(raw.emailVerified),

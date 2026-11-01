@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   Trophy,
   Zap,
@@ -394,8 +395,14 @@ export default function Home() {
             {/* Harshu Card */}
             <div className="flex flex-col justify-between p-6 rounded-2xl bg-bg-surface border border-border-subtle hover:border-emerald-primary/50 transition-all duration-120 group shadow-lg">
               <div className="space-y-4">
-                <div className="h-12 w-12 rounded-xl bg-emerald-primary/15 text-emerald-primary flex items-center justify-center font-black text-lg">
-                  H
+                <div className="relative h-12 w-12 rounded-xl overflow-hidden border border-emerald-primary/30 shadow-md">
+                  <Image
+                    src="/harshu.png"
+                    alt="Harshu Logo"
+                    fill
+                    className="object-cover"
+                    sizes="48px"
+                  />
                 </div>
                 <div>
                   <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-primary">
@@ -433,8 +440,14 @@ export default function Home() {
             {/* Bishal Card */}
             <div className="flex flex-col justify-between p-6 rounded-2xl bg-bg-surface border border-border-subtle hover:border-cyan-depth/50 transition-all duration-120 group shadow-lg">
               <div className="space-y-4">
-                <div className="h-12 w-12 rounded-xl bg-cyan-depth/15 text-cyan-depth flex items-center justify-center font-black text-lg">
-                  B
+                <div className="relative h-12 w-12 rounded-xl overflow-hidden border border-cyan-depth/30 shadow-md">
+                  <Image
+                    src="/bishal.png"
+                    alt="Bishal Logo"
+                    fill
+                    className="object-cover"
+                    sizes="48px"
+                  />
                 </div>
                 <div>
                   <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-cyan-depth">

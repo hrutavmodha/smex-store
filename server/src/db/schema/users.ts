@@ -10,6 +10,7 @@ export const users = pgTable('users', {
   id: uuid('id').defaultRandom().primaryKey(),
   email: varchar('email', { length: 255 }).notNull().unique('users_email_unique_idx'),
   passwordHash: text('password_hash').notNull(),
+  phoneNumber: varchar('phone_number', { length: 50 }),
   role: userRoleEnum('role').notNull().default('user'),
   promotedBy: uuid('promoted_by').references((): any => users.id, { onDelete: 'set null' }),
   promotedAt: timestamp('promoted_at', { withTimezone: true }),

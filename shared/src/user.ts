@@ -7,6 +7,7 @@ export interface UserProfile {
   uid: string;
   inGameId?: string | null;
   email: string;
+  phoneNumber?: string | null;
   ign: string;
   avatarPreset?: string;
   emailVerified: boolean;
