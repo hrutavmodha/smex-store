@@ -6,11 +6,9 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   X,
-  User,
   ShieldCheck,
   Shield,
   Sliders,
-  Laptop,
   LogOut,
 } from 'lucide-react';
 import { type UserProfile } from '@smex/shared';
@@ -44,10 +42,30 @@ export function NavMobileDrawer({
 }: NavMobileDrawerProps) {
   const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
+  const [isRendered, setIsRendered] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (isOpen) {
+      setIsRendered(true);
+      const rAF = requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setIsVisible(true);
+        });
+      });
+      return () => cancelAnimationFrame(rAF);
+    } else {
+      setIsVisible(false);
+      const timer = setTimeout(() => {
+        setIsRendered(false);
+      }, 250);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen]);
 
   // Lock body scroll when drawer is open on mobile
   useEffect(() => {
@@ -62,15 +80,17 @@ export function NavMobileDrawer({
     };
   }, [isOpen]);
 
-  if (!isOpen || !mounted || typeof document === 'undefined' || !document.body) {
+  if (!isRendered || !mounted || typeof document === 'undefined' || !document.body) {
     return null;
   }
 
   const content = (
-    <div className="sm:hidden fixed inset-0 z-50">
+    <div className={`sm:hidden fixed inset-0 z-50 ${isVisible ? 'pointer-events-auto' : 'pointer-events-none'}`}>
       {/* Full-Screen Backdrop Overlay */}
       <div
-        className="fixed inset-0 bg-black/60 z-40 transition-opacity duration-[120ms] opacity-100"
+        className={`fixed inset-0 bg-black/60 z-40 transition-opacity duration-[250ms] ease-out ${
+          isVisible ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        }`}
         onClick={onClose}
         aria-hidden="true"
         data-testid="mobile-drawer-backdrop"
@@ -78,8 +98,10 @@ export function NavMobileDrawer({
 
       {/* Slide-Out Drawer Panel */}
       <div
-        className="fixed inset-y-0 right-0 z-50 w-72 bg-bg-surface border-l border-border-subtle p-6 transition-transform duration-[120ms] ease-out flex flex-col translate-x-0"
-        aria-hidden="false"
+        className={`fixed inset-y-0 right-0 z-50 w-72 bg-bg-surface border-l border-border-subtle p-6 transition-transform duration-[250ms] ease-out flex flex-col will-change-transform ${
+          isVisible ? 'translate-x-0 pointer-events-auto' : 'translate-x-full pointer-events-none'
+        }`}
+        aria-hidden={!isVisible}
       >
         <div className="flex items-center justify-between pb-5 border-b border-border-subtle shrink-0">
           <span className="font-bold text-sm tracking-wide uppercase text-text-primary">Navigation</span>
@@ -159,83 +181,6 @@ export function NavMobileDrawer({
               </Link>
             );
           })}
-
-          {user && (
-            <>
-              <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-text-muted px-3 pt-3 pb-1">
-                Account
-              </div>
-
-              {user.role === 'manager' && (
-                <Link
-                  href="/manager"
-                  onClick={onClose}
-                  className={`px-3 py-2.5 text-sm font-bold rounded-lg border border-purple-500/30 transition-colors duration-[120ms] min-h-[40px] flex items-center gap-2 ${
-                    pathname?.startsWith('/manager')
-                      ? 'bg-purple-500/20 text-purple-300'
-                      : 'bg-purple-500/10 text-purple-300 hover:bg-purple-500/20'
-                  }`}
-                >
-                  <Shield className="h-4 w-4" />
-                  <span>Manager Panel</span>
-                </Link>
-              )}
-
-              {user.role === 'admin' && (
-                <Link
-                  href="/admin"
-                  onClick={onClose}
-                  className={`px-3 py-2.5 text-sm font-bold rounded-lg border border-emerald-500/30 transition-colors duration-[120ms] min-h-[40px] flex items-center gap-2 ${
-                    pathname?.startsWith('/admin')
-                      ? 'bg-emerald-500/20 text-emerald-primary'
-                      : 'bg-emerald-500/10 text-emerald-primary hover:bg-emerald-500/20'
-                  }`}
-                >
-                  <ShieldCheck className="h-4 w-4" />
-                  <span>Admin Portal</span>
-                </Link>
-              )}
-
-              <Link
-                href="/profile"
-                onClick={onClose}
-                className={`px-3 py-2.5 text-sm font-medium rounded-lg transition-colors duration-[120ms] min-h-[40px] flex items-center gap-2.5 ${
-                  pathname === '/profile'
-                    ? 'bg-bg-surface-elevated text-emerald-primary'
-                    : 'text-text-secondary hover:text-text-primary hover:bg-bg-surface-elevated'
-                }`}
-              >
-                <User className="h-4 w-4" />
-                <span>My Profile</span>
-              </Link>
-
-              <Link
-                href="/settings"
-                onClick={onClose}
-                className={`px-3 py-2.5 text-sm font-medium rounded-lg transition-colors duration-[120ms] min-h-[40px] flex items-center gap-2.5 ${
-                  pathname === '/settings'
-                    ? 'bg-bg-surface-elevated text-emerald-primary'
-                    : 'text-text-secondary hover:text-text-primary hover:bg-bg-surface-elevated'
-                }`}
-              >
-                <Sliders className="h-4 w-4" />
-                <span>Settings</span>
-              </Link>
-
-              <Link
-                href="/settings/devices"
-                onClick={onClose}
-                className={`px-3 py-2.5 text-sm font-medium rounded-lg transition-colors duration-[120ms] min-h-[40px] flex items-center gap-2.5 ${
-                  pathname === '/settings/devices'
-                    ? 'bg-bg-surface-elevated text-emerald-primary'
-                    : 'text-text-secondary hover:text-text-primary hover:bg-bg-surface-elevated'
-                }`}
-              >
-                <Laptop className="h-4 w-4" />
-                <span>Device Management</span>
-              </Link>
-            </>
-          )}
 
           {/* Density Preference Switcher in Drawer */}
           {onCycleDensity && (

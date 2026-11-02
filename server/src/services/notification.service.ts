@@ -1,5 +1,5 @@
 import type { Redis } from 'ioredis';
-import { eq, and, desc, count } from 'drizzle-orm';
+import { eq, and, desc, count, inArray } from 'drizzle-orm';
 import type { WsGatewayDecorator } from '../plugins/websocket.js';
 import type { SmexDatabase } from '../db/index.js';
 import { notifications } from '../db/schema/notifications.js';
@@ -54,6 +54,7 @@ export interface NewBoostingOrderData {
   totalPriceInr: number | string;
   contactChannel: string;
   timestamp: string;
+  customerPhone?: string | null;
 }
 
 
@@ -512,20 +513,27 @@ export class NotificationService {
   }
 
   /**
-   * Queries user IDs of all active users holding the 'manager' role (excluding 'admin')
+   * Queries user IDs of all active staff holding 'manager' or 'admin' roles
    */
-  static async getManagerRecipients(db: SmexDatabase): Promise<string[]> {
+  static async getBoostingAlertRecipients(db: SmexDatabase): Promise<string[]> {
     const rows = await db
       .select({ id: users.id })
       .from(users)
-      .where(and(eq(users.role, 'manager'), eq(users.isBanned, false)));
+      .where(and(inArray(users.role, ['manager', 'admin']), eq(users.isBanned, false)));
 
     return rows.map((r) => r.id);
   }
 
   /**
+   * Queries user IDs of all active users holding the 'manager' role (backward-compatible alias)
+   */
+  static async getManagerRecipients(db: SmexDatabase): Promise<string[]> {
+    return this.getBoostingAlertRecipients(db);
+  }
+
+  /**
    * Dispatches real-time alerts and durable notifications for new boosting orders
-   * exclusively to all active Managers (excluding Admins).
+   * to all active Managers and Admins.
    */
   static async notifyNewBoostingOrder(
     orderData: {
@@ -536,13 +544,27 @@ export class NotificationService {
       targetRank: string;
       totalPriceInr: number | string;
       contactChannel: string;
+      customerPhone?: string | null;
+      customerId?: string | null;
     },
     db: SmexDatabase,
     redis?: Redis,
     wsGateway?: WsGatewayDecorator
   ): Promise<string[]> {
-    const managerIds = await this.getManagerRecipients(db);
-    if (!managerIds.length) return [];
+    const recipientIds = await this.getBoostingAlertRecipients(db);
+    if (!recipientIds.length) return [];
+
+    let customerPhone = orderData.customerPhone;
+    if (!customerPhone && orderData.customerId) {
+      const [user] = await db
+        .select({ phoneNumber: users.phoneNumber })
+        .from(users)
+        .where(eq(users.id, orderData.customerId))
+        .limit(1);
+      if (user?.phoneNumber) {
+        customerPhone = user.phoneNumber;
+      }
+    }
 
     const nowIso = new Date().toISOString();
     const payloadData: NewBoostingOrderData = {
@@ -554,6 +576,7 @@ export class NotificationService {
       totalPriceInr: orderData.totalPriceInr,
       contactChannel: orderData.contactChannel,
       timestamp: nowIso,
+      customerPhone: customerPhone || null,
     };
 
     const wsFrame = {
@@ -563,12 +586,13 @@ export class NotificationService {
     };
 
     const title = `🚀 New Boosting Order #${orderData.orderRef}`;
-    const message = `Customer ${orderData.customerIgn} requested ${orderData.startingRank} ➔ ${orderData.targetRank} (₹${orderData.totalPriceInr}) via ${orderData.contactChannel}.`;
+    const phonePart = customerPhone ? ` (Phone: ${customerPhone})` : '';
+    const message = `Customer ${orderData.customerIgn}${phonePart} requested ${orderData.startingRank} ➔ ${orderData.targetRank} (₹${orderData.totalPriceInr}) via ${orderData.contactChannel}.`;
 
-    for (const managerId of managerIds) {
-      const channel = `user:${managerId}`;
+    for (const recipientId of recipientIds) {
+      const channel = `user:${recipientId}`;
 
-      // 1. WebSocket / Redis PubSub broadcast directly to Manager channel
+      // 1. WebSocket / Redis PubSub broadcast directly to Staff channel (Managers & Admins)
       if (redis) {
         await redis.publish(channel, JSON.stringify(wsFrame)).catch(() => {});
       } else if (wsGateway) {
@@ -578,7 +602,7 @@ export class NotificationService {
       // 2. Durable in-app notification record insertion
       try {
         await this.dispatchNotification(
-          managerId,
+          recipientId,
           'update',
           title,
           message,
@@ -600,6 +624,6 @@ export class NotificationService {
       }
     }
 
-    return managerIds;
+    return recipientIds;
   }
 }

@@ -16,27 +16,23 @@ export interface OwnerSocialChannel {
 export function getOwnerSocialChannels(): OwnerSocialChannel[] {
   const channels: OwnerSocialChannel[] = [];
 
-  const whatsappUrl = process.env.NEXT_PUBLIC_SOCIAL_WHATSAPP_CHANNEL?.trim();
-  if (whatsappUrl) {
-    channels.push({
-      id: 'whatsapp',
-      name: 'WhatsApp Channel',
-      href: whatsappUrl,
-      icon: WhatsAppIcon,
-      label: 'Join our official WhatsApp Channel',
-    });
-  }
+  const whatsappUrl = process.env.NEXT_PUBLIC_SOCIAL_WHATSAPP_CHANNEL?.trim() || "https://whatsapp.com/channel/0029VbDEVo70G0XbUx6MK90w";
+  channels.push({
+    id: 'whatsapp',
+    name: 'WhatsApp Channel',
+    href: whatsappUrl,
+    icon: WhatsAppIcon,
+    label: 'Join our official WhatsApp Channel',
+  });
 
-  const instagramUrl = process.env.NEXT_PUBLIC_SOCIAL_INSTAGRAM?.trim();
-  if (instagramUrl) {
-    channels.push({
-      id: 'instagram',
-      name: 'Instagram',
-      href: instagramUrl,
-      icon: InstagramIcon,
-      label: 'Follow our official Instagram page',
-    });
-  }
+  const instagramUrl = process.env.NEXT_PUBLIC_SOCIAL_INSTAGRAM?.trim() || "https://www.instagram.com/smex_official_store?xtok=MTB0aXRheHBvOGk5YQ==";
+  channels.push({
+    id: 'instagram',
+    name: 'Instagram',
+    href: instagramUrl,
+    icon: InstagramIcon,
+    label: 'Follow our official Instagram page',
+  });
 
   return channels;
 }
@@ -164,6 +160,15 @@ export function Footer() {
                 <WhatsAppIcon className="h-4 w-4 shrink-0" />
                 <span>Join Official WhatsApp Channel</span>
               </a>
+              <a
+                href={process.env.NEXT_PUBLIC_SOCIAL_INSTAGRAM?.trim() || "https://www.instagram.com/smex_official_store?xtok=MTB0aXRheHBvOGk5YQ=="}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-[#E1306C]/10 border border-[#E1306C]/30 text-[#E1306C] hover:bg-[#E1306C]/20 text-xs font-bold transition-colors duration-[120ms] w-full"
+              >
+                <InstagramIcon className="h-4 w-4 shrink-0" />
+                <span>Follow Official Instagram</span>
+              </a>
             </div>
 
             {/* Creators & Promoters */}
@@ -181,7 +186,7 @@ export function Footer() {
                       target="_blank"
                       rel="noopener noreferrer"
                       aria-label="Harshu on Instagram"
-                      className="p-1.5 rounded border border-transparent hover:border-emerald-primary/40 text-text-muted hover:text-emerald-primary hover:bg-bg-surface-elevated transition-colors duration-[120ms]"
+                      className="p-1.5 rounded border border-transparent hover:border-[#E1306C]/50 text-text-muted hover:text-[#E1306C] hover:bg-[#E1306C]/10 transition-colors duration-[120ms]"
                     >
                       <InstagramIcon className="h-4 w-4" />
                     </a>
@@ -190,7 +195,7 @@ export function Footer() {
                       target="_blank"
                       rel="noopener noreferrer"
                       aria-label="Harshu on YouTube"
-                      className="p-1.5 rounded border border-transparent hover:border-emerald-primary/40 text-text-muted hover:text-emerald-primary hover:bg-bg-surface-elevated transition-colors duration-[120ms]"
+                      className="p-1.5 rounded border border-transparent hover:border-[#FF0000]/50 text-text-muted hover:text-[#FF0000] hover:bg-[#FF0000]/10 transition-colors duration-[120ms]"
                     >
                       <YouTubeIcon className="h-4 w-4" />
                     </a>
@@ -206,7 +211,7 @@ export function Footer() {
                       target="_blank"
                       rel="noopener noreferrer"
                       aria-label="Bishal on Instagram"
-                      className="p-1.5 rounded border border-transparent hover:border-emerald-primary/40 text-text-muted hover:text-emerald-primary hover:bg-bg-surface-elevated transition-colors duration-[120ms]"
+                      className="p-1.5 rounded border border-transparent hover:border-[#E1306C]/50 text-text-muted hover:text-[#E1306C] hover:bg-[#E1306C]/10 transition-colors duration-[120ms]"
                     >
                       <InstagramIcon className="h-4 w-4" />
                     </a>
@@ -215,7 +220,7 @@ export function Footer() {
                       target="_blank"
                       rel="noopener noreferrer"
                       aria-label="Bishal on YouTube"
-                      className="p-1.5 rounded border border-transparent hover:border-emerald-primary/40 text-text-muted hover:text-emerald-primary hover:bg-bg-surface-elevated transition-colors duration-[120ms]"
+                      className="p-1.5 rounded border border-transparent hover:border-[#FF0000]/50 text-text-muted hover:text-[#FF0000] hover:bg-[#FF0000]/10 transition-colors duration-[120ms]"
                     >
                       <YouTubeIcon className="h-4 w-4" />
                     </a>
@@ -229,9 +234,6 @@ export function Footer() {
         {/* Bottom Bar: Copyright & Compliance */}
         <div className="mt-12 border-t border-border-subtle pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-text-muted">
           <p>© 2026 Smex Store. All rights reserved.</p>
-          <p>
-            Engineered with zero-trust security and 120ms hardware acceleration.
-          </p>
         </div>
       </div>
     </footer>

@@ -89,6 +89,7 @@ export interface BoostingOrderDispatchInput {
     restrictedHeroPool?: string[];
     duoPlayWithBooster?: boolean;
   };
+  customerPhone?: string | null;
 }
 
 export class ValidationError extends Error {
@@ -438,6 +439,7 @@ export function formatOrderMessage(input: BoostingOrderDispatchInput): string {
     `[SMEX STORE BOOSTING ORDER]`,
     `• Order Ref: #${input.orderRef}`,
     `• Customer IGN: ${input.customerIgn} (Server: ${serverIdText})`,
+    ...(input.customerPhone ? [`• Customer Phone: ${input.customerPhone}`] : []),
     `• Game: Mobile Legends: Bang Bang`,
     `• Progression: ${input.startingRank} (${startStars}★) ➔ ${input.targetRank} (${targetStars}★)`,
     `• Pricing Mode: ${modeLabel}`,

@@ -101,9 +101,9 @@ export function NavUserMenu({
             <Link
               href="/manager"
               onClick={() => setIsDropdownOpen(false)}
-              className="flex items-center gap-2 px-2.5 py-2 text-xs font-bold text-purple-300 bg-purple-500/10 hover:bg-purple-500/20 rounded-lg border border-purple-500/30 transition-colors duration-[120ms] min-h-[36px]"
+              className="flex items-center gap-2 px-2.5 py-2 text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-bg-surface-elevated rounded-lg transition-colors duration-[120ms] min-h-[36px]"
             >
-              <Shield className="h-4 w-4 text-purple-400" />
+              <Shield className="h-4 w-4" />
               <span>Manager Panel</span>
             </Link>
           )}
@@ -112,7 +112,7 @@ export function NavUserMenu({
             <Link
               href="/admin"
               onClick={() => setIsDropdownOpen(false)}
-              className="flex items-center gap-2 px-2.5 py-2 text-xs font-bold text-emerald-primary bg-emerald-500/10 hover:bg-emerald-500/20 rounded-lg border border-emerald-500/30 transition-colors duration-[120ms] min-h-[36px]"
+              className="flex items-center gap-2 px-2.5 py-2 text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-bg-surface-elevated rounded-lg transition-colors duration-[120ms] min-h-[36px]"
             >
               <ShieldCheck className="h-4 w-4" />
               <span>Admin Portal</span>

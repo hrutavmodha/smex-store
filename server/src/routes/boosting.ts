@@ -1,7 +1,9 @@
 import { type FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
+import { eq } from 'drizzle-orm';
 import { BoostingRateService } from '../services/boosting-rate.service.js';
 import { NotificationService } from '../services/notification.service.js';
+import { users } from '../db/schema/users.js';
 import {
   type AccessTokenPayload,
   DEFAULT_SURCHARGES,
@@ -118,6 +120,7 @@ const boostingRoutes: FastifyPluginAsync = async (fastify) => {
 
     // Optional customer authentication check
     let customerId: string | null = null;
+    let customerPhone: string | null = null;
     const authHeader = request.headers.authorization;
     if (authHeader && authHeader.startsWith('Bearer ')) {
       try {
@@ -125,6 +128,14 @@ const boostingRoutes: FastifyPluginAsync = async (fastify) => {
         const payload = fastify.jwt.verify<AccessTokenPayload>(token);
         if (payload && payload.sub) {
           customerId = payload.sub;
+          const [customerUser] = await fastify.db
+            .select({ phoneNumber: users.phoneNumber })
+            .from(users)
+            .where(eq(users.id, customerId))
+            .limit(1);
+          if (customerUser?.phoneNumber) {
+            customerPhone = customerUser.phoneNumber;
+          }
         }
       } catch {
         // Guest mode fallback
@@ -166,9 +177,17 @@ const boostingRoutes: FastifyPluginAsync = async (fastify) => {
       pricingMode: data.pricingMode,
       totalPriceInr: calculation.totalPriceInr,
       addons: data.addons,
+      customerPhone,
     });
 
     const dbPricingMode = data.pricingMode === 'composite' ? 'per_star' : data.pricingMode;
+
+    const notesParts = [
+      data.notes ? data.notes : null,
+      `Ref: ${orderRef}`,
+      `Channel: ${data.contactChannel}`,
+      customerPhone ? `Phone: ${customerPhone}` : null,
+    ].filter(Boolean);
 
     const order = await BoostingRateService.createOrder(
       {
@@ -183,9 +202,7 @@ const boostingRoutes: FastifyPluginAsync = async (fastify) => {
         customerIgn: data.customerIgn,
         contactChannel: data.contactChannel,
         status: 'inquiry',
-        notes: data.notes
-          ? `${data.notes} | Ref: ${orderRef} | Channel: ${data.contactChannel}`
-          : `Ref: ${orderRef} | Channel: ${data.contactChannel}`,
+        notes: notesParts.join(' | '),
       },
       fastify.db
     );
@@ -205,7 +222,7 @@ const boostingRoutes: FastifyPluginAsync = async (fastify) => {
       }
     }
 
-    // Manager-exclusive alerting hook for incoming boosting orders
+    // Alerting hook for incoming boosting orders (delivers to Managers and Admins)
     try {
       await NotificationService.notifyNewBoostingOrder(
         {
@@ -216,6 +233,8 @@ const boostingRoutes: FastifyPluginAsync = async (fastify) => {
           targetRank: data.targetRank,
           totalPriceInr: calculation.totalPriceInr,
           contactChannel: data.contactChannel,
+          customerPhone,
+          customerId,
         },
         fastify.db,
         fastify.redis,
