@@ -99,13 +99,16 @@ jobs:
               "set -e
                docker login ghcr.io -u ${{ github.actor }} --password-stdin
                cd $DEPLOY_DIR
+               echo '[deploy] Pruning old unused docker images to reclaim disk space...'
+               docker image prune -af || true
                $ENV_VARS $COMPOSE pull client server
                echo '[deploy] Running database migrations...'
                $ENV_VARS $COMPOSE up -d postgres redis
                $ENV_VARS $COMPOSE run --rm --no-deps server node dist/migrate.mjs
                echo '[deploy] Migrations OK. Restarting app...'
                $ENV_VARS $COMPOSE up -d --remove-orphans client server
-               $COMPOSE exec -T nginx nginx -s reload 2>/dev/null || true"
+               $COMPOSE exec -T nginx nginx -s reload 2>/dev/null || true
+               docker image prune -f || true"
             echo "Deployment completed successfully on remote server."
           else
             echo "Notice: PRODUCTION_DEPLOY_WEBHOOK or SSH_HOST not configured. Container images published to GHCR. Manual deployment pull required on target host."
