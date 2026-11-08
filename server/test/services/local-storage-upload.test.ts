@@ -95,4 +95,77 @@ describe('Local Storage Direct Upload Pipeline (Raasta 1)', () => {
     });
     assert.equal(notFoundRes.statusCode, 404);
   });
+
+  it('Real TCP Socket Test: Full HTTP Upload & Stream over network port', async (t) => {
+    process.env.STORAGE_DRIVER = 'local';
+    const app = await build(t);
+    const address = await app.listen({ port: 3044, host: '127.0.0.1' });
+    const { token, user } = await createVerifiedUser(app, 'real_tcp_user');
+
+    // 1. Presign
+    const presignRes = await fetch(`${address}/api/v1/marketplace/uploads/presigned-url`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        fileName: 'live_test.png',
+        contentType: 'image/png',
+        fileSize: 500,
+      }),
+    });
+    assert.equal(presignRes.status, 200);
+    const presignData = (await presignRes.json()) as any;
+
+    // 2. Real binary PUT over network
+    const pngBuffer = Buffer.from([
+      0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
+      0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52,
+      ...Array(50).fill(1),
+    ]);
+    const uploadRes = await fetch(`${address}${presignData.uploadUrl}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'image/png' },
+      body: pngBuffer,
+    });
+    assert.equal(uploadRes.status, 200);
+
+    // 3. Verify
+    const verifyRes = await fetch(`${address}/api/v1/marketplace/uploads/verify`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        s3Key: presignData.s3Key,
+        expectedMime: 'image/png',
+      }),
+    });
+    assert.equal(verifyRes.status, 200);
+
+    // 4. Stream media back over network
+    const mediaRes = await fetch(`${address}${presignData.cdnUrl}`);
+    assert.equal(mediaRes.status, 200);
+    assert.equal(mediaRes.headers.get('content-type'), 'image/png');
+    assert.equal(mediaRes.headers.get('x-content-type-options'), 'nosniff');
+    const mediaBytes = await mediaRes.arrayBuffer();
+    assert.ok(mediaBytes.byteLength > 0);
+
+    // 5. Clean up delete
+    const deleteRes = await fetch(`${address}/api/v1/marketplace/uploads`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ s3Key: presignData.s3Key }),
+    });
+    assert.equal(deleteRes.status, 200);
+
+    // 6. Verify 404
+    const notFoundRes = await fetch(`${address}${presignData.cdnUrl}`);
+    assert.equal(notFoundRes.status, 404);
+  });
 });
