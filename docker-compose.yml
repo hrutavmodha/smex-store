@@ -36,7 +36,7 @@ services:
       - smex-network
 
   minio:
-    image: minio/minio:latest
+    image: cgr.dev/chainguard/minio:latest
     container_name: smex-minio
     restart: unless-stopped
     command: server /data --console-address ":9001"
@@ -48,27 +48,6 @@ services:
       - "9001:9001"
     volumes:
       - smex_minio_data:/data
-    healthcheck:
-      test: ["CMD", "mc", "ready", "local"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-    networks:
-      - smex-network
-
-  minio-init:
-    image: minio/mc:latest
-    container_name: smex-minio-init
-    depends_on:
-      minio:
-        condition: service_healthy
-    entrypoint: >
-      /bin/sh -c "
-      /usr/bin/mc alias set localminio http://minio:9000 minioadmin minioadmin;
-      /usr/bin/mc mb localminio/smex-storage --ignore-existing;
-      /usr/bin/mc anonymous set download localminio/smex-storage;
-      exit 0;
-      "
     networks:
       - smex-network
 

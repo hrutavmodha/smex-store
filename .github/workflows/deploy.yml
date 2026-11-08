@@ -108,8 +108,6 @@ jobs:
                $ENV_VARS $COMPOSE pull client server
                echo '[deploy] Starting backing services (postgres, redis, minio)...'
                $ENV_VARS $COMPOSE up -d postgres redis minio
-               echo '[deploy] Ensuring storage bucket initialization...'
-               $ENV_VARS $COMPOSE up minio-init || true
                echo '[deploy] Running database migrations...'
                $ENV_VARS $COMPOSE run --rm --no-deps server node dist/migrate.mjs
                echo '[deploy] Migrations OK. Restarting all application services...'

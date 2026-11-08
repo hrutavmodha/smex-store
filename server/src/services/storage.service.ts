@@ -7,6 +7,8 @@ import {
   GetObjectTaggingCommand,
   PutBucketLifecycleConfigurationCommand,
   ListObjectsV2Command,
+  CreateBucketCommand,
+  HeadBucketCommand,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { randomUUID } from 'node:crypto';
@@ -96,6 +98,18 @@ export class StorageService {
     return this.bucket;
   }
 
+  public async ensureBucketExists(): Promise<void> {
+    try {
+      await this.s3Client.send(new HeadBucketCommand({ Bucket: this.bucket }));
+    } catch {
+      try {
+        await this.s3Client.send(new CreateBucketCommand({ Bucket: this.bucket }));
+      } catch {
+        // Bucket may already exist or concurrent creation
+      }
+    }
+  }
+
   public sanitizeFileName(fileName: string): string {
     return fileName
       .trim()
@@ -130,6 +144,8 @@ export class StorageService {
     const uniqueId = randomUUID();
     const s3Key = `marketplace/proofs/${userId}/${uniqueId}-${cleanName}`;
     const expiresIn = 900; // 15 minutes
+
+    await this.ensureBucketExists().catch(() => {});
 
     const command = new PutObjectCommand({
       Bucket: this.bucket,
