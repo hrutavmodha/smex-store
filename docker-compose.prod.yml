@@ -119,6 +119,7 @@ services:
   minio:
     image: cgr.dev/chainguard/minio:latest
     container_name: smex-minio-prod
+    user: "0:0"
     restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
