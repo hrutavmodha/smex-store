@@ -1,6 +1,7 @@
 import { type FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import fs from 'node:fs';
+import path from 'node:path';
 import { StorageService, StorageError, MAX_FILE_SIZE } from '../../services/storage.service.js';
 import { MediaInspectorService, MediaInspectionError } from '../../services/media-inspector.service.js';
 import { presignedUploadRateLimitConfig } from '../../plugins/rate-limit.js';
@@ -350,17 +351,24 @@ export const marketplaceUploadsRoutes: FastifyPluginAsync = async (fastify) => {
     const ext = s3Key.split('.').pop()?.toLowerCase() || '';
     const fallbackMime = EXTENSION_MIME_MAP[ext] || 'image/jpeg';
 
-    const filePath = storageService.getLocalFilePath(s3Key);
-    if (fs.existsSync(filePath)) {
-      try {
-        const stream = fs.createReadStream(filePath);
+    const cleanKey = path.normalize(s3Key).replace(/^(\.\.(\/|\\|$))+/, '');
+    const candidatePaths = [
+      storageService.getLocalFilePath(s3Key),
+      path.resolve('/tmp/smex-uploads', cleanKey),
+    ];
 
-        reply.header('Content-Type', fallbackMime);
-        reply.header('X-Content-Type-Options', 'nosniff');
-        reply.header('Cache-Control', 'public, max-age=31536000, immutable');
-        return reply.send(stream);
-      } catch {
-        // Fall through to S3
+    for (const filePath of candidatePaths) {
+      if (fs.existsSync(filePath)) {
+        try {
+          const stream = fs.createReadStream(filePath);
+
+          reply.header('Content-Type', fallbackMime);
+          reply.header('X-Content-Type-Options', 'nosniff');
+          reply.header('Cache-Control', 'public, max-age=31536000, immutable');
+          return reply.send(stream);
+        } catch {
+          // Fall through
+        }
       }
     }
 

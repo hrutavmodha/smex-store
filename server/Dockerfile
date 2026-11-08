@@ -38,6 +38,9 @@ ENV NODE_ENV=production
 ENV PORT=3001
 ENV HOST=0.0.0.0
 
+# Ensure uploads directory exists and is owned by node user
+RUN mkdir -p /app/uploads && chown -R node:node /app/uploads
+
 # Security: Run as unprivileged node user
 USER node:node
 

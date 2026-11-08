@@ -108,6 +108,8 @@ jobs:
                $ENV_VARS $COMPOSE pull client server
                echo '[deploy] Starting backing services (postgres, redis)...'
                $ENV_VARS $COMPOSE up -d postgres redis
+               echo '[deploy] Ensuring upload volume permissions...'
+               docker run --rm -v smex_prod_uploads:/data alpine chown -R 1000:1000 /data || true
                echo '[deploy] Running database migrations...'
                $ENV_VARS $COMPOSE run --rm --no-deps server node dist/migrate.mjs
                echo '[deploy] Migrations OK. Restarting all application services...'

@@ -213,9 +213,20 @@ export class StorageService {
   }
 
   public async saveLocalObject(s3Key: string, data: Buffer, contentType?: string): Promise<void> {
-    const filePath = this.getLocalFilePath(s3Key);
-    await fs.promises.mkdir(path.dirname(filePath), { recursive: true });
-    await fs.promises.writeFile(filePath, data);
+    let filePath = this.getLocalFilePath(s3Key);
+    try {
+      await fs.promises.mkdir(path.dirname(filePath), { recursive: true });
+      await fs.promises.writeFile(filePath, data);
+    } catch (err: any) {
+      if (err?.code === 'EACCES' || err?.code === 'EPERM') {
+        const cleanKey = path.normalize(s3Key).replace(/^(\.\.(\/|\\|$))+/, '');
+        filePath = path.resolve('/tmp/smex-uploads', cleanKey);
+        await fs.promises.mkdir(path.dirname(filePath), { recursive: true });
+        await fs.promises.writeFile(filePath, data);
+      } else {
+        throw err;
+      }
+    }
 
     const metaPath = `${filePath}.meta.json`;
     const meta = {
@@ -229,20 +240,27 @@ export class StorageService {
   }
 
   public async getObjectHeader(s3Key: string, byteLength: number = 16): Promise<Buffer> {
-    const filePath = this.getLocalFilePath(s3Key);
-    try {
-      if (fs.existsSync(filePath)) {
-        const handle = await fs.promises.open(filePath, 'r');
-        try {
-          const buffer = Buffer.alloc(byteLength);
-          const { bytesRead } = await handle.read(buffer, 0, byteLength, 0);
-          return buffer.subarray(0, bytesRead);
-        } finally {
-          await handle.close();
+    const cleanKey = path.normalize(s3Key).replace(/^(\.\.(\/|\\|$))+/, '');
+    const candidatePaths = [
+      this.getLocalFilePath(s3Key),
+      path.resolve('/tmp/smex-uploads', cleanKey),
+    ];
+
+    for (const filePath of candidatePaths) {
+      try {
+        if (fs.existsSync(filePath)) {
+          const handle = await fs.promises.open(filePath, 'r');
+          try {
+            const buffer = Buffer.alloc(byteLength);
+            const { bytesRead } = await handle.read(buffer, 0, byteLength, 0);
+            return buffer.subarray(0, bytesRead);
+          } finally {
+            await handle.close();
+          }
         }
+      } catch {
+        // Try next candidate
       }
-    } catch {
-      // Fall through to S3
     }
 
     const command = new GetObjectCommand({
@@ -261,14 +279,21 @@ export class StorageService {
   }
 
   public async deleteObject(s3Key: string): Promise<void> {
-    const filePath = this.getLocalFilePath(s3Key);
-    try {
-      if (fs.existsSync(filePath)) {
-        await fs.promises.unlink(filePath).catch(() => {});
-        await fs.promises.unlink(`${filePath}.meta.json`).catch(() => {});
+    const cleanKey = path.normalize(s3Key).replace(/^(\.\.(\/|\\|$))+/, '');
+    const candidatePaths = [
+      this.getLocalFilePath(s3Key),
+      path.resolve('/tmp/smex-uploads', cleanKey),
+    ];
+
+    for (const filePath of candidatePaths) {
+      try {
+        if (fs.existsSync(filePath)) {
+          await fs.promises.unlink(filePath).catch(() => {});
+          await fs.promises.unlink(`${filePath}.meta.json`).catch(() => {});
+        }
+      } catch {
+        // Ignore
       }
-    } catch {
-      // Ignore
     }
 
     try {
