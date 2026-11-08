@@ -387,7 +387,9 @@ export function calculateStarBrackets(
 }
 
 export function getDispatchConfig(): BoostingDispatchConfig {
-  const env = (typeof process !== 'undefined' && process.env ? process.env : {}) as Record<string, string | undefined>;
+  const env = ((typeof globalThis !== 'undefined' && (globalThis as any).process?.env)
+    ? (globalThis as any).process.env
+    : {}) as Record<string, string | undefined>;
   return {
     whatsappChannelUrl: env.NEXT_PUBLIC_SOCIAL_WHATSAPP_CHANNEL || '',
     instagramUrl: env.NEXT_PUBLIC_SOCIAL_INSTAGRAM || '',
