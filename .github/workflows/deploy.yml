@@ -106,17 +106,17 @@ jobs:
                echo '[deploy] Pruning old unused docker images to reclaim disk space...'
                docker image prune -af || true
                $ENV_VARS $COMPOSE pull client server
-               echo '[deploy] Starting backing services (postgres, redis, minio)...'
-               $ENV_VARS $COMPOSE up -d postgres redis minio
+               echo '[deploy] Starting backing services (postgres, redis)...'
+               $ENV_VARS $COMPOSE up -d postgres redis
                echo '[deploy] Running database migrations...'
                $ENV_VARS $COMPOSE run --rm --no-deps server node dist/migrate.mjs
                echo '[deploy] Migrations OK. Restarting all application services...'
-               $ENV_VARS $COMPOSE up -d --remove-orphans client server minio postgres redis nginx
+               $ENV_VARS $COMPOSE up -d --remove-orphans client server postgres redis nginx
                $COMPOSE restart nginx
                echo '[deploy] Container statuses:'
                docker ps -a
-               echo '[deploy] MinIO logs:'
-               docker logs smex-minio-prod --tail 30 || true
+               echo '[deploy] Server logs:'
+               docker logs smex-server-prod --tail 30 || true
                docker image prune -f || true"
             echo "Deployment completed successfully on remote server."
           else

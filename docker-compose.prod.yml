@@ -14,8 +14,6 @@ services:
         condition: service_healthy
       client:
         condition: service_healthy
-      minio:
-        condition: service_started
     networks:
       - smex-prod-network
 
@@ -26,6 +24,8 @@ services:
       dockerfile: server/Dockerfile
     container_name: smex-server-prod
     restart: unless-stopped
+    volumes:
+      - smex_prod_uploads:/app/uploads
     environment:
       NODE_ENV: production
       PORT: 3001
@@ -37,18 +37,13 @@ services:
       CLIENT_URL: ${CLIENT_URL:-https://smexstore.com}
       RESEND_API_KEY: ${RESEND_API_KEY:-}
       COMMIT_SHA: ${COMMIT_SHA:-}
-      S3_ENDPOINT: http://minio:9000
-      S3_PUBLIC_ENDPOINT: ${S3_PUBLIC_ENDPOINT:-https://smexstore.com}
-      S3_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-minioadmin}
-      S3_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
-      S3_BUCKET: smex-storage
+      STORAGE_DRIVER: local
+      UPLOAD_DIR: /app/uploads
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
-      minio:
-        condition: service_started
     healthcheck:
       test: ["CMD-SHELL", "node -e \"require('http').get('http://127.0.0.1:3001/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))\""]
       interval: 15s
@@ -116,24 +111,10 @@ services:
     networks:
       - smex-prod-network
 
-  minio:
-    image: cgr.dev/chainguard/minio:latest
-    container_name: smex-minio-prod
-    user: "0:0"
-    restart: unless-stopped
-    command: server /data --console-address ":9001"
-    environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
-    volumes:
-      - smex_prod_minio_data:/data
-    networks:
-      - smex-prod-network
-
 volumes:
   smex_prod_postgres_data:
   smex_prod_redis_data:
-  smex_prod_minio_data:
+  smex_prod_uploads:
 
 networks:
   smex-prod-network:

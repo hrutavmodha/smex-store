@@ -76,7 +76,7 @@ async function createVerifiedUser(app: FastifyInstance, prefix = 'u') {
     method: 'POST',
     url: '/api/v1/auth/register',
     remoteAddress: ip,
-    payload: { email, password, username },
+    payload: { email, password, username, phoneNumber: '+1234567890' },
   });
   if (regRes.statusCode !== 201) {
     throw new Error(`Registration failed with ${regRes.statusCode}: ${regRes.body}`);

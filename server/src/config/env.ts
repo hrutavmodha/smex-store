@@ -32,6 +32,12 @@ export const envSchema = z.object({
     .default('development_jwt_refresh_secret_key_needs_32_chars_min!'),
   CORS_ORIGIN: z.string().default('http://localhost:3000'),
   CLIENT_URL: z.string().default('http://localhost:3000'),
+  STORAGE_DRIVER: z.enum(['local', 's3']).default('local'),
+  UPLOAD_DIR: z.string().default(
+    process.env.NODE_ENV === 'production'
+      ? '/app/uploads'
+      : path.resolve(process.cwd(), 'uploads')
+  ),
   S3_ENDPOINT: z.string().url().optional(),
   S3_PUBLIC_ENDPOINT: z.string().url().optional(),
   S3_REGION: z.string().default('auto'),

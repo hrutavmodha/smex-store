@@ -1,6 +1,7 @@
 import { type FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
-import { StorageService, StorageError } from '../../services/storage.service.js';
+import fs from 'node:fs';
+import { StorageService, StorageError, MAX_FILE_SIZE } from '../../services/storage.service.js';
 import { MediaInspectorService, MediaInspectionError } from '../../services/media-inspector.service.js';
 import { presignedUploadRateLimitConfig } from '../../plugins/rate-limit.js';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
@@ -22,6 +23,61 @@ const verifyUploadBodySchema = z.object({
 export const marketplaceUploadsRoutes: FastifyPluginAsync = async (fastify) => {
   const storageService = new StorageService();
   const mediaInspectorService = new MediaInspectorService();
+
+  fastify.addContentTypeParser(
+    ['image/jpeg', 'image/png', 'image/webp', 'application/octet-stream'],
+    { parseAs: 'buffer' },
+    (_req, body, done) => {
+      done(null, body);
+    }
+  );
+
+  /**
+   * PUT /api/v1/marketplace/uploads/binary/*
+   * Direct binary upload endpoint for local disk storage mode
+   */
+  fastify.put(
+    '/api/v1/marketplace/uploads/binary/*',
+    {
+      bodyLimit: 10 * 1024 * 1024,
+    },
+    async (request, reply) => {
+      const s3Key = (request.params as { '*': string })['*'];
+      if (!s3Key || !S3_KEY_REGEX.test(s3Key) || s3Key.includes('..')) {
+        return reply.code(400).send(
+          formatRfc7807(400, 'INVALID_STORAGE_KEY', 'Bad Request', 'Invalid storage key format', request.url)
+        );
+      }
+
+      const buffer = request.body as Buffer;
+      if (!buffer || !Buffer.isBuffer(buffer) || buffer.length === 0) {
+        return reply.code(400).send(
+          formatRfc7807(400, 'EMPTY_PAYLOAD', 'Bad Request', 'Binary payload is required', request.url)
+        );
+      }
+
+      if (buffer.length > MAX_FILE_SIZE) {
+        return reply.code(422).send(
+          formatRfc7807(422, 'FILE_TOO_LARGE', 'Payload Too Large', 'File size exceeds maximum limit of 5MB', request.url)
+        );
+      }
+
+      const contentType = (request.headers['content-type'] as string) || 'image/jpeg';
+      try {
+        await storageService.saveLocalObject(s3Key, buffer, contentType);
+        return reply.code(200).send({
+          success: true,
+          s3Key,
+          size: buffer.length,
+        });
+      } catch (err: unknown) {
+        request.log.error(err, 'Failed to save binary upload to disk');
+        return reply.code(500).send(
+          formatRfc7807(500, 'STORAGE_WRITE_FAILED', 'Internal Server Error', 'Failed to save file to disk', request.url)
+        );
+      }
+    }
+  );
 
   /**
    * POST /api/v1/marketplace/uploads/presigned-url
@@ -281,7 +337,7 @@ export const marketplaceUploadsRoutes: FastifyPluginAsync = async (fastify) => {
 
   /**
    * GET /api/v1/media/*
-   * Serves public media streams from object storage
+   * Serves public media streams from local disk or object storage
    */
   fastify.get('/api/v1/media/*', async (request, reply) => {
     const s3Key = (request.params as { '*': string })['*'];
@@ -291,6 +347,23 @@ export const marketplaceUploadsRoutes: FastifyPluginAsync = async (fastify) => {
       );
     }
 
+    const ext = s3Key.split('.').pop()?.toLowerCase() || '';
+    const fallbackMime = EXTENSION_MIME_MAP[ext] || 'image/jpeg';
+
+    const filePath = storageService.getLocalFilePath(s3Key);
+    if (fs.existsSync(filePath)) {
+      try {
+        const stream = fs.createReadStream(filePath);
+
+        reply.header('Content-Type', fallbackMime);
+        reply.header('X-Content-Type-Options', 'nosniff');
+        reply.header('Cache-Control', 'public, max-age=31536000, immutable');
+        return reply.send(stream);
+      } catch {
+        // Fall through to S3
+      }
+    }
+
     try {
       const command = new GetObjectCommand({
         Bucket: storageService.getBucket(),
@@ -298,8 +371,6 @@ export const marketplaceUploadsRoutes: FastifyPluginAsync = async (fastify) => {
       });
       const s3Res = await storageService.getClient().send(command);
 
-      const ext = s3Key.split('.').pop()?.toLowerCase() || '';
-      const fallbackMime = EXTENSION_MIME_MAP[ext] || 'image/jpeg';
       const resolvedContentType =
         s3Res.ContentType && ALLOWED_MEDIA_MIME_TYPES.has(s3Res.ContentType)
           ? s3Res.ContentType

@@ -45,9 +45,9 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (user) {
-      setInGameId(user.inGameId || '');
       // Fetch full profile info
       void (async () => {
+        setInGameId(user.inGameId || '');
         try {
           const res = await fetchWithAuth('/api/v1/auth/me');
           if (res.ok) {
